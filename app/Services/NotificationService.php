@@ -1,7 +1,10 @@
 <?php
 
+namespace App\Services;
+
 use App\Events\NotificationSent;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class NotificationService
 {

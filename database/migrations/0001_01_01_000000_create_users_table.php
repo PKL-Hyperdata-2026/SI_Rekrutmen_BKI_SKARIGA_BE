@@ -13,18 +13,18 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('full_name');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
+            $table->string('phone')->nullable();
             $table->string('password');
+            $table->enum('role', ['admin', 'siswa', 'alumni', 'hrd'])->default('siswa');
+            $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();
-        });
-
-        Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('email')->primary();
-            $table->string('token');
-            $table->timestamp('created_at')->nullable();
+            $table->softDeletes();
+            $table->bigIncrements('created_by'); // nullable apa gk guys jawa b dong
+            $table->bigIncrements('updated_by')->nullable();
+            $table->bigIncrements('deleted_by')->nullable();
         });
 
         Schema::create('sessions', function (Blueprint $table) {

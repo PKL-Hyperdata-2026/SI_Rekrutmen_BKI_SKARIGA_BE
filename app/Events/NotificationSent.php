@@ -14,15 +14,15 @@ class NotificationSent implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public string $userId;
-    public string $message;
+    public array $notificationData;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(string $userId, string $message)
+    public function __construct(string $userId, array $notificationData)
     {
         $this->userId = $userId;
-        $this->message = $message;
+        $this->notificationData = $notificationData;
     }
 
     /**

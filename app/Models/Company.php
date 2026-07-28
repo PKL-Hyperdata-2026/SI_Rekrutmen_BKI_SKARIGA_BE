@@ -40,9 +40,7 @@ class Company extends Model
     public function industry(): BelongsTo
     {
         return $this->belongsTo(StandardType::class, 'industry_id')
-            ->whereHas('category', function ($query) {
-                $query->where('code', 'company_industry');
-            });
+            ->byCategory('company_industry');
     }
 
     public function createdBy(): BelongsTo

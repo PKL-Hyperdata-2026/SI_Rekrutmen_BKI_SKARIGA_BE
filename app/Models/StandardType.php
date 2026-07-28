@@ -30,4 +30,11 @@ class StandardType extends Model
     {
         return $this->belongsTo(StandardTypeCategory::class, 'category_id');
     }
+
+    public function scopeByCategory($query, string $categoryCode)
+    {
+        return $query->whereHas('category', function ($q) use ($categoryCode) {
+            $q->where('code', $categoryCode);
+        });
+    }
 }

@@ -19,7 +19,7 @@ class RecruitmentAttendanceStandardTypeSeeder extends Seeder
         $statuses = [
             ['code' => 'present', 'name' => 'Hadir', 'metadata' => ['badge_color' => 'green', 'icon' => 'user-check'], 'sort_order' => 1],
             ['code' => 'leave', 'name' => 'Izin', 'metadata' => ['badge_color' => 'orange', 'icon' => 'user-minus'], 'sort_order' => 2],
-            ['code' => 'Absent', 'name' => 'Alpa / Tidak Hadir', 'metadata' => ['badge_color' => 'red', 'icon' => 'user-x'], 'sort_order' => 3],
+            ['code' => 'absent', 'name' => 'Alpa / Tidak Hadir', 'metadata' => ['badge_color' => 'red', 'icon' => 'user-x'], 'sort_order' => 3],
         ];
 
         foreach ($statuses as $item) {

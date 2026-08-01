@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
@@ -26,5 +27,10 @@ class Major extends Model
         return [
             'is_active' => 'boolean',
         ];
+    }
+
+    public function jobVacancies(): BelongsToMany
+    {
+        return $this->belongsToMany(JobVacancy::class, 'job_vacancy_majors', 'major_id', 'job_vacancy_id')->withTimestamps();
     }
 }

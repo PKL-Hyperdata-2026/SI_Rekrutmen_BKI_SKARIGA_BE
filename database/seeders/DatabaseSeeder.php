@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             CompanyIndustrySeeder::class,
             EmploymentStatusSeeder::class,
             ClassSeeder::class,
+            JobVacancyStandardTypeSeeder::class,
         ]);
     }
 }

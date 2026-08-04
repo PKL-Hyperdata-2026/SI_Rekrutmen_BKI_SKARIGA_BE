@@ -31,7 +31,8 @@ class StudentPortfolio extends Model
     // Relasi: Satu portfolio termasuk satu jenis type
     public function category(): BelongsTo
     {
-        return $this->belongsTo(StandardType::class, 'category_id');
+        return $this->belongsTo(StandardType::class, 'category_id')
+            ->byCategory('portfolio_types');
     }
 
     public function createdBy(): BelongsTo

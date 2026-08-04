@@ -9,7 +9,7 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
+    /**1
      * Seed the application's database.
      */
     public function run(): void
@@ -20,12 +20,7 @@ class DatabaseSeeder extends Seeder
             EmploymentStatusSeeder::class,
             ClassSeeder::class,
             JobVacancyStandardTypeSeeder::class,
-            SelectionStageStandardTypeSeeder::class,
-            JobApplicationStandardTypeSeeder::class,
-            ApplicationStageHistoryStandardTypeSeeder::class,
-            RecruitmentAttendanceStandardTypeSeeder::class,
-            TracerStudyStandardTypeSeeder::class,
-            PlacementStatusStandardTypeSeeder::class,
+            
         ]);
     }
 }

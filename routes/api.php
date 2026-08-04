@@ -19,4 +19,25 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/{id}/read', [NotificationController::class, 'markAsRead']);
         Route::patch('/read-all', [NotificationController::class, 'markAllAsRead']);
     });
+
+    Route::middleware('role:admin')->prefix('admin')->group(function () {
+        // TODO: API untuk Admin
+    });
+
+    Route::middleware('role:hrd')->prefix('hrd')->group(function () {
+        // TODO: API untuk HRD
+    });
+
+    Route::middleware('role:siswa,alumni')->group(function () {
+        // TODO: API untuk Siswa dan Alumni
+        // jadi nanti ada API yang bisa diakses alumni
+        // tetapi tidak bisa diakses siswa
+        // nah gatau untuk prefix API nya gimana
+        // looking forward for further brief 😉
+    });
+
+    Route::middleware('role:alumni')->prefix('alumni')->group(function () {
+        // TODO: API untuk Alumni
+        // nah ini yang hanya bisa diakses alumni
+    });
 });

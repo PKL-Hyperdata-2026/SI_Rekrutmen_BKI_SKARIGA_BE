@@ -20,7 +20,12 @@ class DatabaseSeeder extends Seeder
             EmploymentStatusSeeder::class,
             ClassSeeder::class,
             JobVacancyStandardTypeSeeder::class,
-            StudentPortfolioSeeder::class,
+            SelectionStageStandardTypeSeeder::class,
+            JobApplicationStandardTypeSeeder::class,
+            ApplicationStageHistoryStandardTypeSeeder::class,
+            RecruitmentAttendanceStandardTypeSeeder::class,
+            TracerStudyStandardTypeSeeder::class,
+            PlacementStatusStandardTypeSeeder::class,
         ]);
     }
 }

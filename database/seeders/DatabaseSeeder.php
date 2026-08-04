@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             EmploymentStatusSeeder::class,
             ClassSeeder::class,
             JobVacancyStandardTypeSeeder::class,
+            StudentPortfolioSeeder::class,
         ]);
     }
 }

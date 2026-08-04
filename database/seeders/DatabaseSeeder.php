@@ -24,7 +24,8 @@ class DatabaseSeeder extends Seeder
             JobApplicationStandardTypeSeeder::class,
             ApplicationStageHistoryStandardTypeSeeder::class,
             RecruitmentAttendanceStandardTypeSeeder::class,
-            TracerStudyStandardTypeSeeder::class
+            TracerStudyStandardTypeSeeder::class,
+            PlacementStatusStandardTypeSeeder::class,
         ]);
     }
 }

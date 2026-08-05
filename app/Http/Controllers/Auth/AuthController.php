@@ -8,9 +8,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use App\Services\ResponseService;
 
 class AuthController extends Controller
 {
+    public function __construct(
+        protected ResponseService $response
+    ) {}
+
     public function login(Request $request)
     {
         $request->validate([
@@ -27,33 +32,31 @@ class AuthController extends Controller
         }
 
         if (!$user->is_active) {
-            return response()->json([
-                'message' => 'Your account is deactivated. Contact admin for further help.',
-            ], 403);
+            return $this->response
+                ->message('Your account is deactivated. Contact admin for further help.')
+                ->code(403);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            'message' => 'Login success',
-            'access_token' => $token,
-            'user' => $user,
-        ], 200);
+        return $this->response
+            ->message('Login success')
+            ->with('access_token', $token)
+            ->with('user', $user)
+            ->code(200);
     }
 
     public function me()
     {
-        return response()->json([
-            'user' => Auth::user(),
-        ], 200);
+        return $this->response
+            ->with('user', Auth::user())
+            ->code(200);
     }
 
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json([
-            'message' => 'Logout success',
-        ]);
+        return $this->response->message('Logout success');
     }
 }

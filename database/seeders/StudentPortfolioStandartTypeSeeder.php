@@ -6,7 +6,7 @@ use App\Models\StandardType;
 use App\Models\StandardTypeCategory;
 use Illuminate\Database\Seeder;
 
-class StudentPortfolioSeeder extends Seeder
+class StudentPortfolioStandartTypeSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -31,7 +31,7 @@ class StudentPortfolioSeeder extends Seeder
         foreach ($portfolioTypes as $type) {
             StandardType::updateOrCreate(
                 [
-                    'category_id' => $portfolioTypeCategory->id, 
+                    'category_id' => $portfolioTypeCategory->id,
                     'code' => $type['code']
                 ],
                 [

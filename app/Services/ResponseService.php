@@ -7,7 +7,7 @@ use Illuminate\Http\JsonResponse;
 
 class ResponseService implements Responsable
 {
-    protected bool $success = false;
+    protected bool $success = true;
 
     protected string $message = '';
 
@@ -49,6 +49,15 @@ class ResponseService implements Responsable
         return $this;
     }
 
+    public function error(string $message, int $httpCode = 400): JsonResponse
+    {
+        $this->success = false;
+        $this->message = $message;
+        $this->statusCode = $httpCode;
+
+        return response()->json($this->toArray(), $this->statusCode);
+    }
+
     public function with(string $key, mixed $value): self
     {
         $this->additionalPayload[$key] = $value;
@@ -58,7 +67,9 @@ class ResponseService implements Responsable
 
     public function toArray(): array
     {
-        $payload = [];
+        $payload = [
+            'success' => $this->success,
+        ];
 
         if (!empty($this->message)) {
             $payload['message'] = $this->message;

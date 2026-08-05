@@ -8,14 +8,18 @@ use App\Http\Requests\UpdateJobVacancyRequest;
 use App\Http\Resources\JobVacancyResource;
 use App\Models\JobVacancy;
 use App\Services\JobVacancyService;
-use Illuminate\Http\JsonResponse;
+use App\Services\ResponseService;
+use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\Request;
 
 class JobVacancyController extends Controller
 {
-    public function __construct(protected JobVacancyService $jobVacancyService) {}
+    public function __construct(
+        protected JobVacancyService $jobVacancyService,
+        protected ResponseService $response
+    ) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): Responsable
     {
         $query = JobVacancy::with(['company', 'jobType', 'status', 'targetApplicant', 'majors']);
 
@@ -39,42 +43,35 @@ class JobVacancyController extends Controller
 
         $vacancies = $query->latest()->paginate($request->integer('per_page', 15));
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Job vacancies retrieved successfully.',
-            'data' => JobVacancyResource::collection($vacancies)->response()->getData(true),
-        ]);
+        return $this->response
+            ->message('Job vacancies retrieved successfully.')
+            ->data(JobVacancyResource::collection($vacancies)->response()->getData(true));
     }
 
-    public function store(StoreJobVacancyRequest $request): JsonResponse
+    public function store(StoreJobVacancyRequest $request): Responsable
     {
         $vacancy = $this->jobVacancyService->createJobVacancy(
             $request->validated(),
             $request->user()?->id
         );
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Job vacancy created successfully.',
-            'data' => new JobVacancyResource($vacancy),
-        ], 201);
+        return $this->response
+            ->message('Job vacancy created successfully.')
+            ->data(new JobVacancyResource($vacancy))->code(201);
     }
 
-    public function show(string $idOrSlug): JsonResponse
+    public function show(string $idOrSlug): Responsable
     {
         $vacancy = JobVacancy::with(['company', 'jobType', 'status', 'targetApplicant', 'majors'])
             ->where('id', $idOrSlug)
             ->orWhere('slug', $idOrSlug)
             ->firstOrFail();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Job vacancy details retrieved successfully.',
-            'data' => new JobVacancyResource($vacancy),
-        ]);
+        return $this->response->message('Job vacancy details retrieved successfully.')
+            ->data(new JobVacancyResource($vacancy));
     }
 
-    public function update(UpdateJobVacancyRequest $request, JobVacancy $jobVacancy): JsonResponse
+    public function update(UpdateJobVacancyRequest $request, JobVacancy $jobVacancy): Responsable
     {
         $updated = $this->jobVacancyService->updateJobVacancy(
             $jobVacancy,
@@ -82,20 +79,14 @@ class JobVacancyController extends Controller
             $request->user()?->id
         );
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Job vacancy updated successfully.',
-            'data' => new JobVacancyResource($updated),
-        ]);
+        return $this->response->message('Job vacancy updated successfully.')
+            ->data(new JobVacancyResource($updated));
     }
 
-    public function destroy(Request $request, JobVacancy $jobVacancy): JsonResponse
+    public function destroy(Request $request, JobVacancy $jobVacancy): Responsable
     {
         $this->jobVacancyService->deleteJobVacancy($jobVacancy, $request->user()?->id);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Job vacancy deleted successfully.',
-        ]);
+        return $this->response->message('Job vacancy deleted successfully.');
     }
 }

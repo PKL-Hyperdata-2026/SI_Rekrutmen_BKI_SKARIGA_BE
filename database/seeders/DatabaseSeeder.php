@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             CompanyIndustrySeeder::class,
             EmploymentStatusSeeder::class,
             ClassSeeder::class,
+            MajorSeeder::class,
             JobVacancyStandardTypeSeeder::class,
             SelectionStageStandardTypeSeeder::class,
             JobApplicationStandardTypeSeeder::class,

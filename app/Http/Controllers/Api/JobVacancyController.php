@@ -21,30 +21,23 @@ class JobVacancyController extends Controller
 
     public function index(Request $request): Responsable
     {
-        $query = JobVacancy::with(['company', 'jobType', 'status', 'targetApplicant', 'majors']);
+        $filters = $request->only([
+            'search',
+            'company_id',
+            'status_id',
+            'target_applicant_id',
+            'job_type_id',
+            'major_id',
+            'major_ids',
+            'majors',
+            'is_active',
+        ]);
 
-        if ($request->filled('company_id')) {
-            $query->where('company_id', $request->company_id);
-        }
-        if ($request->filled('status_id')) {
-            $query->where('status_id', $request->status_id);
-        }
-        if ($request->filled('job_type_id')) {
-            $query->where('job_type_id', $request->job_type_id);
-        }
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('position', 'like', "%{$search}%")
-                    ->orWhere('work_location', 'like', "%{$search}%");
-            });
-        }
-
-        $vacancies = $query->latest()->paginate($request->integer('per_page', 15));
+        $perPage = $request->integer('per_page', 15);
+        $vacancies = $this->jobVacancyService->getAdminVacancies($filters, $perPage);
 
         return $this->response
-            ->message('Job vacancies retrieved successfully.')
+            ->message('Daftar lowongan kerja berhasil diambil.')
             ->data(JobVacancyResource::collection($vacancies)->response()->getData(true));
     }
 
@@ -56,18 +49,20 @@ class JobVacancyController extends Controller
         );
 
         return $this->response
-            ->message('Job vacancy created successfully.')
+            ->message('Lowongan kerja berhasil ditambahkan.')
             ->data(new JobVacancyResource($vacancy))->code(201);
     }
 
     public function show(string $idOrSlug): Responsable
     {
-        $vacancy = JobVacancy::with(['company', 'jobType', 'status', 'targetApplicant', 'majors'])
-            ->where('id', $idOrSlug)
-            ->orWhere('slug', $idOrSlug)
+        $vacancy = JobVacancy::with(['company', 'jobType', 'status', 'targetApplicant', 'majors', 'createdBy', 'updatedBy'])
+            ->where(function ($query) use ($idOrSlug) {
+                $query->where('id', $idOrSlug)
+                    ->orWhere('slug', $idOrSlug);
+            })
             ->firstOrFail();
 
-        return $this->response->message('Job vacancy details retrieved successfully.')
+        return $this->response->message('Detail lowongan kerja berhasil diambil.')
             ->data(new JobVacancyResource($vacancy));
     }
 
@@ -79,7 +74,7 @@ class JobVacancyController extends Controller
             $request->user()?->id
         );
 
-        return $this->response->message('Job vacancy updated successfully.')
+        return $this->response->message('Lowongan kerja berhasil diperbarui.')
             ->data(new JobVacancyResource($updated));
     }
 
@@ -87,6 +82,21 @@ class JobVacancyController extends Controller
     {
         $this->jobVacancyService->deleteJobVacancy($jobVacancy, $request->user()?->id);
 
-        return $this->response->message('Job vacancy deleted successfully.');
+        return $this->response->message('Lowongan kerja berhasil dihapus.');
+    }
+
+    public function toggleActive(Request $request, JobVacancy $jobVacancy): Responsable
+    {
+        $updated = $this->jobVacancyService->toggleActive($jobVacancy, $request->user()?->id);
+        $statusText = $updated->is_active ? 'diaktifkan' : 'dinonaktifkan';
+        return $this->response->message("Status lowongan kerja berhasil {$statusText}.")
+            ->data(new JobVacancyResource($updated));
+    }
+
+    public function options(): Responsable
+    {
+        $options = $this->jobVacancyService->getFormOptions();
+        return $this->response->message('Opsi formulir lowongan kerja berhasil diambil.')
+            ->data($options);
     }
 }

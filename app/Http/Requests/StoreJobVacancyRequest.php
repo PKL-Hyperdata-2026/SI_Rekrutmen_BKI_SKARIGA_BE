@@ -14,23 +14,24 @@ class StoreJobVacancyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id'          => 'required|exists:companies,id',
-            'job_type_id'         => 'nullable|exists:standard_types,id',
-            'status_id'           => 'nullable|exists:standard_types,id',
+            'company_id' => 'required|exists:companies,id',
+            'position' => 'nullable|string|max:255',
+            'title' => 'required_without:position|nullable|string|max:255', //di design form gaada input title, jadi dibuat required_without
+            'quota' => 'nullable|integer|min:1',
+            'deadline' => 'nullable|date',
+            'major_ids' => 'nullable|array',
+            'major_ids.*' => 'exists:majors,id',
             'target_applicant_id' => 'nullable|exists:standard_types,id',
-            'title'               => 'required|string|max:255',
-            'position'            => 'nullable|string|max:255',
-            'description'         => 'nullable|string',
-            'qualification'       => 'nullable|string',
-            'quota'               => 'nullable|integer|min:1',
-            'deadline'            => 'nullable|date|after_or_equal:today',
-            'work_location'       => 'nullable|string|max:255',
-            'min_salary'          => 'nullable|numeric|min:0|max:9999999999999.99',
-            'max_salary'          => 'nullable|numeric|gte:min_salary|max:9999999999999.99',
-            'is_featured'         => 'boolean',
-            'is_active'           => 'boolean',
-            'major_ids'           => 'nullable|array',
-            'major_ids.*'         => 'exists:majors,id',
+            'work_location' => 'nullable|string|max:255',
+            'qualification' => 'nullable|string',
+            'description' => 'nullable|string',
+            'job_type_id' => 'nullable|exists:standard_types,id',
+            'status_id' => 'nullable|exists:standard_types,id',
+            'min_salary' => 'nullable|numeric|min:0|max:9999999999999.99',
+            'max_salary' => 'nullable|numeric|gte:min_salary|max:9999999999999.99',
+            'is_featured' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
+            'send_notification' => 'nullable|boolean',
         ];
     }
 }

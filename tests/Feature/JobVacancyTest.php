@@ -92,8 +92,8 @@ class JobVacancyTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.min_salary', '1500000000.00')
-            ->assertJsonPath('data.max_salary', '3000000000.00');
+            ->assertJsonPath('data.minSalary', '1500000000.00')
+            ->assertJsonPath('data.maxSalary', '3000000000.00');
     }
 
     public function test_can_fetch_and_update_job_vacancy(): void

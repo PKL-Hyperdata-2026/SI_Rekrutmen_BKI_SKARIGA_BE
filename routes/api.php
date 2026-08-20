@@ -21,7 +21,10 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:admin')->prefix('admin')->group(function () {
-        // TODO: API untuk Admin
+        Route::get('/job-vacancies/options', [JobVacancyController::class, 'options']); // Ambil opsi dropdown form (Perusahaan, Status, Target, Tipe Kerja)
+        Route::patch('/job-vacancies/{jobVacancy}/toggle-active', [JobVacancyController::class, 'toggleActive']); // Toggle saklar status aktif/non-aktif lowongan
+        Route::apiResource('job-vacancies', JobVacancyController::class); // CRUD lengkap lowongan kerja (Index, Store, Show, Update, Delete)
+        // TODO: API Admin lainnya
     });
 
     Route::middleware('role:hrd')->prefix('hrd')->group(function () {

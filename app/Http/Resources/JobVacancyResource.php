@@ -11,10 +11,45 @@ class JobVacancyResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'company' => $this->whenLoaded('company'),
-            'job_type' => $this->whenLoaded('jobType'),
-            'status' => $this->whenLoaded('status'),
-            'target_applicant' => $this->whenLoaded('targetApplicant'),
+            'companyId' => $this->company_id,
+            'company' => $this->whenLoaded('company', function () {
+                return [
+                    'id' => $this->company->id,
+                    'name' => $this->company->name,
+                    'email' => $this->company->email,
+                    'phone' => $this->company->phone,
+                    'address' => $this->company->address,
+                    'website' => $this->company->website,
+                    'logoPath' => $this->company->logo_path,
+                ];
+            }),
+            'jobTypeId' => $this->job_type_id,
+            'jobType' => $this->whenLoaded('jobType', function () {
+                return $this->jobType ? [
+                    'id' => $this->jobType->id,
+                    'code' => $this->jobType->code,
+                    'name' => $this->jobType->name,
+                    'metadata' => $this->jobType->metadata,
+                ] : null;
+            }),
+            'statusId' => $this->status_id,
+            'status' => $this->whenLoaded('status', function () {
+                return $this->status ? [
+                    'id' => $this->status->id,
+                    'code' => $this->status->code,
+                    'name' => $this->status->name,
+                    'metadata' => $this->status->metadata,
+                ] : null;
+            }),
+            'targetApplicantId' => $this->target_applicant_id,
+            'targetApplicant' => $this->whenLoaded('targetApplicant', function () {
+                return $this->targetApplicant ? [
+                    'id' => $this->targetApplicant->id,
+                    'code' => $this->targetApplicant->code,
+                    'name' => $this->targetApplicant->name,
+                    'metadata' => $this->targetApplicant->metadata,
+                ] : null;
+            }),
             'title' => $this->title,
             'slug' => $this->slug,
             'position' => $this->position,
@@ -22,16 +57,39 @@ class JobVacancyResource extends JsonResource
             'qualification' => $this->qualification,
             'quota' => $this->quota,
             'deadline' => $this->deadline?->format('Y-m-d'),
-            'work_location' => $this->work_location,
-            'min_salary' => $this->min_salary,
-            'max_salary' => $this->max_salary,
-            'is_featured' => $this->is_featured,
-            'is_active' => $this->is_active,
-            'majors' => $this->whenLoaded('majors'),
-            'created_by_user' => $this->whenLoaded('createdBy'),
-            'updated_by_user' => $this->whenLoaded('updatedBy'),
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            'workLocation' => $this->work_location,
+            'majors' => $this->whenLoaded('majors', function () {
+                return $this->majors->map(function ($major) {
+                    return [
+                        'id' => $major->id,
+                        'code' => $major->code,
+                        'name' => $major->name,
+                    ];
+                });
+            }),
+            'majorIds' => $this->whenLoaded('majors', function () {
+                return $this->majors->pluck('id');
+            }),
+            'minSalary' => $this->min_salary,
+            'maxSalary' => $this->max_salary,
+            'isFeatured' => (bool) $this->is_featured,
+            'isActive' => (bool) $this->is_active,
+            'createdByUser' => $this->whenLoaded('createdBy', function () {
+                return $this->createdBy ? [
+                    'id' => $this->createdBy->id,
+                    'fullName' => $this->createdBy->full_name,
+                    'email' => $this->createdBy->email,
+                ] : null;
+            }),
+            'updatedByUser' => $this->whenLoaded('updatedBy', function () {
+                return $this->updatedBy ? [
+                    'id' => $this->updatedBy->id,
+                    'fullName' => $this->updatedBy->full_name,
+                    'email' => $this->updatedBy->email,
+                ] : null;
+            }),
+            'createdAt' => $this->created_at?->toIso8601String(),
+            'updatedAt' => $this->updated_at?->toIso8601String(),
         ];
     }
 }

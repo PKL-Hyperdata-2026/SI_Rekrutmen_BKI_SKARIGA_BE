@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -8,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -19,16 +22,16 @@ use Laravel\Sanctum\HasApiTokens;
     'phone',
     'password',
     'role',
-    'is_active'
+    'is_active',
 ])]
 #[Hidden([
     'password',
-    'remember_token'
+    'remember_token',
 ])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use SoftDeletes, HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * Get the attributes that should be cast.
@@ -46,6 +49,11 @@ class User extends Authenticatable
     public function notifications(): HasMany
     {
         return $this->hasMany(Notification::class)->latest();
+    }
+
+    public function studentAlumni(): HasOne
+    {
+        return $this->hasOne(StudentAlumni::class, 'user_id');
     }
 
     public function unreadNotifications(): HasMany

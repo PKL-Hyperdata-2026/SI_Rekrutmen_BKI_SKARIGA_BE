@@ -38,7 +38,8 @@ backend/app/
 ├── Http/
 │   ├── Controllers/
 │   │   ├── Api/
-│   │   │   └── JobVacancyController.php       # Job vacancies CRUD & publishing
+│   │   │   ├── JobVacancyController.php       # Job vacancies CRUD & publishing
+│   │   │   └── StudentAlumniController.php    # Admin CRUD data alumni (upgrade akun siswa)
 │   │   ├── Auth/
 │   │   │   └── AuthController.php             # Login, logout, me endpoint
 │   │   └── NotificationController.php         # Notification listing & read status
@@ -65,7 +66,7 @@ backend/app/
 │   └── AccessMenu.php                         # Role-to-menu permission mapping
 ├── Services/
 │   ├── JobVacancyService.php                  # Vacancy business rules, filters, company checks
-│   ├── StudentAlumniService.php               # Student & alumni profile management
+│   ├── StudentAlumniService.php               # Alumni CRUD (list/filter, upgrade siswa→alumni, sync users, soft delete)
 │   ├── NotificationService.php                # Notification creation, broadcast, read flags
 │   ├── ResponseService.php                    # Standard JSON response building
 │   └── MailService.php                        # Email notification dispatch
@@ -102,6 +103,12 @@ backend/app/
 
 ### Role-Protected Routes
 - `/api/admin/*` (`role:admin`) — User management, school masters, verification, analytics.
+  - `GET /api/admin/alumni` — List alumni (`graduation_year` terisi) + pagination (`per_page`), search (nama/NIS/perusahaan), filter (`graduation_year`, `major_id`, `employment_status_id`, `current_company_id`), sort (`sort_by`, `sort_dir`).
+  - `GET /api/admin/alumni/options` — Dropdown: `majors`, `classes`, `employment_statuses`, `companies`, `graduation_years`.
+  - `GET /api/admin/alumni/{alumni}` — Detail alumni (dengan relasi user/major/class/employment_status/current_company).
+  - `POST /api/admin/alumni` — Tambah alumni: upgrade akun siswa (`user_id` wajib, role `siswa`), isi data alumni, set `users.role = alumni`. Tanpa pembuatan akun baru / email. Dalam `DB::transaction()`.
+  - `PUT|PATCH /api/admin/alumni/{alumni}` — Update data alumni; sinkron `users.full_name`/`phone`; role mengikuti `graduation_year` (terisi → `alumni`, kosong → `siswa`). Dalam `DB::transaction()`.
+  - `DELETE /api/admin/alumni/{alumni}` — Soft delete + `deleted_by` + set `users.is_active = false`. Dalam `DB::transaction()`.
 - `/api/hrd/*` (`role:hrd`) — Company profile, vacancy management, candidate selection pipeline.
 - `/api/alumni/*` (`role:alumni`) — Alumni job applications, portfolio updates, tracer study submissions.
 

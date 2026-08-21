@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreJobPlacementRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'student_alumni_id' => ['required', 'integer', 'exists:students_alumni,id'],
+            'company_id' => ['required', 'integer', 'exists:companies,id'],
+            'job_application_id' => ['nullable', 'integer', 'exists:job_applications,id'],
+            'placement_status_id' => ['nullable', 'integer', 'exists:standard_types,id'],
+            'accepted_date' => ['nullable', 'date'],
+            'start_date' => ['nullable', 'date'],
+            'notes' => ['nullable', 'string'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'student_alumni_id.required' => 'Data siswa atau alumni wajib dipilih.',
+            'student_alumni_id.exists' => 'Data siswa atau alumni tidak ditemukan.',
+            'company_id.required' => 'Perusahaan wajib dipilih.',
+            'company_id.exists' => 'Perusahaan yang dipilih tidak valid.',
+            'job_application_id.exists' => 'Lamaran pekerjaan yang dipilih tidak valid.',
+            'placement_status_id.exists' => 'Status penempatan yang dipilih tidak valid.',
+            'accepted_date.date' => 'Format tanggal diterima tidak valid.',
+            'start_date.date' => 'Format tanggal mulai kerja tidak valid.',
+        ];
+    }
+}

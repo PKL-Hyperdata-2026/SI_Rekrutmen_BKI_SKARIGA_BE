@@ -38,6 +38,7 @@ backend/app/
 ├── Http/
 │   ├── Controllers/
 │   │   ├── Api/
+│   │   │   ├── JobPlacementController.php     # Admin CRUD data penempatan kerja
 │   │   │   ├── JobVacancyController.php       # Job vacancies CRUD & publishing
 │   │   │   └── StudentAlumniController.php    # Admin CRUD data alumni (upgrade akun siswa)
 │   │   ├── Auth/
@@ -65,6 +66,7 @@ backend/app/
 │   ├── Menu.php                               # System navigation menus
 │   └── AccessMenu.php                         # Role-to-menu permission mapping
 ├── Services/
+│   ├── JobPlacementService.php                # Job placement CRUD, filtering, audit trail, options
 │   ├── JobVacancyService.php                  # Vacancy business rules, filters, company checks
 │   ├── StudentAlumniService.php               # Alumni CRUD (list/filter, upgrade siswa→alumni, sync users, soft delete)
 │   ├── NotificationService.php                # Notification creation, broadcast, read flags
@@ -83,6 +85,7 @@ backend/app/
 - **`job_vacancies`**: Job postings linked to `companies.id`. Contains title, description, requirements, start/end dates, quota, status (`draft`, `published`, `closed`).
 - **`job_applications`**: Junction between `job_vacancies.id` and `student_alumni.id`. Tracks overall status (`pending`, `in_review`, `accepted`, `rejected`).
 - **`selection_stages` & `application_stage_histories`**: Granular tracking of test stages (administrative, psychotest, technical interview, medical).
+- **`job_placements`**: Records work placement of students/alumni (`student_alumni_id`, `company_id`, `job_application_id`, `placement_status_id`, `accepted_date`, `start_date`, `notes`).
 - **`tracer_studies`**: Alumni tracer data linked to `student_alumni.id` (employment status, company name, salary range, field alignment).
 - **`activity_logs`**: Security & audit logs recording user ID, action, model affected, IP address, and changed attributes.
 
@@ -109,6 +112,12 @@ backend/app/
   - `POST /api/admin/alumni` — Tambah alumni: upgrade akun siswa (`user_id` wajib, role `siswa`), isi data alumni, set `users.role = alumni`. Tanpa pembuatan akun baru / email. Dalam `DB::transaction()`.
   - `PUT|PATCH /api/admin/alumni/{alumni}` — Update data alumni; sinkron `users.full_name`/`phone`; role mengikuti `graduation_year` (terisi → `alumni`, kosong → `siswa`). Dalam `DB::transaction()`.
   - `DELETE /api/admin/alumni/{alumni}` — Soft delete + `deleted_by` + set `users.is_active = false`. Dalam `DB::transaction()`.
+  - `GET /api/admin/job-placements` — List penempatan kerja + pagination (`per_page`), search (nama/NIS/perusahaan/notes), filter (`student_alumni_id`, `company_id`, `placement_status_id`, `job_application_id`, `year`), sort (`sort_by`, `sort_dir`).
+  - `GET /api/admin/job-placements/options` — Dropdown opsi: `companies`, `placement_statuses`, `students_alumni`.
+  - `GET /api/admin/job-placements/{jobPlacement}` — Detail penempatan kerja (dengan relasi studentAlumni, company, placementStatus, jobApplication).
+  - `POST /api/admin/job-placements` — Tambah penempatan kerja. Dalam `DB::transaction()`.
+  - `PUT|PATCH /api/admin/job-placements/{jobPlacement}` — Update data penempatan kerja. Dalam `DB::transaction()`.
+  - `DELETE /api/admin/job-placements/{jobPlacement}` — Soft delete + `deleted_by`. Dalam `DB::transaction()`.
 - `/api/hrd/*` (`role:hrd`) — Company profile, vacancy management, candidate selection pipeline.
 - `/api/alumni/*` (`role:alumni`) — Alumni job applications, portfolio updates, tracer study submissions.
 

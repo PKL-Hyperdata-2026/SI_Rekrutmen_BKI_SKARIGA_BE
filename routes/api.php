@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\JobPlacementController;
 use App\Http\Controllers\Api\JobVacancyController;
 use App\Http\Controllers\Api\StudentAlumniController;
 use App\Http\Controllers\Auth\AuthController;
@@ -28,6 +29,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/alumni/options', [StudentAlumniController::class, 'options']); // Ambil opsi dropdown form alumni (Jurusan, Kelas, Status, Perusahaan, Tahun Lulus)
         Route::apiResource('alumni', StudentAlumniController::class)
             ->parameters(['alumni' => 'alumni']); // CRUD lengkap data alumni (Index, Store, Show, Update, Delete)
+        Route::get('/job-placements/options', [JobPlacementController::class, 'options']); // Ambil opsi dropdown form penempatan kerja
+        Route::apiResource('job-placements', JobPlacementController::class)
+            ->parameters(['job-placements' => 'jobPlacement']); // CRUD lengkap penempatan kerja (Index, Store, Show, Update, Delete)
         // TODO: API Admin lainnya
     });
 

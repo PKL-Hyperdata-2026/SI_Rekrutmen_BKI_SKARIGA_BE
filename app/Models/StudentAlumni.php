@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
@@ -90,6 +91,11 @@ class StudentAlumni extends Model
     public function currentCompany(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'current_company_id');
+    }
+
+    public function portfolios(): HasMany
+    {
+        return $this->hasMany(StudentPortfolio::class, 'student_alumni_id');
     }
 
     public function createdBy(): BelongsTo

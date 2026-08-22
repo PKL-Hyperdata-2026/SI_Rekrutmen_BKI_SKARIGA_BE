@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class StudentPortfolio extends Model
 {
@@ -32,7 +34,7 @@ class StudentPortfolio extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(StandardType::class, 'category_id')
-            ->byCategory('portfolio_types');
+            ->byCategory('portfolio_type');
     }
 
     public function createdBy(): BelongsTo

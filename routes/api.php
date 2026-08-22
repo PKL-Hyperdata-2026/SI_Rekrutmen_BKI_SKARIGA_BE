@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\JobPlacementController;
 use App\Http\Controllers\Api\JobVacancyController;
 use App\Http\Controllers\Api\StudentAlumniController;
+use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/job-vacancies/options', [JobVacancyController::class, 'options']); // Ambil opsi dropdown form (Perusahaan, Status, Target, Tipe Kerja)
         Route::patch('/job-vacancies/{jobVacancy}/toggle-active', [JobVacancyController::class, 'toggleActive']); // Toggle saklar status aktif/non-aktif lowongan
         Route::apiResource('job-vacancies', JobVacancyController::class); // CRUD lengkap lowongan kerja (Index, Store, Show, Update, Delete)
+        Route::get('/students/options', [StudentController::class, 'options']); // Ambil opsi dropdown form siswa (Jurusan, Kelas, Status, Portfolio Type, Perusahaan, Tahun Lulus)
+        Route::post('/students/{student}/portfolios', [StudentController::class, 'uploadPortfolio']); // Upload portofolio/berkas siswa
+        Route::delete('/students/{student}/portfolios/{portfolio}', [StudentController::class, 'destroyPortfolio']); // Hapus portofolio/berkas siswa
+        Route::apiResource('students', StudentController::class)
+            ->parameters(['students' => 'student']); // CRUD lengkap data siswa (Index, Store, Show, Update, Delete)
         Route::get('/alumni/options', [StudentAlumniController::class, 'options']); // Ambil opsi dropdown form alumni (Jurusan, Kelas, Status, Perusahaan, Tahun Lulus)
         Route::apiResource('alumni', StudentAlumniController::class)
             ->parameters(['alumni' => 'alumni']); // CRUD lengkap data alumni (Index, Store, Show, Update, Delete)

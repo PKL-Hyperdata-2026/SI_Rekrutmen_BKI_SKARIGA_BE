@@ -40,7 +40,8 @@ backend/app/
 │   │   ├── Api/
 │   │   │   ├── JobPlacementController.php     # Admin CRUD data penempatan kerja
 │   │   │   ├── JobVacancyController.php       # Job vacancies CRUD & publishing
-│   │   │   └── StudentAlumniController.php    # Admin CRUD data alumni (upgrade akun siswa)
+│   │   │   ├── StudentAlumniController.php    # Admin CRUD data alumni (upgrade akun siswa)
+│   │   │   └── StudentController.php          # Admin CRUD data siswa kelas 12 aktif & portfolio
 │   │   ├── Auth/
 │   │   │   └── AuthController.php             # Login, logout, me endpoint
 │   │   └── NotificationController.php         # Notification listing & read status
@@ -69,6 +70,7 @@ backend/app/
 │   ├── JobPlacementService.php                # Job placement CRUD, filtering, audit trail, options
 │   ├── JobVacancyService.php                  # Vacancy business rules, filters, company checks
 │   ├── StudentAlumniService.php               # Alumni CRUD (list/filter, upgrade siswa→alumni, sync users, soft delete)
+│   ├── StudentService.php                     # Siswa aktif CRUD, filtering, form options, portofolio berkas
 │   ├── NotificationService.php                # Notification creation, broadcast, read flags
 │   ├── ResponseService.php                    # Standard JSON response building
 │   └── MailService.php                        # Email notification dispatch
@@ -106,6 +108,14 @@ backend/app/
 
 ### Role-Protected Routes
 - `/api/admin/*` (`role:admin`) — User management, school masters, verification, analytics.
+  - `GET /api/admin/students` — List data siswa aktif (role `siswa`) + pagination (`per_page`), search (nama/NIS/email/phone/jurusan/perusahaan), filter (`major_id`, `class_id`, `employment_status_id`, `graduation_year`, `is_active`), sort (`sort_by`, `sort_dir`).
+  - `GET /api/admin/students/options` — Dropdown: `majors`, `classes`, `employment_statuses`, `portfolio_types`, `companies`, `graduation_years`.
+  - `GET /api/admin/students/{student}` — Detail data siswa (dengan relasi user/major/class/employment_status/current_company/portfolios.category).
+  - `POST /api/admin/students` — Tambah siswa baru + pembuatan akun user (role `siswa`, is_active `true`). Dalam `DB::transaction()`.
+  - `PUT|PATCH /api/admin/students/{student}` — Update data siswa dan akun user terkait. Dalam `DB::transaction()`.
+  - `DELETE /api/admin/students/{student}` — Soft delete data siswa & akun user + set `users.is_active = false`. Dalam `DB::transaction()`.
+  - `POST /api/admin/students/{student}/portfolios` — Upload dokumen portofolio siswa (CV, Sertifikat PKL, dll).
+  - `DELETE /api/admin/students/{student}/portfolios/{portfolio}` — Hapus dokumen portofolio siswa.
   - `GET /api/admin/alumni` — List alumni (`graduation_year` terisi) + pagination (`per_page`), search (nama/NIS/perusahaan), filter (`graduation_year`, `major_id`, `employment_status_id`, `current_company_id`), sort (`sort_by`, `sort_dir`).
   - `GET /api/admin/alumni/options` — Dropdown: `majors`, `classes`, `employment_statuses`, `companies`, `graduation_years`.
   - `GET /api/admin/alumni/{alumni}` — Detail alumni (dengan relasi user/major/class/employment_status/current_company).

@@ -1,0 +1,327 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Models\Company;
+use App\Models\Major;
+use App\Models\StandardType;
+use App\Models\StudentAlumni;
+use App\Models\StudentPortfolio;
+use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+
+class StudentService
+{
+    /** @var array<int, string> */
+    protected array $sortableColumns = [
+        'id',
+        'nis',
+        'graduation_year',
+        'current_position',
+        'starting_salary',
+        'waiting_time_months',
+        'created_at',
+    ];
+
+    public function getStudents(array $filters = [], int $perPage = 15): LengthAwarePaginator
+    {
+        $query = StudentAlumni::with([
+            'user',
+            'class',
+            'major',
+            'employmentStatus',
+            'currentCompany',
+            'portfolios.category',
+        ])->whereHas('user', function (Builder $userQuery) {
+            $userQuery->where('role', 'siswa');
+        });
+
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function (Builder $q) use ($search) {
+                $q->where('nis', 'like', "%{$search}%")
+                    ->orWhereHas('user', function (Builder $userQuery) use ($search) {
+                        $userQuery->where('full_name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('currentCompany', function (Builder $companyQuery) use ($search) {
+                        $companyQuery->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('major', function (Builder $majorQuery) use ($search) {
+                        $majorQuery->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if (! empty($filters['major_id'])) {
+            $query->where('major_id', $filters['major_id']);
+        }
+
+        if (! empty($filters['class_id'])) {
+            $query->where('class_id', $filters['class_id']);
+        }
+
+        if (! empty($filters['employment_status_id'])) {
+            $query->where('employment_status_id', $filters['employment_status_id']);
+        }
+
+        if (isset($filters['graduation_year']) && $filters['graduation_year'] !== '') {
+            $query->where('graduation_year', $filters['graduation_year']);
+        }
+
+        if (isset($filters['is_active'])) {
+            $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
+        }
+
+        $sortBy = in_array($filters['sort_by'] ?? 'id', $this->sortableColumns, true)
+            ? $filters['sort_by']
+            : 'id';
+        $sortDir = strtolower((string) ($filters['sort_dir'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $query->orderBy($sortBy, $sortDir);
+
+        return $query->paginate($perPage);
+    }
+
+    public function show(StudentAlumni $student): StudentAlumni
+    {
+        return $student->load([
+            'user',
+            'class',
+            'major',
+            'employmentStatus',
+            'currentCompany',
+            'portfolios.category',
+        ]);
+    }
+
+    public function getStudentById(int $id): StudentAlumni
+    {
+        return StudentAlumni::with([
+            'user',
+            'class',
+            'major',
+            'employmentStatus',
+            'currentCompany',
+            'portfolios.category',
+        ])->findOrFail($id);
+    }
+
+    public function getFormOptions(): array
+    {
+        $companies = Company::where('is_active', true)
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
+        $majors = Major::where('is_active', true)
+            ->select('id', 'code', 'name')
+            ->orderBy('name')
+            ->get();
+
+        $classes = StandardType::byCategory('class')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'code', 'name']);
+
+        $employmentStatuses = StandardType::byCategory('employment_status')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'code', 'name']);
+
+        $portfolioTypes = StandardType::byCategory('portfolio_type')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'code', 'name']);
+
+        $currentYear = (int) date('Y');
+        $graduationYears = range($currentYear - 5, $currentYear + 2);
+
+        return [
+            'companies' => $companies,
+            'majors' => $majors,
+            'classes' => $classes,
+            'employment_statuses' => $employmentStatuses,
+            'portfolio_types' => $portfolioTypes,
+            'graduation_years' => $graduationYears,
+        ];
+    }
+
+    public function createStudent(array $data, ?int $authUserId = null): StudentAlumni
+    {
+        return DB::transaction(function () use ($data, $authUserId) {
+            $userData = [
+                'full_name'  => $data['full_name'],
+                'email'      => $data['email'],
+                'phone'      => $data['phone'] ?? null,
+                'password'   => ! empty($data['password']) ? $data['password'] : ($data['nis'] ?? 'siswa123'),
+                'role'       => 'siswa',
+                'is_active'  => $data['is_active'] ?? true,
+                'created_by' => $authUserId,
+                'updated_by' => $authUserId,
+            ];
+
+            $user = User::create($userData);
+
+            $socialMedia = null;
+            if (! empty($data['social_media'])) {
+                $socialMedia = is_array($data['social_media'])
+                    ? $data['social_media']
+                    : ['profile_url' => $data['social_media']];
+            }
+
+            $studentData = [
+                'user_id'              => $user->id,
+                'nis'                  => $data['nis'],
+                'class_id'             => $data['class_id'],
+                'major_id'             => $data['major_id'],
+                'employment_status_id' => $data['employment_status_id'] ?? null,
+                'graduation_year'      => $data['graduation_year'] ?? null,
+                'social_media'         => $socialMedia,
+                'current_company_id'   => $data['current_company_id'] ?? null,
+                'current_position'     => $data['current_position'] ?? null,
+                'starting_salary'      => $data['starting_salary'] ?? null,
+                'waiting_time_months'  => $data['waiting_time_months'] ?? null,
+                'is_active'            => $data['is_active'] ?? true,
+                'created_by'           => $authUserId,
+                'updated_by'           => $authUserId,
+            ];
+
+            $student = StudentAlumni::create($studentData);
+
+            return $student->load([
+                'user',
+                'class',
+                'major',
+                'employmentStatus',
+                'currentCompany',
+                'portfolios.category',
+            ]);
+        });
+    }
+
+    public function updateStudent(StudentAlumni $student, array $data, ?int $authUserId = null): StudentAlumni
+    {
+        return DB::transaction(function () use ($student, $data, $authUserId) {
+            if ($student->user_id && $student->user) {
+                $userUpdates = [
+                    'full_name'  => $data['full_name'] ?? $student->user->full_name,
+                    'email'      => $data['email'] ?? $student->user->email,
+                    'phone'      => $data['phone'] ?? $student->user->phone,
+                    'updated_by' => $authUserId,
+                ];
+
+                if (! empty($data['password'])) {
+                    $userUpdates['password'] = $data['password'];
+                }
+
+                if (isset($data['is_active'])) {
+                    $userUpdates['is_active'] = $data['is_active'];
+                }
+
+                $student->user->update($userUpdates);
+            }
+
+            $studentUpdates = [
+                'updated_by' => $authUserId,
+            ];
+
+            $allowedFields = [
+                'nis',
+                'class_id',
+                'major_id',
+                'employment_status_id',
+                'graduation_year',
+                'current_company_id',
+                'current_position',
+                'starting_salary',
+                'waiting_time_months',
+                'is_active',
+            ];
+
+            foreach ($allowedFields as $field) {
+                if (array_key_exists($field, $data)) {
+                    $studentUpdates[$field] = $data[$field];
+                }
+            }
+
+            if (array_key_exists('social_media', $data)) {
+                $studentUpdates['social_media'] = is_array($data['social_media'])
+                    ? $data['social_media']
+                    : ($data['social_media'] ? ['profile_url' => $data['social_media']] : null);
+            }
+
+            $student->update($studentUpdates);
+
+            return $student->fresh([
+                'user',
+                'class',
+                'major',
+                'employmentStatus',
+                'currentCompany',
+                'portfolios.category',
+            ]);
+        });
+    }
+
+    public function deleteStudent(StudentAlumni $student, ?int $authUserId = null): bool
+    {
+        return DB::transaction(function () use ($student, $authUserId) {
+            $student->updated_by = $authUserId;
+            $student->deleted_by = $authUserId;
+            $student->save();
+
+            if ($student->user) {
+                $student->user->is_active = false;
+                $student->user->updated_by = $authUserId;
+                $student->user->deleted_by = $authUserId;
+                $student->user->save();
+                $student->user->delete();
+            }
+
+            return (bool) $student->delete();
+        });
+    }
+
+    public function uploadPortfolio(StudentAlumni $student, array $data, UploadedFile $file, ?int $authUserId = null): StudentPortfolio
+    {
+        return DB::transaction(function () use ($student, $data, $file, $authUserId) {
+            $filePath = $file->store('portfolios', 'public');
+
+            $portfolio = StudentPortfolio::create([
+                'student_alumni_id' => $student->id,
+                'category_id'       => $data['category_id'],
+                'title'             => $data['title'],
+                'description'       => $data['description'] ?? null,
+                'file_path'         => $filePath,
+                'created_by'        => $authUserId,
+                'updated_by'        => $authUserId,
+            ]);
+
+            return $portfolio->load(['category', 'studentAlumni']);
+        });
+    }
+
+    public function deletePortfolio(StudentPortfolio $portfolio, ?int $authUserId = null): bool
+    {
+        return DB::transaction(function () use ($portfolio, $authUserId) {
+            $portfolio->updated_by = $authUserId;
+            $portfolio->deleted_by = $authUserId;
+            $portfolio->save();
+
+            if ($portfolio->file_path && Storage::disk('public')->exists($portfolio->file_path)) {
+                // Kept or deleted based on policy, soft deleted
+            }
+
+            return (bool) $portfolio->delete();
+        });
+    }
+}
+

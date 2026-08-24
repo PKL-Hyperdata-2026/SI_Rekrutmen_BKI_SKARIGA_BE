@@ -1,19 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ForgotPasswordRequest;
+use App\Http\Requests\ResetPasswordRequest;
 use App\Models\User;
+use App\Services\PasswordResetService;
+use App\Services\ResponseService;
+use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
-use App\Services\ResponseService;
 
 class AuthController extends Controller
 {
     public function __construct(
-        protected ResponseService $response
+        protected ResponseService $response,
+        protected PasswordResetService $passwordResetService
     ) {}
 
     public function login(Request $request)
@@ -44,6 +51,20 @@ class AuthController extends Controller
             ->with('access_token', $token)
             ->with('user', $user)
             ->code(200);
+    }
+
+    public function forgot(ForgotPasswordRequest $request): Responsable
+    {
+        return $this->passwordResetService->sendResetLink(
+            (string) $request->validated('email')
+        );
+    }
+
+    public function reset(ResetPasswordRequest $request): Responsable
+    {
+        return $this->passwordResetService->reset(
+            $request->validated()
+        );
     }
 
     public function me()

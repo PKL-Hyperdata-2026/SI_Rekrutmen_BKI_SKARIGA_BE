@@ -49,14 +49,14 @@ class ResponseService implements Responsable
         return $this;
     }
 
-    public function error(string $message, int $httpCode = 400): JsonResponse
-    {
-        $this->success = false;
-        $this->message = $message;
-        $this->statusCode = $httpCode;
+    // public function error(string $message, int $httpCode = 400): JsonResponse
+    // {
+    //     $this->success = false;
+    //     $this->message = $message;
+    //     $this->statusCode = $httpCode;
 
-        return response()->json($this->toArray(), $this->statusCode);
-    }
+    //     return response()->json($this->toArray(), $this->statusCode);
+    // }
 
     public function with(string $key, mixed $value): self
     {

@@ -23,10 +23,11 @@ class RBAC
         $user = $request->user();
 
         if (!$user || !in_array($user->role, $roles)) {
-            return $this->response->error(
-                message: 'Anda tidak memiliki hak untuk mengakses ini',
-                httpCode: 403,
-            );
+            return $this->response
+                ->message('Anda tidak memiliki hak untuk mengakses ini!')
+                ->code(403)
+                ->success(false)
+                ->toResponse($request);
         }
 
         return $next($request);

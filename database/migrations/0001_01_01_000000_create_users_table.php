@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('phone')->nullable();
             $table->string('password');
-            $table->enum('role', ['admin', 'siswa', 'alumni', 'hrd'])->default('siswa');
+            $table->enum('role', ['superadmin', 'admin', 'siswa', 'alumni', 'hrd']);
             $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();

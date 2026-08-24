@@ -81,7 +81,7 @@ class StudentService
         }
 
         $sortBy = in_array($filters['sort_by'] ?? 'id', $this->sortableColumns, true)
-            ? $filters['sort_by']
+            ? ($filters['sort_by'] ?? 'id')
             : 'id';
         $sortDir = strtolower((string) ($filters['sort_dir'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
 

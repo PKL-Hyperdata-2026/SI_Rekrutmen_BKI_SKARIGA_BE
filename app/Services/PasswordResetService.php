@@ -12,30 +12,40 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Illuminate\Support\Timebox;
 
 class PasswordResetService
 {
     public function sendResetLink(string $email): Responsable
     {
-        $user = $this->getUser($email);
+        $outcome = (new Timebox)->call(function () use ($email): string {
+            $user = $this->getUser($email);
 
-        if ($user === null) {
-            return $this->successLinkResponse();
-        }
+            if ($user === null) {
+                return 'not-found';
+            }
 
-        if (Password::broker()->getRepository()->recentlyCreatedToken($user)) {
+            if (Password::broker()->getRepository()->recentlyCreatedToken($user)) {
+                return 'throttled';
+            }
+
+            $token = Password::createToken($user);
+
+            Mail::to($user->email)->send(new ResetPasswordMail(
+                $user->email,
+                $token,
+                (int) config('auth.passwords.users.expire', 60)
+            ));
+
+            return 'sent';
+        }, 500_000);
+
+        if ($outcome === 'throttled') {
             return ResponseService::make()
+                ->success(false)
                 ->message('Terlalu banyak permintaan reset. Silakan tunggu satu menit sebelum mencoba lagi.')
                 ->code(429);
         }
-
-        $token = Password::createToken($user);
-
-        Mail::to($user->email)->send(new ResetPasswordMail(
-            $user->email,
-            $token,
-            (int) config('auth.passwords.users.expire', 60)
-        ));
 
         return $this->successLinkResponse();
     }
@@ -55,6 +65,7 @@ class PasswordResetService
         }
 
         return ResponseService::make()
+            ->success(false)
             ->message('Token tidak valid atau telah kedaluwarsa. Silakan ajukan ulang tautan reset password.')
             ->code(422);
     }
@@ -70,8 +81,10 @@ class PasswordResetService
             ->message('Tautan reset password telah dikirim ke email Anda. Silakan periksa kotak masuk atau folder spam.');
     }
 
-    protected function updatePassword(CanResetPassword $user, string $password): void
+    protected function updatePassword(User $user, string $password): void
     {
+        $user->tokens()->delete();
+
         $user->forceFill([
             'password' => Hash::make($password),
             'remember_token' => Str::random(60),

@@ -133,4 +133,73 @@ class PasswordResetTest extends TestCase
         $response->assertStatus(422);
         $this->assertFalse(Hash::check('password-baru-123', $user->fresh()->password));
     }
+
+    public function test_reset_password_revokes_existing_sanctum_tokens(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create([
+            'email' => 'tokens@example.com',
+        ]);
+
+        $user->createToken('device-a');
+        $user->createToken('device-b');
+
+        $this->assertSame(2, $user->fresh()->tokens()->count());
+
+        $this->postJson('/api/forgot-password', ['email' => $user->email]);
+
+        $token = '';
+
+        Mail::assertQueued(ResetPasswordMail::class, function (ResetPasswordMail $mail) use (&$token): bool {
+            parse_str((string) parse_url($mail->resetUrl, PHP_URL_QUERY), $query);
+            $token = (string) ($query['token'] ?? '');
+
+            return true;
+        });
+
+        $this->postJson('/api/reset-password', [
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'password-baru-123',
+            'password_confirmation' => 'password-baru-123',
+        ])->assertStatus(200);
+
+        $this->assertSame(0, $user->fresh()->tokens()->count());
+    }
+
+    public function test_forgot_password_returns_identical_envelope_for_known_and_unknown_email(): void
+    {
+        Mail::fake();
+
+        $known = User::factory()->create(['email' => 'ada@example.com']);
+        $unknownEmail = 'tidak-ada@example.com';
+
+        $knownResponse = $this->postJson('/api/forgot-password', ['email' => $known->email]);
+        $unknownResponse = $this->postJson('/api/forgot-password', ['email' => $unknownEmail]);
+
+        $knownResponse->assertStatus(200)->assertJsonPath('success', true);
+        $unknownResponse->assertStatus(200)->assertJsonPath('success', true);
+
+        $this->assertSame(
+            $knownResponse->json('message'),
+            $unknownResponse->json('message')
+        );
+    }
+
+    public function test_reset_password_response_envelope_shape_on_invalid_token(): void
+    {
+        $user = User::factory()->create(['email' => 'shape@example.com']);
+
+        $response = $this->postJson('/api/reset-password', [
+            'token' => 'token-palsu',
+            'email' => $user->email,
+            'password' => 'password-baru-123',
+            'password_confirmation' => 'password-baru-123',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonStructure(['success', 'message']);
+    }
 }

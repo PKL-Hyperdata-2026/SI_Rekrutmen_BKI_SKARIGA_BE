@@ -38,7 +38,7 @@ class ResetPasswordMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Reset Password - ' . config('app.name'),
+            subject: 'Reset Password - ' . (string) config('app.name'),
         );
     }
 
@@ -46,12 +46,6 @@ class ResetPasswordMail extends Mailable implements ShouldQueue
     {
         return new Content(
             view: 'emails.reset-password',
-            with: [
-                'email' => $this->email,
-                'resetUrl' => $this->resetUrl,
-                'expiresInMinutes' => $this->expiresInMinutes,
-                'appName' => (string) config('app.name'),
-            ],
         );
     }
 

@@ -33,7 +33,7 @@
                                 Klik tombol di bawah ini untuk membuat password baru. Tautan ini berlaku selama
                                 <strong>{{ $expiresInMinutes ?? '60' }} menit</strong>.
                             </p>
-                            <a href="{{ $resetUrl ?? "" }}"
+                            <a href="{!! $resetUrl ?? '' !!}"
                                 style="display:flex;padding:12px 24px;background-color:#1f66a8;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;border-radius:6px;justify-content:center;align-items:center;text-align: center;">
                                 Reset Password
                             </a>

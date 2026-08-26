@@ -43,7 +43,7 @@ backend/app/
 │   │   │   ├── StudentAlumniController.php    # Admin CRUD data alumni (upgrade akun siswa)
 │   │   │   └── StudentController.php          # Admin CRUD data siswa kelas 12 aktif & portfolio
 │   │   ├── Auth/
-│   │   │   └── AuthController.php             # Login, logout, me endpoint
+│   │   │   └── AuthController.php             # Login, logout, me endpoint + forgot/reset password
 │   │   └── NotificationController.php         # Notification listing & read status
 │   ├── Requests/                              # FormRequest classes for validation
 │   ├── Resources/                             # JsonResource transformers
@@ -69,6 +69,7 @@ backend/app/
 ├── Services/
 │   ├── JobPlacementService.php                # Job placement CRUD, filtering, audit trail, options
 │   ├── JobVacancyService.php                  # Vacancy business rules, filters, company checks
+│   ├── PasswordResetService.php               # Password reset flow end-to-end (broker token, mail, response mapping)
 │   ├── StudentAlumniService.php               # Alumni CRUD (list/filter, upgrade siswa→alumni, sync users, soft delete)
 │   ├── StudentService.php                     # Siswa aktif CRUD, filtering, form options, portofolio berkas
 │   ├── NotificationService.php                # Notification creation, broadcast, read flags
@@ -90,11 +91,18 @@ backend/app/
 - **`job_placements`**: Records work placement of students/alumni (`student_alumni_id`, `company_id`, `job_application_id`, `placement_status_id`, `accepted_date`, `start_date`, `notes`).
 - **`tracer_studies`**: Alumni tracer data linked to `student_alumni.id` (employment status, company name, salary range, field alignment).
 - **`activity_logs`**: Security & audit logs recording user ID, action, model affected, IP address, and changed attributes.
+- **`password_reset_tokens`**: Email-keyed storage of SHA-256 hashed reset tokens (`email`, `token`, `created_at`). Expiry 60 minutes & 60s resend throttle configured in `config/auth.php` (`passwords.users`).
+
+### Password Reset Flow
+- `AppServiceProvider::boot()` overrides `Password::sendMessageUsing()` so reset links are delivered via `App\Mail\ResetPasswordMail` (queued, view `emails/reset-password.blade.php`) instead of the default Laravel notification.
+- Reset URL points to the SPA: `{FRONTEND_URL}/reset-password?token=...&email=...` (`FRONTEND_URL` in `.env`, exposed as `config/app.frontend_url`).
 
 ## 5. API Endpoints Map
 
 ### Public / Auth
 - `POST /api/login` — Authenticate user and issue Sanctum token.
+- `POST /api/forgot-password` — Send password reset link email (throttled 6/min). Always returns success even if email is not registered (anti user-enumeration). Uses Laravel Password broker; token stored hashed in `password_reset_tokens`.
+- `POST /api/reset-password` — Reset password using `token`, `email`, `password` (`min:8`, `confirmed`). Invalid/expired token returns 422.
 
 ### Authenticated (`auth:sanctum`)
 - `GET /api/me` — Retrieve current authenticated user profile and roles.

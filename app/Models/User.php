@@ -56,6 +56,11 @@ class User extends Authenticatable
         return $this->hasOne(StudentAlumni::class, 'user_id');
     }
 
+    public function company(): HasOne
+    {
+        return $this->hasOne(Company::class, 'user_id');
+    }
+
     public function unreadNotifications(): HasMany
     {
         return $this->hasMany(Notification::class)->whereNull('read_at')->latest();

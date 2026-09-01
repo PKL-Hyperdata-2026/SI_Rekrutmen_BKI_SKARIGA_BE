@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\JobPlacementController;
 use App\Http\Controllers\Api\JobVacancyController;
 use App\Http\Controllers\Api\StudentAlumniController;
 use App\Http\Controllers\Api\StudentController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
@@ -44,6 +45,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('job-placements', JobPlacementController::class)
             ->parameters(['job-placements' => 'jobPlacement']); // CRUD lengkap penempatan kerja (Index, Store, Show, Update, Delete)
         // TODO: API Admin lainnya
+    });
+
+    Route::middleware('role:superadmin')->prefix('admin')->group(function () {
+        Route::get('/users/options', [UserController::class, 'options']);
+        Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive']);
+        Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword']);
+        Route::apiResource('users', UserController::class);
     });
 
     Route::middleware('role:hrd')->prefix('hrd')->group(function () {

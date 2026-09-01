@@ -23,6 +23,15 @@ class UserSeeder extends Seeder
         // User::factory(10)->create(['role' => 'siswa']);
 
         User::create([
+            'full_name' => 'Super Admin',
+            'email' => 'superadmin@email.com',
+            'phone' => '081234567890',
+            'password' => 'superadmin123',
+            'role' => 'superadmin',
+            'is_active' => true,
+        ]);
+
+        User::create([
             'full_name' => 'Siswa',
             'email' => 'faisalmarvello53@gmail.com',
             'phone' => '081234567890',

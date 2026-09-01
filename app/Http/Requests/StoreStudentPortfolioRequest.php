@@ -17,7 +17,7 @@ class StoreStudentPortfolioRequest extends FormRequest
     {
         return [
             'category_id' => ['required', 'integer', 'exists:standard_types,id'],
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:10240'],
         ];

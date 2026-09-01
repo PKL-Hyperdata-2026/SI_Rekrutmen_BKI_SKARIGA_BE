@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\Alumni\AlumniPortfolioController;
 use App\Http\Controllers\Api\JobPlacementController;
 use App\Http\Controllers\Api\JobVacancyController;
+use App\Http\Controllers\Api\Student\SiswaPortfolioController;
 use App\Http\Controllers\Api\StudentAlumniController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\UserController;
@@ -58,16 +60,19 @@ Route::middleware('auth:sanctum')->group(function () {
         // TODO: API untuk HRD
     });
 
-    Route::middleware('role:siswa,alumni')->group(function () {
-        // TODO: API untuk Siswa dan Alumni
-        // jadi nanti ada API yang bisa diakses alumni
-        // tetapi tidak bisa diakses siswa
-        // nah gatau untuk prefix API nya gimana
-        // looking forward for further brief 😉
+    Route::middleware('role:siswa')->prefix('siswa')->group(function () {
+        Route::get('/portfolio/profile', [SiswaPortfolioController::class, 'getProfile']);
+        Route::get('/portfolio/options', [SiswaPortfolioController::class, 'getOptions']);
+        Route::put('/portfolio/profile', [SiswaPortfolioController::class, 'updateProfile']);
+        Route::post('/portfolio/upload', [SiswaPortfolioController::class, 'uploadPortfolio']);
+        Route::delete('/portfolio/{portfolio}', [SiswaPortfolioController::class, 'destroyPortfolio']);
     });
 
     Route::middleware('role:alumni')->prefix('alumni')->group(function () {
-        // TODO: API untuk Alumni
-        // nah ini yang hanya bisa diakses alumni
+        Route::get('/portfolio/profile', [AlumniPortfolioController::class, 'getProfile']);
+        Route::get('/portfolio/options', [AlumniPortfolioController::class, 'getOptions']);
+        Route::put('/portfolio/profile', [AlumniPortfolioController::class, 'updateProfile']);
+        Route::post('/portfolio/upload', [AlumniPortfolioController::class, 'uploadPortfolio']);
+        Route::delete('/portfolio/{portfolio}', [AlumniPortfolioController::class, 'destroyPortfolio']);
     });
 });

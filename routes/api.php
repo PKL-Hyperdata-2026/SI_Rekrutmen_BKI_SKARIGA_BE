@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\JobPlacementController;
 use App\Http\Controllers\Api\JobVacancyController;
 use App\Http\Controllers\Api\StudentAlumniController;
@@ -29,6 +30,9 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:admin')->prefix('admin')->group(function () {
+        Route::get('/companies/options', [CompanyController::class, 'options']); // Ambil opsi dropdown form perusahaan (Industri)
+        Route::patch('/companies/{company}/toggle-active', [CompanyController::class, 'toggleActive']); // Toggle saklar status aktif/non-aktif perusahaan
+        Route::apiResource('companies', CompanyController::class); // CRUD lengkap perusahaan (Index, Store, Show, Update, Delete)
         Route::get('/job-vacancies/options', [JobVacancyController::class, 'options']); // Ambil opsi dropdown form (Perusahaan, Status, Target, Tipe Kerja)
         Route::patch('/job-vacancies/{jobVacancy}/toggle-active', [JobVacancyController::class, 'toggleActive']); // Toggle saklar status aktif/non-aktif lowongan
         Route::apiResource('job-vacancies', JobVacancyController::class); // CRUD lengkap lowongan kerja (Index, Store, Show, Update, Delete)

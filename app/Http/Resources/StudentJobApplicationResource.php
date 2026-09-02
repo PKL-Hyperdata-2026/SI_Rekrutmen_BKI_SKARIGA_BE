@@ -22,9 +22,9 @@ class StudentJobApplicationResource extends JsonResource
                 return $this->jobVacancy ? [
                     'id' => $this->jobVacancy->id,
                     'title' => $this->jobVacancy->title,
-                    'company_name' => $this->jobVacancy->company?->name,
-                    'company_logo' => $this->jobVacancy->company?->logo_path,
-                    'job_type' => $this->jobVacancy->jobType?->name,
+                    'companyName' => $this->jobVacancy->company?->name,
+                    'companyLogo' => $this->jobVacancy->company?->logo_path,
+                    'jobType' => $this->jobVacancy->jobType?->name,
                     'location' => $this->jobVacancy->work_location,
                 ] : null;
             }),
@@ -35,16 +35,16 @@ class StudentJobApplicationResource extends JsonResource
                     'code' => $this->status->code,
                 ] : null;
             }),
-            'current_stage' => $this->whenLoaded('currentStage', function () {
+            'currentStage' => $this->whenLoaded('currentStage', function () {
                 return $this->currentStage ? [
                     'id' => $this->currentStage->id,
                     'name' => $this->currentStage->name,
                 ] : null;
             }),
-            'applied_at' => $this->applied_at?->toIso8601String(),
+            'appliedAt' => $this->applied_at?->toIso8601String(),
             'notes' => $this->notes,
-            'stage_histories' => ApplicationStageHistoryResource::collection($this->whenLoaded('stageHistories')),
-            'created_at' => $this->created_at?->toIso8601String(),
+            'stageHistories' => ApplicationStageHistoryResource::collection($this->whenLoaded('stageHistories')),
+            'createdAt' => $this->created_at?->toIso8601String(),
         ];
     }
 }

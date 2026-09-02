@@ -38,10 +38,7 @@ backend/app/
 ├── Http/
 │   ├── Controllers/
 │   │   ├── Api/
-│   │   │   ├── Alumni/
-│   │   │   │   └── AlumniPortfolioController.php   # Self-service E-Portfolio alumni (role: alumni)
-│   │   │   ├── Student/
-│   │   │   │   └── SiswaPortfolioController.php    # Self-service E-Portfolio siswa (role: siswa)
+│   │   │   ├── PortfolioController.php         # Self-service E-Portfolio (role: siswa & alumni)
 │   │   │   ├── JobPlacementController.php     # Admin CRUD data penempatan kerja
 │   │   │   ├── JobVacancyController.php       # Job vacancies CRUD & publishing
 │   │   │   ├── StudentAlumniController.php    # Admin CRUD data alumni (upgrade akun siswa)

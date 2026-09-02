@@ -1,9 +1,8 @@
 <?php
 
-use App\Http\Controllers\Api\Alumni\AlumniPortfolioController;
 use App\Http\Controllers\Api\JobPlacementController;
 use App\Http\Controllers\Api\JobVacancyController;
-use App\Http\Controllers\Api\Student\SiswaPortfolioController;
+use App\Http\Controllers\Api\PortfolioController;
 use App\Http\Controllers\Api\StudentAlumniController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\UserController;
@@ -61,18 +60,18 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:siswa')->prefix('siswa')->group(function () {
-        Route::get('/portfolio/profile', [SiswaPortfolioController::class, 'getProfile']);
-        Route::get('/portfolio/options', [SiswaPortfolioController::class, 'getOptions']);
-        Route::put('/portfolio/profile', [SiswaPortfolioController::class, 'updateProfile']);
-        Route::post('/portfolio/upload', [SiswaPortfolioController::class, 'uploadPortfolio']);
-        Route::delete('/portfolio/{portfolio}', [SiswaPortfolioController::class, 'destroyPortfolio']);
+        Route::get('/portfolio/profile', [PortfolioController::class, 'getProfile']);
+        Route::get('/portfolio/options', [PortfolioController::class, 'getOptions']);
+        Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);
+        Route::post('/portfolio/upload', [PortfolioController::class, 'uploadPortfolio']);
+        Route::delete('/portfolio/{portfolio}', [PortfolioController::class, 'destroyPortfolio']);
     });
 
     Route::middleware('role:alumni')->prefix('alumni')->group(function () {
-        Route::get('/portfolio/profile', [AlumniPortfolioController::class, 'getProfile']);
-        Route::get('/portfolio/options', [AlumniPortfolioController::class, 'getOptions']);
-        Route::put('/portfolio/profile', [AlumniPortfolioController::class, 'updateProfile']);
-        Route::post('/portfolio/upload', [AlumniPortfolioController::class, 'uploadPortfolio']);
-        Route::delete('/portfolio/{portfolio}', [AlumniPortfolioController::class, 'destroyPortfolio']);
+        Route::get('/portfolio/profile', [PortfolioController::class, 'getProfile']);
+        Route::get('/portfolio/options', [PortfolioController::class, 'getOptions']);
+        Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);
+        Route::post('/portfolio/upload', [PortfolioController::class, 'uploadPortfolio']);
+        Route::delete('/portfolio/{portfolio}', [PortfolioController::class, 'destroyPortfolio']);
     });
 });

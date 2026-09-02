@@ -20,6 +20,7 @@ class UpdateStudentProfileRequest extends FormRequest
         $student = $user?->studentAlumni;
         $studentId = $student?->id;
         $userId = $user?->id;
+        $isSiswa = $user?->role === 'siswa';
 
         return [
             'nis' => [
@@ -40,7 +41,10 @@ class UpdateStudentProfileRequest extends FormRequest
                     ->whereNull('deleted_at'),
             ],
             'phone' => ['required', 'string', 'max:25'],
-            'class_id' => ['required', 'integer', 'exists:standard_types,id'],
+            'class_id' => array_merge(
+                $isSiswa ? ['required', 'integer'] : ['nullable', 'integer'],
+                ['exists:standard_types,id']
+            ),
             'major_id' => ['required', 'integer', 'exists:majors,id'],
             'employment_status_id' => ['nullable', 'integer', 'exists:standard_types,id'],
             'graduation_year' => ['nullable', 'integer', 'between:1900,2100'],
@@ -61,6 +65,7 @@ class UpdateStudentProfileRequest extends FormRequest
             'email.unique' => 'Alamat email sudah digunakan oleh akun lain.',
             'phone.required' => 'Nomor WhatsApp aktif wajib diisi.',
             'class_id.required' => 'Kelas wajib dipilih.',
+            'class_id.integer' => 'Kelas yang dipilih tidak valid.',
             'class_id.exists' => 'Kelas yang dipilih tidak valid.',
             'major_id.required' => 'Jurusan wajib dipilih.',
             'major_id.exists' => 'Jurusan yang dipilih tidak valid.',

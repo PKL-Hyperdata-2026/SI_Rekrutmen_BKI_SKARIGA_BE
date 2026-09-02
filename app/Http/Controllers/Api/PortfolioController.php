@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api\Alumni;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreStudentPortfolioRequest;
@@ -15,7 +15,7 @@ use App\Services\StudentPortfolioService;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\Request;
 
-class AlumniPortfolioController extends Controller
+class PortfolioController extends Controller
 {
     public function __construct(
         protected StudentPortfolioService $portfolioService,

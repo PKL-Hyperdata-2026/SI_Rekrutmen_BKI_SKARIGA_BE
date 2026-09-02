@@ -101,12 +101,15 @@ class StudentPortfolioService
 
             $studentUpdates = [
                 'nis' => $data['nis'] ?? $student->nis,
-                'class_id' => $data['class_id'] ?? $student->class_id,
                 'major_id' => $data['major_id'] ?? $student->major_id,
                 'employment_status_id' => $data['employment_status_id'] ?? $student->employment_status_id,
                 'graduation_year' => $data['graduation_year'] ?? $student->graduation_year,
                 'updated_by' => $user->id,
             ];
+
+            if (array_key_exists('class_id', $data)) {
+                $studentUpdates['class_id'] = $data['class_id'];
+            }
 
             if (array_key_exists('social_media', $data)) {
                 $studentUpdates['social_media'] = SocialMedia::storable($data['social_media']);

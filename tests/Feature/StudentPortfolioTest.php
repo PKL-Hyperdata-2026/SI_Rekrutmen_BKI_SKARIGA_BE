@@ -297,6 +297,59 @@ class StudentPortfolioTest extends TestCase
         ]);
     }
 
+    public function test_alumni_can_update_their_profile_without_class_id(): void
+    {
+        $alumniUser = User::factory()->create([
+            'role' => 'alumni',
+            'is_active' => true,
+        ]);
+
+        StudentAlumni::create([
+            'user_id' => $alumniUser->id,
+            'major_id' => $this->major->id,
+            'class_id' => null,
+            'nis' => '99999999',
+            'graduation_year' => 2025,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($alumniUser)
+            ->putJson('/api/alumni/portfolio/profile', [
+                'nis' => '99999999',
+                'full_name' => 'Alumni Tanpa Kelas',
+                'email' => $alumniUser->email,
+                'phone' => '081333333333',
+                'major_id' => $this->major->id,
+                'graduation_year' => 2025,
+            ])
+            ->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'classId' => null,
+                ],
+            ]);
+
+        $this->assertDatabaseHas('students_alumni', [
+            'user_id' => $alumniUser->id,
+            'class_id' => null,
+        ]);
+    }
+
+    public function test_student_class_id_remains_required(): void
+    {
+        $this->actingAs($this->studentUser)
+            ->putJson('/api/siswa/portfolio/profile', [
+                'nis' => $this->student->nis,
+                'full_name' => $this->studentUser->full_name,
+                'email' => $this->studentUser->email,
+                'phone' => '081111111111',
+                'major_id' => $this->major->id,
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['class_id']);
+    }
+
     public function test_student_cannot_access_alumni_route(): void
     {
         $this->actingAs($this->studentUser)

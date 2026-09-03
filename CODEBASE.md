@@ -141,6 +141,13 @@ backend/app/
   - `POST /api/admin/job-placements` — Tambah penempatan kerja. Dalam `DB::transaction()`.
   - `PUT|PATCH /api/admin/job-placements/{jobPlacement}` — Update data penempatan kerja. Dalam `DB::transaction()`.
   - `DELETE /api/admin/job-placements/{jobPlacement}` — Soft delete + `deleted_by`. Dalam `DB::transaction()`.
+  - `GET /api/admin/companies` — List perusahaan mitra + pagination (`per_page`), search (nama/email/PIC/phone/industri), filter (`industry_id`, `is_active`), sort (`sort_by`, `sort_dir`).
+  - `GET /api/admin/companies/options` — Dropdown opsi: `industries` (kategori `company_industry`).
+  - `GET /api/admin/companies/{company}` — Detail perusahaan (dengan relasi industry/createdBy/updatedBy).
+  - `POST /api/admin/companies` — Tambah perusahaan baru (nama wajib, email/website valid, nomor HP Indonesia, `is_active` default true).
+  - `PUT|PATCH /api/admin/companies/{company}` — Update data perusahaan.
+  - `DELETE /api/admin/companies/{company}` — Soft delete + `deleted_by`.
+  - `PATCH /api/admin/companies/{company}/toggle-active` — Toggle status aktif/non-aktif (status MoU BKK).
 - `/api/hrd/*` (`role:hrd`) — Company profile, vacancy management, candidate selection pipeline.
 - `/api/siswa/*` (`role:siswa`) — Self-service E-Portfolio siswa (profil + dokumen).
   - `GET /api/siswa/portfolio/profile` — Profil + portofolio siswa yang login.

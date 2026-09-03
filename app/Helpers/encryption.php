@@ -5,11 +5,11 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\Crypt;
 
-if (!function_exists('aes_encrypt')) {
+if (!function_exists('encrypt')) {
     /**
      * Encrypt string using AES-256-CBC with HMAC-SHA256 authentication.
      */
-    function aes_encrypt(string $value, ?string $key = null): string
+    function encrypt(string $value, ?string $key = null): string
     {
         if ($key === null) {
             return Crypt::encryptString($value);
@@ -23,12 +23,12 @@ if (!function_exists('aes_encrypt')) {
     }
 }
 
-if (!function_exists('aes_decrypt')) {
+if (!function_exists('decrypt')) {
     /**
      * Decrypt payload using AES-256-CBC with HMAC verification.
      * Returns null if payload is invalid or tampered.
      */
-    function aes_decrypt(string $payload, ?string $key = null): ?string
+    function decrypt(string $payload, ?string $key = null): ?string
     {
         try {
             if ($key === null) {

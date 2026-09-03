@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\JobVacancyController;
 use App\Http\Controllers\Api\PortfolioController;
 use App\Http\Controllers\Api\StudentAlumniController;
 use App\Http\Controllers\Api\StudentController;
+use App\Http\Controllers\Api\StudentJobApplicationController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\NotificationController;
@@ -65,6 +66,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);
         Route::post('/portfolio/upload', [PortfolioController::class, 'uploadPortfolio']);
         Route::delete('/portfolio/{portfolio}', [PortfolioController::class, 'destroyPortfolio']);
+    Route::middleware('role:siswa,alumni')->group(function () {
+        Route::get('/my-applications', [StudentJobApplicationController::class, 'index']);
+        Route::get('/my-applications/{id}', [StudentJobApplicationController::class, 'show']);
     });
 
     Route::middleware('role:alumni')->prefix('alumni')->group(function () {

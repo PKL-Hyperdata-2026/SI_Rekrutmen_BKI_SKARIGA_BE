@@ -17,7 +17,6 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserSeeder::class,
             CompanyIndustrySeeder::class,
-            EmploymentStatusSeeder::class,
             ClassSeeder::class,
             MajorSeeder::class,
             JobVacancyStandardTypeSeeder::class,
@@ -28,6 +27,9 @@ class DatabaseSeeder extends Seeder
             TracerStudyStandardTypeSeeder::class,
             PlacementStatusStandardTypeSeeder::class,
             StudentPortfolioStandartTypeSeeder::class,
+            StudentAlumniSeeder::class,
+            JobPlacementSeeder::class,
+            JobVacancySeeder::class,
         ]);
     }
 }

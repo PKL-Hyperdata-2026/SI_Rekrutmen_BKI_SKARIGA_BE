@@ -42,7 +42,8 @@ backend/app/
 │   │   │   ├── JobPlacementController.php     # Admin CRUD data penempatan kerja
 │   │   │   ├── JobVacancyController.php       # Job vacancies CRUD & publishing
 │   │   │   ├── StudentAlumniController.php    # Admin CRUD data alumni (upgrade akun siswa)
-│   │   │   └── StudentController.php          # Admin CRUD data siswa kelas 12 aktif & portfolio
+│   │   │   ├── StudentController.php          # Admin CRUD data siswa kelas 12 aktif & portfolio
+│   │   │   └── StudentJobApplicationController.php # Siswa/alumni daftar & detail lamaran saya
 │   │   ├── Auth/
 │   │   │   └── AuthController.php             # Login, logout, me endpoint + forgot/reset password
 │   │   └── NotificationController.php         # Notification listing & read status
@@ -73,6 +74,7 @@ backend/app/
 │   ├── PasswordResetService.php               # Password reset flow end-to-end (broker token, mail, response mapping)
 │   ├── StudentAlumniService.php               # Alumni CRUD (list/filter, upgrade siswa→alumni, sync users, soft delete)
 │   ├── StudentPortfolioService.php            # Self-service E-Portfolio (profile, options, upload/delete dokumen) — shared siswa & alumni
+│   ├── StudentJobApplicationService.php       # Siswa/alumni lamaran saya queries & stage histories
 │   ├── StudentService.php                     # Siswa aktif CRUD, filtering, form options, portofolio berkas
 │   ├── NotificationService.php                # Notification creation, broadcast, read flags
 │   ├── ResponseService.php                    # Standard JSON response building
@@ -152,6 +154,9 @@ backend/app/
   - `PUT /api/alumni/portfolio/profile` — Update profil alumni (plus `employment_status_id`).
   - `POST /api/alumni/portfolio/upload` — Upload dokumen portofolio alumni.
   - `DELETE /api/alumni/portfolio/{portfolio}` — Hapus dokumen portofolio alumni.
+- `/api/my-applications` (`role:siswa,alumni`) — List lamaran saya siswa/alumni (pagination & filter `status_id`).
+- `/api/my-applications/{id}` (`role:siswa,alumni`) — Detail spesifik lamaran siswa beserta timeline tahapan seleksi (`stage_histories`).
+- `/api/alumni/*` (`role:alumni`) — Alumni job applications, portfolio updates, tracer study submissions.
 
 ## 6. Response and Error Envelope Standards
 

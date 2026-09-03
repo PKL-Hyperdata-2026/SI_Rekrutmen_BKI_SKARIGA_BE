@@ -37,10 +37,8 @@ class JobVacancyStandardTypeSeeder extends Seeder
         );
 
         $statuses = [
-            ['code' => 'draft', 'name' => 'Draft', 'metadata' => ['badge_color' => 'gray', 'icon' => 'file-edit'], 'sort_order' => 1],
-            ['code' => 'published', 'name' => 'Diterbitkan', 'metadata' => ['badge_color' => 'green', 'icon' => 'check-circle'], 'sort_order' => 2],
-            ['code' => 'closed', 'name' => 'Ditutup', 'metadata' => ['badge_color' => 'red', 'icon' => 'x-circle'], 'sort_order' => 3],
-            ['code' => 'archived', 'name' => 'Diarsipkan', 'metadata' => ['badge_color' => 'amber', 'icon' => 'archive'], 'sort_order' => 4],
+            ['code' => 'published', 'name' => 'Aktif / Dibuka', 'metadata' => ['badge_color' => 'green', 'icon' => 'check-circle'], 'sort_order' => 1],
+            ['code' => 'closed', 'name' => 'Ditutup / Expired', 'metadata' => ['badge_color' => 'red', 'icon' => 'x-circle'], 'sort_order' => 2],
         ];
 
         foreach ($statuses as $item) {
@@ -50,6 +48,10 @@ class JobVacancyStandardTypeSeeder extends Seeder
             );
         }
 
+        StandardType::where('category_id', $statusCategory->id)
+            ->whereNotIn('code', ['published', 'closed'])
+            ->update(['is_active' => false]);
+
         // 3. Category: target_applicant
         $targetCategory = StandardTypeCategory::firstOrCreate(
             ['code' => 'target_applicant'],
@@ -57,9 +59,8 @@ class JobVacancyStandardTypeSeeder extends Seeder
         );
 
         $targets = [
-            ['code' => 'all', 'name' => 'Semua (Siswa & Alumni)', 'metadata' => ['badge_color' => 'indigo'], 'sort_order' => 1],
-            ['code' => 'class_12_only', 'name' => 'Khusus Siswa Kelas 12', 'metadata' => ['badge_color' => 'cyan'], 'sort_order' => 2],
-            ['code' => 'alumni_only', 'name' => 'Khusus Alumni', 'metadata' => ['badge_color' => 'emerald'], 'sort_order' => 3],
+            ['code' => 'alumni_only', 'name' => 'Alumni', 'metadata' => ['badge_color' => 'emerald'], 'sort_order' => 1],
+            ['code' => 'class_12_only', 'name' => 'Siswa', 'metadata' => ['badge_color' => 'cyan'], 'sort_order' => 2],
         ];
 
         foreach ($targets as $item) {
@@ -68,5 +69,9 @@ class JobVacancyStandardTypeSeeder extends Seeder
                 ['name' => $item['name'], 'metadata' => $item['metadata'], 'sort_order' => $item['sort_order'], 'is_active' => true]
             );
         }
+
+        StandardType::where('category_id', $targetCategory->id)
+            ->whereNotIn('code', ['alumni_only', 'class_12_only'])
+            ->update(['is_active' => false]);
     }
 }

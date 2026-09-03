@@ -97,6 +97,6 @@ class JobVacancyController extends Controller
     {
         $options = $this->jobVacancyService->getFormOptions();
         return $this->response->message('Opsi formulir lowongan kerja berhasil diambil.')
-            ->data($options);
+            ->data(encrypt_recursive($options));
     }
 }

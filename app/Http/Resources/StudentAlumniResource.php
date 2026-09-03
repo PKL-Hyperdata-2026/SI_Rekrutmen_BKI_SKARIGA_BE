@@ -12,12 +12,12 @@ class StudentAlumniResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'userId' => $this->user_id,
+            'id' => encrypt($this->id),
+            'userId' => $this->user_id ? encrypt($this->user_id) : null,
             'nis' => $this->nis,
             'user' => $this->whenLoaded('user', function () {
                 return $this->user ? [
-                    'id' => $this->user->id,
+                    'id' => encrypt($this->user->id),
                     'fullName' => $this->user->full_name,
                     'email' => $this->user->email,
                     'phone' => $this->user->phone,
@@ -25,17 +25,17 @@ class StudentAlumniResource extends JsonResource
                     'isActive' => $this->user->is_active,
                 ] : null;
             }),
-            'majorId' => $this->major_id,
+            'majorId' => $this->major_id ? encrypt($this->major_id) : null,
             'major' => $this->whenLoaded('major', fn () => $this->major?->name),
-            'classId' => $this->class_id,
+            'classId' => $this->class_id ? encrypt($this->class_id) : null,
             'class' => $this->whenLoaded('class', fn () => $this->class?->name),
             'graduationYear' => $this->graduation_year,
-            'employmentStatusId' => $this->employment_status_id,
+            'employmentStatusId' => $this->employment_status_id ? encrypt($this->employment_status_id) : null,
             'employmentStatus' => $this->whenLoaded('employmentStatus', fn () => $this->employmentStatus?->name),
-            'currentCompanyId' => $this->current_company_id,
+            'currentCompanyId' => $this->current_company_id ? encrypt($this->current_company_id) : null,
             'currentCompany' => $this->whenLoaded('currentCompany', function () {
                 return $this->currentCompany ? [
-                    'id' => $this->currentCompany->id,
+                    'id' => encrypt($this->currentCompany->id),
                     'name' => $this->currentCompany->name,
                 ] : null;
             }),

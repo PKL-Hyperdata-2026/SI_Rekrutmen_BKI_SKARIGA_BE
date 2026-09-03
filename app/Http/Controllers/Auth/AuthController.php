@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\ResetPasswordRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\PasswordResetService;
 use App\Services\ResponseService;
@@ -49,7 +50,7 @@ class AuthController extends Controller
         return $this->response
             ->message('Login success')
             ->with('access_token', $token)
-            ->with('user', $user)
+            ->with('user', new UserResource($user))
             ->code(200);
     }
 
@@ -70,7 +71,7 @@ class AuthController extends Controller
     public function me()
     {
         return $this->response
-            ->with('user', Auth::user())
+            ->with('user', new UserResource(Auth::user()))
             ->code(200);
     }
 

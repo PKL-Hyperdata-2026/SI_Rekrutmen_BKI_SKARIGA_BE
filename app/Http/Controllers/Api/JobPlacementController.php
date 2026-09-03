@@ -48,7 +48,7 @@ class JobPlacementController extends Controller
 
         return $this->response
             ->message('Opsi formulir penempatan kerja berhasil diambil.')
-            ->data($options);
+            ->data(encrypt_recursive($options));
     }
 
     public function show(JobPlacement $jobPlacement): Responsable

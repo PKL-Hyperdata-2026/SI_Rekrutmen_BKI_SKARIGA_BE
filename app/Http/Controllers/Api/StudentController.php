@@ -50,7 +50,7 @@ class StudentController extends Controller
 
         return $this->response
             ->message('Opsi formulir siswa berhasil diambil.')
-            ->data($options);
+            ->data(encrypt_recursive($options));
     }
 
     public function show(StudentAlumni $student): Responsable

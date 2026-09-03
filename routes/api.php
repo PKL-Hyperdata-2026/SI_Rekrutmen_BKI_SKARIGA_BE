@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\JobPlacementController;
 use App\Http\Controllers\Api\JobVacancyController;
+use App\Http\Controllers\Api\PortfolioController;
 use App\Http\Controllers\Api\StudentAlumniController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StudentJobApplicationController;
@@ -59,13 +60,22 @@ Route::middleware('auth:sanctum')->group(function () {
         // TODO: API untuk HRD
     });
 
+    Route::middleware('role:siswa')->prefix('siswa')->group(function () {
+        Route::get('/portfolio/profile', [PortfolioController::class, 'getProfile']);
+        Route::get('/portfolio/options', [PortfolioController::class, 'getOptions']);
+        Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);
+        Route::post('/portfolio/upload', [PortfolioController::class, 'uploadPortfolio']);
+        Route::delete('/portfolio/{portfolio}', [PortfolioController::class, 'destroyPortfolio']);
     Route::middleware('role:siswa,alumni')->group(function () {
         Route::get('/my-applications', [StudentJobApplicationController::class, 'index']);
         Route::get('/my-applications/{id}', [StudentJobApplicationController::class, 'show']);
     });
 
     Route::middleware('role:alumni')->prefix('alumni')->group(function () {
-        // TODO: API untuk Alumni
-        // nah ini yang hanya bisa diakses alumni
+        Route::get('/portfolio/profile', [PortfolioController::class, 'getProfile']);
+        Route::get('/portfolio/options', [PortfolioController::class, 'getOptions']);
+        Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);
+        Route::post('/portfolio/upload', [PortfolioController::class, 'uploadPortfolio']);
+        Route::delete('/portfolio/{portfolio}', [PortfolioController::class, 'destroyPortfolio']);
     });
 });

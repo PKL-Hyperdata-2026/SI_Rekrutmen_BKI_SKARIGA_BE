@@ -38,6 +38,7 @@ backend/app/
 ├── Http/
 │   ├── Controllers/
 │   │   ├── Api/
+│   │   │   ├── PortfolioController.php         # Self-service E-Portfolio (role: siswa & alumni)
 │   │   │   ├── JobPlacementController.php     # Admin CRUD data penempatan kerja
 │   │   │   ├── JobVacancyController.php       # Job vacancies CRUD & publishing
 │   │   │   ├── StudentAlumniController.php    # Admin CRUD data alumni (upgrade akun siswa)
@@ -72,6 +73,7 @@ backend/app/
 │   ├── JobVacancyService.php                  # Vacancy business rules, filters, company checks
 │   ├── PasswordResetService.php               # Password reset flow end-to-end (broker token, mail, response mapping)
 │   ├── StudentAlumniService.php               # Alumni CRUD (list/filter, upgrade siswa→alumni, sync users, soft delete)
+│   ├── StudentPortfolioService.php            # Self-service E-Portfolio (profile, options, upload/delete dokumen) — shared siswa & alumni
 │   ├── StudentJobApplicationService.php       # Siswa/alumni lamaran saya queries & stage histories
 │   ├── StudentService.php                     # Siswa aktif CRUD, filtering, form options, portofolio berkas
 │   ├── NotificationService.php                # Notification creation, broadcast, read flags
@@ -80,7 +82,8 @@ backend/app/
 ├── Events/                                    # Domain events (application submitted, stage updated)
 ├── Mail/                                      # Mailable templates
 ├── Traits/                                    # Shared traits (Auditable, HasStandardType)
-└── Support/                                   # Custom helpers & utilities
+└── Support/
+    └── SocialMedia.php                        # Normalisasi & build URL platform sosial media (backward-compatible)
 ```
 
 ## 4. Key Database Entities and Relations
@@ -139,6 +142,18 @@ backend/app/
   - `PUT|PATCH /api/admin/job-placements/{jobPlacement}` — Update data penempatan kerja. Dalam `DB::transaction()`.
   - `DELETE /api/admin/job-placements/{jobPlacement}` — Soft delete + `deleted_by`. Dalam `DB::transaction()`.
 - `/api/hrd/*` (`role:hrd`) — Company profile, vacancy management, candidate selection pipeline.
+- `/api/siswa/*` (`role:siswa`) — Self-service E-Portfolio siswa (profil + dokumen).
+  - `GET /api/siswa/portfolio/profile` — Profil + portofolio siswa yang login.
+  - `GET /api/siswa/portfolio/options` — Dropdown form: `majors`, `classes`, `employment_statuses`, `portfolio_types`, `graduation_years`.
+  - `PUT /api/siswa/portfolio/profile` — Update profil siswa (NIS, nama, email, telepon, kelas, jurusan, tahun lulus, sosial media).
+  - `POST /api/siswa/portfolio/upload` — Upload dokumen portofolio (CV, sertifikat, dll).
+  - `DELETE /api/siswa/portfolio/{portfolio}` — Hapus dokumen portofolio siswa.
+- `/api/alumni/*` (`role:alumni`) — Self-service E-Portfolio alumni (profil + dokumen + status karir).
+  - `GET /api/alumni/portfolio/profile` — Profil + portofolio alumni yang login (termasuk `employmentStatusId`).
+  - `GET /api/alumni/portfolio/options` — Dropdown form (sama dengan siswa, termasuk `employment_statuses`).
+  - `PUT /api/alumni/portfolio/profile` — Update profil alumni (plus `employment_status_id`).
+  - `POST /api/alumni/portfolio/upload` — Upload dokumen portofolio alumni.
+  - `DELETE /api/alumni/portfolio/{portfolio}` — Hapus dokumen portofolio alumni.
 - `/api/my-applications` (`role:siswa,alumni`) — List lamaran saya siswa/alumni (pagination & filter `status_id`).
 - `/api/my-applications/{id}` (`role:siswa,alumni`) — Detail spesifik lamaran siswa beserta timeline tahapan seleksi (`stage_histories`).
 - `/api/alumni/*` (`role:alumni`) — Alumni job applications, portfolio updates, tracer study submissions.

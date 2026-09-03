@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\GetStudentJobApplicationRequest;
 use App\Http\Resources\StudentJobApplicationResource;
 use App\Services\ResponseService;
 use App\Services\StudentJobApplicationService;
 use Illuminate\Contracts\Support\Responsable;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class StudentJobApplicationController extends Controller
 {
@@ -18,15 +19,12 @@ class StudentJobApplicationController extends Controller
         protected ResponseService $response
     ) {}
 
-    public function index(Request $request): Responsable
+    public function index(GetStudentJobApplicationRequest $request): Responsable
     {
-        $filters = $request->only([
-            'status_id',
-            'per_page',
-        ]);
+        $filters = $request->validated();
 
         $applications = $this->studentJobApplicationService->getMyApplications(
-            (int) $request->user()->id,
+            (int) Auth::id(),
             $filters
         );
 
@@ -35,10 +33,10 @@ class StudentJobApplicationController extends Controller
             ->data(StudentJobApplicationResource::collection($applications)->response()->getData(true));
     }
 
-    public function show(Request $request, int $id): Responsable
+    public function show(int $id): Responsable
     {
         $application = $this->studentJobApplicationService->getMyApplicationDetail(
-            (int) $request->user()->id,
+            (int) Auth::id(),
             $id
         );
 

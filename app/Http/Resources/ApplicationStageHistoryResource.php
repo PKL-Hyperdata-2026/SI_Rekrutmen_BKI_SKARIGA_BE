@@ -32,10 +32,10 @@ class ApplicationStageHistoryResource extends JsonResource
                     'code' => $this->status->code,
                 ] : null;
             }),
-            'assessor_name' => $this->relationLoaded('assessor') ? $this->assessor?->full_name : null,
+            'assessorName' => $this->relationLoaded('assessor') ? $this->assessor?->full_name : null,
             'score' => $this->score !== null ? (float) $this->score : null,
             'notes' => $this->notes,
-            'created_at' => $this->created_at?->toIso8601String(),
+            'createdAt' => $this->created_at?->toIso8601String(),
         ];
     }
 }

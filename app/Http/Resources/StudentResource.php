@@ -13,16 +13,16 @@ class StudentResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'userId' => $this->user_id,
+            'id' => encrypt($this->id),
+            'userId' => $this->user_id ? encrypt($this->user_id) : null,
             'nis' => $this->nis,
             'fullName' => $this->user?->full_name,
             'email' => $this->user?->email,
             'phone' => $this->user?->phone,
-            'classId' => $this->class_id,
-            'majorId' => $this->major_id,
-            'employmentStatusId' => $this->employment_status_id,
-            'currentCompanyId' => $this->current_company_id,
+            'classId' => $this->class_id ? encrypt($this->class_id) : null,
+            'majorId' => $this->major_id ? encrypt($this->major_id) : null,
+            'employmentStatusId' => $this->employment_status_id ? encrypt($this->employment_status_id) : null,
+            'currentCompanyId' => $this->current_company_id ? encrypt($this->current_company_id) : null,
             'graduationYear' => $this->graduation_year,
             'socialMedia' => $this->social_media,
             'currentPosition' => $this->current_position,
@@ -33,7 +33,7 @@ class StudentResource extends JsonResource
             'updatedAt' => $this->updated_at?->toIso8601String(),
             'user' => $this->whenLoaded('user', function () {
                 return $this->user ? [
-                    'id' => $this->user->id,
+                    'id' => encrypt($this->user->id),
                     'fullName' => $this->user->full_name,
                     'email' => $this->user->email,
                     'phone' => $this->user->phone,
@@ -43,39 +43,39 @@ class StudentResource extends JsonResource
             }),
             'class' => $this->whenLoaded('class', function () {
                 return $this->class ? [
-                    'id' => $this->class->id,
+                    'id' => encrypt($this->class->id),
                     'code' => $this->class->code,
                     'name' => $this->class->name,
                 ] : null;
             }),
             'major' => $this->whenLoaded('major', function () {
                 return $this->major ? [
-                    'id' => $this->major->id,
+                    'id' => encrypt($this->major->id),
                     'code' => $this->major->code,
                     'name' => $this->major->name,
                 ] : null;
             }),
             'employmentStatus' => $this->whenLoaded('employmentStatus', function () {
                 return $this->employmentStatus ? [
-                    'id' => $this->employmentStatus->id,
+                    'id' => encrypt($this->employmentStatus->id),
                     'code' => $this->employmentStatus->code,
                     'name' => $this->employmentStatus->name,
                 ] : null;
             }),
             'currentCompany' => $this->whenLoaded('currentCompany', function () {
                 return $this->currentCompany ? [
-                    'id' => $this->currentCompany->id,
+                    'id' => encrypt($this->currentCompany->id),
                     'name' => $this->currentCompany->name,
                 ] : null;
             }),
             'portfolios' => $this->whenLoaded('portfolios', function () {
                 return $this->portfolios->map(function ($portfolio) {
                     return [
-                        'id' => $portfolio->id,
-                        'studentAlumniId' => $portfolio->student_alumni_id,
-                        'categoryId' => $portfolio->category_id,
+                        'id' => encrypt($portfolio->id),
+                        'studentAlumniId' => $portfolio->student_alumni_id ? encrypt($portfolio->student_alumni_id) : null,
+                        'categoryId' => $portfolio->category_id ? encrypt($portfolio->category_id) : null,
                         'category' => $portfolio->category ? [
-                            'id' => $portfolio->category->id,
+                            'id' => encrypt($portfolio->category->id),
                             'code' => $portfolio->category->code,
                             'name' => $portfolio->category->name,
                         ] : null,

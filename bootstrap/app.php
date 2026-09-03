@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\DecryptRequest;
 use App\Http\Middleware\RBAC;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -19,6 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => RBAC::class,
+        ]);
+        $middleware->api(prepend: [
+            DecryptRequest::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

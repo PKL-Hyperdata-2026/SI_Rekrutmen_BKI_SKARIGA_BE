@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Auth;
 
 #[Fillable([
+    'id',
     'user_id',
     'type',
     'title',

@@ -11,9 +11,9 @@ use App\Models\StudentAlumni;
 use App\Models\StudentPortfolio;
 use App\Models\User;
 use Database\Seeders\ClassSeeder;
-use Database\Seeders\EmploymentStatusSeeder;
 use Database\Seeders\MajorSeeder;
 use Database\Seeders\StudentPortfolioStandartTypeSeeder;
+use Database\Seeders\TracerStudyStandardTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -44,7 +44,7 @@ class AdminStudentTest extends TestCase
         $this->seed([
             MajorSeeder::class,
             ClassSeeder::class,
-            EmploymentStatusSeeder::class,
+            TracerStudyStandardTypeSeeder::class,
             StudentPortfolioStandartTypeSeeder::class,
         ]);
 

@@ -1,5 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
+use App\Http\Controllers\Api\DepartmentController;
+use App\Http\Controllers\Api\JobPlacementController;
+use App\Http\Controllers\Api\JobVacancyController;
+use App\Http\Controllers\Api\MajorController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\JobPlacementController;
 use App\Http\Controllers\Api\JobVacancyController;
@@ -28,8 +34,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('notification')->group(function () {
         Route::get('/', [NotificationController::class, 'index']);
         Route::get('/unread', [NotificationController::class, 'unread']);
-        Route::patch('/{id}/read', [NotificationController::class, 'markAsRead']);
         Route::patch('/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::patch('/{id}/read', [NotificationController::class, 'markAsRead']);
     });
 
     Route::middleware('role:admin')->prefix('admin')->group(function () {
@@ -50,6 +56,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/job-placements/options', [JobPlacementController::class, 'options']); // Ambil opsi dropdown form penempatan kerja
         Route::apiResource('job-placements', JobPlacementController::class)
             ->parameters(['job-placements' => 'jobPlacement']); // CRUD lengkap penempatan kerja (Index, Store, Show, Update, Delete)
+        Route::get('/departments/options', [DepartmentController::class, 'options']);
+        Route::patch('/departments/{department}/toggle-active', [DepartmentController::class, 'toggleActive']);
+        Route::apiResource('departments', DepartmentController::class);
+        Route::get('/majors/options', [MajorController::class, 'options']);
+        Route::patch('/majors/{major}/toggle-active', [MajorController::class, 'toggleActive']);
+        Route::apiResource('majors', MajorController::class);
         // TODO: API Admin lainnya
     });
 

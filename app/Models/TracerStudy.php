@@ -1,34 +1,39 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+#[Fillable([
+    'student_alumni_id',
+    'employment_status_id',
+    'survey_year',
+    'company_name',
+    'job_title',
+    'relevance_status_id',
+    'income_range_id',
+    'created_by',
+    'updated_by',
+    'deleted_by',
+])]
 class TracerStudy extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $table = 'tracer_studies';
 
-    protected $fillable = [
-        'student_alumni_id',
-        'employment_status_id',
-        'survey_year',
-        'company_name',
-        'job_title',
-        'relevance_status_id',
-        'income_range_id',
-        'created_by',
-        'updated_by',
-        'deleted_by',
-    ];
-
-    protected $casts = [
-        'survey_year' => 'integer',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'survey_year' => 'integer',
+        ];
+    }
 
     public function studentAlumni(): BelongsTo
     {

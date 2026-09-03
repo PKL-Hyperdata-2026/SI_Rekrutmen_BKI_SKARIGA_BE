@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Models\Major;
 use App\Models\StandardTypeCategory;
 use App\Models\StudentAlumni;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Models\Company;
@@ -53,7 +55,7 @@ class AdminJobVacancyTest extends TestCase
             'address' => 'Kawasan Industri EJIP, Cikarang',
         ]);
 
-        $this->targetApplicant = StandardType::byCategory('target_applicant')->where('code', 'all')->firstOrFail();
+        $this->targetApplicant = StandardType::byCategory('target_applicant')->where('code', 'alumni_only')->firstOrFail();
         $this->vacancyStatus = StandardType::byCategory('vacancy_status')->where('code', 'published')->firstOrFail();
         $this->rplMajor = Major::where('code', 'RPL')->firstOrFail();
         $this->tkjMajor = Major::where('code', 'TKJ')->firstOrFail();

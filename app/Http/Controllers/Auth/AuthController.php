@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ForgotPasswordRequest;
+use App\Http\Requests\LoginRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
@@ -24,16 +25,11 @@ class AuthController extends Controller
         protected PasswordResetService $passwordResetService
     ) {}
 
-    public function login(Request $request)
+    public function login(LoginRequest $request): Responsable
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
+        $user = User::where('email', $request->validated('email'))->first();
 
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check($request->validated('password'), $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Invalid Credentials!'],
             ]);
@@ -68,14 +64,14 @@ class AuthController extends Controller
         );
     }
 
-    public function me()
+    public function me(): Responsable
     {
         return $this->response
             ->with('user', new UserResource(Auth::user()))
             ->code(200);
     }
 
-    public function logout(Request $request)
+    public function logout(Request $request): Responsable
     {
         $request->user()->currentAccessToken()->delete();
 

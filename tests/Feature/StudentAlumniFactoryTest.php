@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Models\Company;
 use App\Models\Major;
 use App\Models\StudentAlumni;
 use Database\Seeders\ClassSeeder;
 use Database\Seeders\CompanyIndustrySeeder;
-use Database\Seeders\EmploymentStatusSeeder;
+use Database\Seeders\TracerStudyStandardTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -13,7 +15,7 @@ uses(RefreshDatabase::class);
 test('factory creates a valid student alumni record', function () {
     $this->seed([
         CompanyIndustrySeeder::class,
-        EmploymentStatusSeeder::class,
+        TracerStudyStandardTypeSeeder::class,
         ClassSeeder::class,
     ]);
 

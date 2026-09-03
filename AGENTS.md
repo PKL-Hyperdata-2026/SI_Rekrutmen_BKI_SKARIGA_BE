@@ -34,7 +34,7 @@ php artisan make:model X -m                # Generate Model with migration
 ## Non-Default Conventions (Things You'd Get Wrong)
 - Controller responsibilities: Controller acts only as HTTP dispatcher. It accepts the FormRequest, calls the corresponding method in `app/Services/`, and returns the response using `ResponseService` or JsonResource.
 - Response format: Use standard response helper or `ResponseService` (`success_response($data, $message, $code)` / `error_response($message, $code, $errors)`).
-- Model mass assignment: Fillable attributes must be explicitly defined in `$fillable`. Do not use `$guarded = []`.
+- Model mass assignment: Fillable attributes must be explicitly defined with the `#[Fillable([...])]` attribute (Laravel 13). Do not use `$guarded = []`.
 - Database dates: Timestamps use PostgreSQL `timestamp with time zone` or default Laravel timestamps. Format outputs in UTC / Asia/Jakarta ISO string inside API Resources.
 - Role checks: Route middleware uses `role:admin`, `role:hrd`, `role:siswa,alumni`, or `role:alumni` defined in `routes/api.php`.
 

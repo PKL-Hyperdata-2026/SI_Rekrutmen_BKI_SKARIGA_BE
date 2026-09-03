@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -18,6 +20,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             CompanyIndustrySeeder::class,
             ClassSeeder::class,
+            DepartmentSeeder::class,
             MajorSeeder::class,
             JobVacancyStandardTypeSeeder::class,
             SelectionStageStandardTypeSeeder::class,

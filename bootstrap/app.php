@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Middleware\DecryptRequest;
 use App\Http\Middleware\RBAC;
 use Illuminate\Foundation\Application;

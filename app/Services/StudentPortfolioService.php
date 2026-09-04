@@ -84,31 +84,18 @@ class StudentPortfolioService
     {
         return DB::transaction(function () use ($user, $data) {
             $user->update([
-                'full_name' => $data['full_name'] ?? $user->full_name,
-                'email' => $data['email'] ?? $user->email,
                 'phone' => $data['phone'] ?? $user->phone,
                 'updated_by' => $user->id,
             ]);
 
-            $student = StudentAlumni::firstOrCreate(
-                ['user_id' => $user->id],
-                [
-                    'major_id' => $data['major_id'],
-                    'class_id' => $data['class_id'] ?? null,
-                    'created_by' => $user->id,
-                ]
-            );
+            $student = $this->getProfileForUser($user);
 
             $studentUpdates = [
-                'nis' => $data['nis'] ?? $student->nis,
-                'major_id' => $data['major_id'] ?? $student->major_id,
-                'employment_status_id' => $data['employment_status_id'] ?? $student->employment_status_id,
-                'graduation_year' => $data['graduation_year'] ?? $student->graduation_year,
                 'updated_by' => $user->id,
             ];
 
-            if (array_key_exists('class_id', $data)) {
-                $studentUpdates['class_id'] = $data['class_id'];
+            if (array_key_exists('employment_status_id', $data)) {
+                $studentUpdates['employment_status_id'] = $data['employment_status_id'];
             }
 
             if (array_key_exists('social_media', $data)) {

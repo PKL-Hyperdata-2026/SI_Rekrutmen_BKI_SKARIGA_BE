@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
@@ -10,11 +12,11 @@ class JobVacancyResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'companyId' => $this->company_id,
+            'id' => encrypt($this->id),
+            'companyId' => $this->company_id ? encrypt($this->company_id) : null,
             'company' => $this->whenLoaded('company', function () {
                 return [
-                    'id' => $this->company->id,
+                    'id' => encrypt($this->company->id),
                     'name' => $this->company->name,
                     'email' => $this->company->email,
                     'phone' => $this->company->phone,
@@ -23,28 +25,28 @@ class JobVacancyResource extends JsonResource
                     'logoPath' => $this->company->logo_path,
                 ];
             }),
-            'jobTypeId' => $this->job_type_id,
+            'jobTypeId' => $this->job_type_id ? encrypt($this->job_type_id) : null,
             'jobType' => $this->whenLoaded('jobType', function () {
                 return $this->jobType ? [
-                    'id' => $this->jobType->id,
+                    'id' => encrypt($this->jobType->id),
                     'code' => $this->jobType->code,
                     'name' => $this->jobType->name,
                     'metadata' => $this->jobType->metadata,
                 ] : null;
             }),
-            'statusId' => $this->status_id,
+            'statusId' => $this->status_id ? encrypt($this->status_id) : null,
             'status' => $this->whenLoaded('status', function () {
                 return $this->status ? [
-                    'id' => $this->status->id,
+                    'id' => encrypt($this->status->id),
                     'code' => $this->status->code,
                     'name' => $this->status->name,
                     'metadata' => $this->status->metadata,
                 ] : null;
             }),
-            'targetApplicantId' => $this->target_applicant_id,
+            'targetApplicantId' => $this->target_applicant_id ? encrypt($this->target_applicant_id) : null,
             'targetApplicant' => $this->whenLoaded('targetApplicant', function () {
                 return $this->targetApplicant ? [
-                    'id' => $this->targetApplicant->id,
+                    'id' => encrypt($this->targetApplicant->id),
                     'code' => $this->targetApplicant->code,
                     'name' => $this->targetApplicant->name,
                     'metadata' => $this->targetApplicant->metadata,
@@ -61,14 +63,14 @@ class JobVacancyResource extends JsonResource
             'majors' => $this->whenLoaded('majors', function () {
                 return $this->majors->map(function ($major) {
                     return [
-                        'id' => $major->id,
+                        'id' => encrypt($major->id),
                         'code' => $major->code,
                         'name' => $major->name,
                     ];
                 });
             }),
             'majorIds' => $this->whenLoaded('majors', function () {
-                return $this->majors->pluck('id');
+                return $this->majors->map(fn ($m) => encrypt($m->id))->values();
             }),
             'minSalary' => $this->min_salary,
             'maxSalary' => $this->max_salary,
@@ -76,14 +78,14 @@ class JobVacancyResource extends JsonResource
             'isActive' => (bool) $this->is_active,
             'createdByUser' => $this->whenLoaded('createdBy', function () {
                 return $this->createdBy ? [
-                    'id' => $this->createdBy->id,
+                    'id' => encrypt($this->createdBy->id),
                     'fullName' => $this->createdBy->full_name,
                     'email' => $this->createdBy->email,
                 ] : null;
             }),
             'updatedByUser' => $this->whenLoaded('updatedBy', function () {
                 return $this->updatedBy ? [
-                    'id' => $this->updatedBy->id,
+                    'id' => encrypt($this->updatedBy->id),
                     'fullName' => $this->updatedBy->full_name,
                     'email' => $this->updatedBy->email,
                 ] : null;

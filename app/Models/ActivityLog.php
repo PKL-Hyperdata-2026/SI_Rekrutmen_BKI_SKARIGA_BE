@@ -1,33 +1,35 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+#[Fillable([
+    'user_id',
+    'action',
+    'module',
+    'method',
+    'url',
+    'subject_type',
+    'subject_id',
+    'old_values',
+    'new_values',
+    'properties',
+    'ip_address',
+    'user_agent',
+    'created_at',
+])]
 class ActivityLog extends Model
 {
     use HasFactory;
 
     public $timestamps = false;
-
-    protected $fillable = [
-        'user_id',
-        'action',
-        'module',
-        'method',
-        'url',
-        'subject_type',
-        'subject_id',
-        'old_values',
-        'new_values',
-        'properties',
-        'ip_address',
-        'user_agent',
-        'created_at',
-    ];
 
     protected function casts(): array
     {

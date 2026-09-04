@@ -12,7 +12,7 @@ class UserResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id' => encrypt($this->id),
             'fullName' => $this->full_name,
             'email' => $this->email,
             'phone' => $this->phone,
@@ -22,7 +22,7 @@ class UserResource extends JsonResource
             'updatedAt' => $this->updated_at?->toIso8601String(),
             'company' => $this->whenLoaded('company', function () {
                 return $this->company ? [
-                    'id' => $this->company->id,
+                    'id' => encrypt($this->company->id),
                     'name' => $this->company->name,
                     'address' => $this->company->address,
                     'email' => $this->company->email,

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Models\JobVacancy;
@@ -57,18 +59,24 @@ class JobVacancyService
             $query->where('status_id', $filters['status_id']);
         }
 
-        if (! empty($filters['target_applicant_id'])) {
-            $query->where('target_applicant_id', $filters['target_applicant_id']);
+        if (! empty($filters['target_applicant_id']) && $filters['target_applicant_id'] !== 'all') {
+            $targetApplicantId = $filters['target_applicant_id'];
+            $query->where(function (Builder $q) use ($targetApplicantId) {
+                $q->where('target_applicant_id', $targetApplicantId)
+                    ->orWhereNull('target_applicant_id');
+            });
         }
 
         if (! empty($filters['job_type_id'])) {
             $query->where('job_type_id', $filters['job_type_id']);
         }
 
-        if (! empty($filters['major_id'])) {
+        if (! empty($filters['major_id']) && $filters['major_id'] !== 'all') {
             $majorId = $filters['major_id'];
-            $query->whereHas('majors', function (Builder $majorQuery) use ($majorId) {
-                $majorQuery->where('majors.id', $majorId);
+            $query->where(function (Builder $q) use ($majorId) {
+                $q->whereHas('majors', function (Builder $majorQuery) use ($majorId) {
+                    $majorQuery->where('majors.id', $majorId);
+                })->orDoesntHave('majors');
             });
         }
 
@@ -103,6 +111,19 @@ class JobVacancyService
                 }
             }
 
+            // Default job_type to first available job_type if not provided
+            if (empty($data['job_type_id'])) {
+                $jobType = StandardType::byCategory('job_type')->first();
+                if ($jobType) {
+                    $data['job_type_id'] = $jobType->id;
+                }
+            }
+
+            // Fallback description if not provided
+            if (empty($data['description'])) {
+                $data['description'] = $data['qualification'] ?? "Lowongan pekerjaan untuk posisi {$title}.";
+            }
+
             $majorIds = $data['major_ids'] ?? [];
             unset($data['major_ids']);
 
@@ -118,7 +139,9 @@ class JobVacancyService
             $vacancy->load(['company', 'jobType', 'status', 'targetApplicant', 'majors', 'createdBy', 'updatedBy']);
 
             if ($sendNotification) {
-                $this->notifyTargetApplicants($vacancy);
+                DB::afterCommit(function () use ($vacancy) {
+                    $this->notifyTargetApplicants($vacancy);
+                });
             }
 
             return $vacancy;
@@ -151,7 +174,9 @@ class JobVacancyService
             $vacancy = $vacancy->fresh(['company', 'jobType', 'status', 'targetApplicant', 'majors', 'createdBy', 'updatedBy']);
 
             if ($sendNotification) {
-                $this->notifyTargetApplicants($vacancy);
+                DB::afterCommit(function () use ($vacancy) {
+                    $this->notifyTargetApplicants($vacancy);
+                });
             }
 
             return $vacancy;

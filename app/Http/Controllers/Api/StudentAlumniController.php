@@ -47,7 +47,7 @@ class StudentAlumniController extends Controller
 
         return $this->response
             ->message('Opsi formulir alumni berhasil diambil.')
-            ->data($options);
+            ->data(encrypt_recursive($options));
     }
 
     public function show(StudentAlumni $alumni): Responsable

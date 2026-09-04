@@ -46,7 +46,7 @@ class UserController extends Controller
 
         return $this->response
             ->message('Opsi formulir pengguna berhasil diambil.')
-            ->data($options);
+            ->data(encrypt_recursive($options));
     }
 
     public function show(User $user): Responsable

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\JobPlacementController;
 use App\Http\Controllers\Api\JobVacancyController;
+use App\Http\Controllers\Api\StudentJobVacancyController;
 use App\Http\Controllers\Api\StudentAlumniController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\UserController;
@@ -58,12 +59,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // TODO: API untuk HRD
     });
 
-    Route::middleware('role:siswa,alumni')->group(function () {
-        // TODO: API untuk Siswa dan Alumni
-        // jadi nanti ada API yang bisa diakses alumni
-        // tetapi tidak bisa diakses siswa
-        // nah gatau untuk prefix API nya gimana
-        // looking forward for further brief 😉
+    Route::middleware('role:siswa,alumni')->prefix('student')->group(function () {
+        Route::get('/job-vacancies/options', [StudentJobVacancyController::class, 'options']);
+        Route::get('/job-vacancies', [StudentJobVacancyController::class, 'index']);
+        Route::get('/job-vacancies/{jobVacancy}', [StudentJobVacancyController::class, 'show']);
+        Route::post('/job-vacancies/{jobVacancy}/apply', [StudentJobVacancyController::class, 'apply']);
     });
 
     Route::middleware('role:alumni')->prefix('alumni')->group(function () {

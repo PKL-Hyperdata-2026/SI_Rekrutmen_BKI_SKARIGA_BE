@@ -75,30 +75,14 @@ Route::middleware('auth:sanctum')->group(function () {
         // TODO: API untuk HRD
     });
 
-    Route::middleware('role:siswa,alumni')->prefix('student')->group(function () {
-        Route::get('/job-vacancies/options', [StudentJobVacancyController::class, 'options']);
-        Route::get('/job-vacancies', [StudentJobVacancyController::class, 'index']);
-        Route::get('/job-vacancies/{jobVacancy}', [StudentJobVacancyController::class, 'show']);
-        Route::post('/job-vacancies/{jobVacancy}/apply', [StudentJobVacancyController::class, 'apply']);
-    });
-    Route::middleware('role:siswa')->prefix('siswa')->group(function () {
+    Route::middleware('role:siswa,alumni')->prefix('siswa')->group(function () {
         Route::get('/portfolio/profile', [PortfolioController::class, 'getProfile']);
         Route::get('/portfolio/options', [PortfolioController::class, 'getOptions']);
         Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);
         Route::post('/portfolio/upload', [PortfolioController::class, 'uploadPortfolio']);
         Route::delete('/portfolio/{portfolio}', [PortfolioController::class, 'destroyPortfolio']);
 
-        Route::middleware('role:siswa,alumni')->group(function () {
-            Route::get('/my-applications', [StudentJobApplicationController::class, 'index']);
-            Route::get('/my-applications/{id}', [StudentJobApplicationController::class, 'show']);
-        });
-
-        Route::middleware('role:alumni')->prefix('alumni')->group(function () {
-            Route::get('/portfolio/profile', [PortfolioController::class, 'getProfile']);
-            Route::get('/portfolio/options', [PortfolioController::class, 'getOptions']);
-            Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);
-            Route::post('/portfolio/upload', [PortfolioController::class, 'uploadPortfolio']);
-            Route::delete('/portfolio/{portfolio}', [PortfolioController::class, 'destroyPortfolio']);
-        });
+        Route::get('/my-applications', [StudentJobApplicationController::class, 'index']);
+        Route::get('/my-applications/{id}', [StudentJobApplicationController::class, 'show']);
     });
 });

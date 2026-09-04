@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\JobPlacementController;
 use App\Http\Controllers\Api\JobVacancyController;
+use App\Http\Controllers\Api\StudentJobVacancyController;
 use App\Http\Controllers\Api\MajorController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\PortfolioController;
@@ -74,6 +75,12 @@ Route::middleware('auth:sanctum')->group(function () {
         // TODO: API untuk HRD
     });
 
+    Route::middleware('role:siswa,alumni')->prefix('student')->group(function () {
+        Route::get('/job-vacancies/options', [StudentJobVacancyController::class, 'options']);
+        Route::get('/job-vacancies', [StudentJobVacancyController::class, 'index']);
+        Route::get('/job-vacancies/{jobVacancy}', [StudentJobVacancyController::class, 'show']);
+        Route::post('/job-vacancies/{jobVacancy}/apply', [StudentJobVacancyController::class, 'apply']);
+    });
     Route::middleware('role:siswa')->prefix('siswa')->group(function () {
         Route::get('/portfolio/profile', [PortfolioController::class, 'getProfile']);
         Route::get('/portfolio/options', [PortfolioController::class, 'getOptions']);

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\PortfolioController;
 use App\Http\Controllers\Api\StudentAlumniController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StudentJobApplicationController;
+use App\Http\Controllers\Api\TracerStudyController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\NotificationController;
@@ -74,24 +75,31 @@ Route::middleware('auth:sanctum')->group(function () {
         // TODO: API untuk HRD
     });
 
+    // Self-Service Siswa
     Route::middleware('role:siswa')->prefix('siswa')->group(function () {
         Route::get('/portfolio/profile', [PortfolioController::class, 'getProfile']);
         Route::get('/portfolio/options', [PortfolioController::class, 'getOptions']);
         Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);
         Route::post('/portfolio/upload', [PortfolioController::class, 'uploadPortfolio']);
         Route::delete('/portfolio/{portfolio}', [PortfolioController::class, 'destroyPortfolio']);
+    });
 
-        Route::middleware('role:siswa,alumni')->group(function () {
-            Route::get('/my-applications', [StudentJobApplicationController::class, 'index']);
-            Route::get('/my-applications/{id}', [StudentJobApplicationController::class, 'show']);
-        });
+    // Lamaran Pekerjaan (Bisa diakses Siswa maupun Alumni)
+    Route::middleware('role:siswa,alumni')->group(function () {
+        Route::get('/my-applications', [StudentJobApplicationController::class, 'index']);
+        Route::get('/my-applications/{id}', [StudentJobApplicationController::class, 'show']);
+    });
 
-        Route::middleware('role:alumni')->prefix('alumni')->group(function () {
-            Route::get('/portfolio/profile', [PortfolioController::class, 'getProfile']);
-            Route::get('/portfolio/options', [PortfolioController::class, 'getOptions']);
-            Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);
-            Route::post('/portfolio/upload', [PortfolioController::class, 'uploadPortfolio']);
-            Route::delete('/portfolio/{portfolio}', [PortfolioController::class, 'destroyPortfolio']);
-        });
+    // Self-Service Alumni
+    Route::middleware('role:alumni')->prefix('alumni')->group(function () {
+        Route::get('/portfolio/profile', [PortfolioController::class, 'getProfile']);
+        Route::get('/portfolio/options', [PortfolioController::class, 'getOptions']);
+        Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);
+        Route::post('/portfolio/upload', [PortfolioController::class, 'uploadPortfolio']);
+        Route::delete('/portfolio/{portfolio}', [PortfolioController::class, 'destroyPortfolio']);
+
+        // Tracer Study Endpoints
+        Route::get('/tracer-study', [TracerStudyController::class, 'show']);
+        Route::post('/tracer-study', [TracerStudyController::class, 'store']);
     });
 });

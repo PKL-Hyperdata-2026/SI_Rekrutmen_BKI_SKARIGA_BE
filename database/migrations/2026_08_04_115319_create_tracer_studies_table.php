@@ -10,27 +10,39 @@ return new class extends Migration
     {
         Schema::create('tracer_studies', function (Blueprint $table) {
             $table->id();
-            
-            // Foreign Keys
+
+            // Foreign Key ke Alumni
             $table->foreignId('student_alumni_id')
-                  ->constrained('students_alumni')
-                  ->cascadeOnDelete();
-                  
-            $table->foreignId('employment_status_id')
-                  ->nullable()
-                  ->constrained('standard_types');
-                  
-            $table->year('survey_year');
+                ->constrained('students_alumni')
+                ->cascadeOnDelete();
+
+            // Status Karir (Enum snake_case sesuai instruksi Marvell)
+            $table->enum('career_status', [
+                'bekerja',
+                'wirausaha',
+                'lanjut_studi',
+                'mencari_pekerjaan',
+            ]);
+
+            // Field Khusus Status: Bekerja
             $table->string('company_name')->nullable();
             $table->string('job_title')->nullable();
-            
-            $table->foreignId('relevance_status_id')
-                  ->nullable()
-                  ->constrained('standard_types');
-                  
-            $table->foreignId('income_range_id')
-                  ->nullable()
-                  ->constrained('standard_types');
+            $table->unsignedBigInteger('minimum_salary')->nullable();
+            $table->unsignedBigInteger('maximum_salary')->nullable();
+            $table->string('waiting_period')->nullable();
+            $table->date('start_date')->nullable();
+
+            // Field Khusus Status: Wirausaha
+            $table->string('business_name')->nullable();
+            $table->text('business_address')->nullable();
+            $table->string('instagram_handle')->nullable();
+            $table->string('average_income')->nullable();
+            $table->string('business_field')->nullable();
+            $table->date('business_start_date')->nullable();
+
+            // Field Khusus Status: Lanjut Studi
+            $table->string('university_name')->nullable();
+            $table->string('study_program')->nullable();
 
             // Audit Trail
             $table->foreignId('created_by')->nullable()->constrained('users');

@@ -43,7 +43,8 @@ backend/app/
 │   │   │   ├── JobVacancyController.php       # Job vacancies CRUD & publishing
 │   │   │   ├── StudentAlumniController.php    # Admin CRUD data alumni (upgrade akun siswa)
 │   │   │   ├── StudentController.php          # Admin CRUD data siswa kelas 12 aktif & portfolio
-│   │   │   └── StudentJobApplicationController.php # Siswa/alumni daftar & detail lamaran saya
+│   │   │   ├── StudentJobApplicationController.php # Siswa/alumni daftar & detail lamaran saya
+│   │   │   └── TracerStudyController.php      # Tracer study submission & detail (role: alumni)
 │   │   ├── Auth/
 │   │   │   └── AuthController.php             # Login, logout, me endpoint + forgot/reset password
 │   │   └── NotificationController.php         # Notification listing & read status
@@ -76,6 +77,7 @@ backend/app/
 │   ├── StudentPortfolioService.php            # Self-service E-Portfolio (profile, options, upload/delete dokumen) — shared siswa & alumni
 │   ├── StudentJobApplicationService.php       # Siswa/alumni lamaran saya queries & stage histories
 │   ├── StudentService.php                     # Siswa aktif CRUD, filtering, form options, portofolio berkas
+│   ├── TracerStudyService.php                 # Alumni career status survey, conditional null resets, DB transactions
 │   ├── NotificationService.php                # Notification creation, broadcast, read flags
 │   ├── ResponseService.php                    # Standard JSON response building
 │   └── MailService.php                        # Email notification dispatch
@@ -94,7 +96,7 @@ backend/app/
 - **`job_applications`**: Junction between `job_vacancies.id` and `student_alumni.id`. Tracks overall status (`pending`, `in_review`, `accepted`, `rejected`).
 - **`selection_stages` & `application_stage_histories`**: Granular tracking of test stages (administrative, psychotest, technical interview, medical).
 - **`job_placements`**: Records work placement of students/alumni (`student_alumni_id`, `company_id`, `job_application_id`, `placement_status_id`, `accepted_date`, `start_date`, `notes`).
-- **`tracer_studies`**: Alumni tracer data linked to `student_alumni.id` (employment status, company name, salary range, field alignment).
+- **`tracer_studies`**: Tercatat relasi ke `students_alumni.id`, menggunakan enum `career_status` (`bekerja`, `wirausaha`, `lanjut_studi`, `mencari_pekerjaan`), dengan atribut kondisional per status (bekerja, wirausaha, lanjut studi). Detail kolom: `bekerja` (`company_name`, `job_title`, `minimum_salary`, `maximum_salary`, `waiting_period`, `start_date`), `wirausaha` (`business_name`, `business_address`, `instagram_handle`, `average_income`, `business_field`, `business_start_date`), `lanjut_studi` (`university_name`, `study_program`), dan `mencari_pekerjaan` (tanpa atribut tambahan — semua kolom detail di-null-kan). Mendukung `created_by`/`updated_by`/`deleted_by` + `softDeletes` dan `DB::transaction` dengan reset null data lama saat ganti status.
 - **`activity_logs`**: Security & audit logs recording user ID, action, model affected, IP address, and changed attributes.
 - **`password_reset_tokens`**: Email-keyed storage of SHA-256 hashed reset tokens (`email`, `token`, `created_at`). Expiry 60 minutes & 60s resend throttle configured in `config/auth.php` (`passwords.users`).
 
@@ -161,6 +163,8 @@ backend/app/
   - `PUT /api/alumni/portfolio/profile` — Update profil alumni (plus `employment_status_id`).
   - `POST /api/alumni/portfolio/upload` — Upload dokumen portofolio alumni.
   - `DELETE /api/alumni/portfolio/{portfolio}` — Hapus dokumen portofolio alumni.
+  - `GET /api/alumni/tracer-study` — Ambil data pengisian tracer study alumni yang sedang login.
+  - `POST /api/alumni/tracer-study` — Submit atau update data tracer study alumni.
 - `/api/my-applications` (`role:siswa,alumni`) — List lamaran saya siswa/alumni (pagination & filter `status_id`).
 - `/api/my-applications/{id}` (`role:siswa,alumni`) — Detail spesifik lamaran siswa beserta timeline tahapan seleksi (`stage_histories`).
 - `/api/alumni/*` (`role:alumni`) — Alumni job applications, portfolio updates, tracer study submissions.

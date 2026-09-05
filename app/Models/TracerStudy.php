@@ -12,12 +12,29 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
     'student_alumni_id',
-    'employment_status_id',
-    'survey_year',
+    'career_status',
+
+    // Status: Bekerja
     'company_name',
     'job_title',
-    'relevance_status_id',
-    'income_range_id',
+    'minimum_salary',
+    'maximum_salary',
+    'waiting_period',
+    'start_date',
+
+    // Status: Wirausaha
+    'business_name',
+    'business_address',
+    'instagram_handle',
+    'average_income',
+    'business_field',
+    'business_start_date',
+
+    // Status: Lanjut Studi
+    'university_name',
+    'study_program',
+
+    // Audit Trail
     'created_by',
     'updated_by',
     'deleted_by',
@@ -28,34 +45,22 @@ class TracerStudy extends Model
 
     protected $table = 'tracer_studies';
 
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
-            'survey_year' => 'integer',
+            'minimum_salary'      => 'integer',
+            'maximum_salary'      => 'integer',
+            'start_date'          => 'date',
+            'business_start_date' => 'date',
         ];
     }
 
     public function studentAlumni(): BelongsTo
     {
         return $this->belongsTo(StudentAlumni::class, 'student_alumni_id');
-    }
-
-    public function employmentStatus(): BelongsTo
-    {
-        return $this->belongsTo(StandardType::class, 'employment_status_id')
-            ->byCategory('employment_status');
-    }
-
-    public function relevanceStatus(): BelongsTo
-    {
-        return $this->belongsTo(StandardType::class, 'relevance_status_id')
-            ->byCategory('relevance_status');
-    }
-
-    public function incomeRange(): BelongsTo
-    {
-        return $this->belongsTo(StandardType::class, 'income_range_id')
-            ->byCategory('income_range');
     }
 
     public function createdBy(): BelongsTo

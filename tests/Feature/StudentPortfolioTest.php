@@ -105,9 +105,9 @@ class StudentPortfolioTest extends TestCase
             'full_name' => 'Marvello Cikiwaw Updated',
             'email' => 'marvello.updated@skariga.sch.id',
             'phone' => '081234567899',
-            'class_id' => $this->class->id,
-            'major_id' => $this->major->id,
-            'graduation_year' => 2026,
+            'class_id' => 9999,
+            'major_id' => 9999,
+            'graduation_year' => 2099,
             'social_media' => [
                 ['platform' => 'linkedin', 'username' => 'marvello'],
                 ['platform' => 'github', 'username' => 'marvellocikiwaw'],
@@ -121,9 +121,10 @@ class StudentPortfolioTest extends TestCase
             ->assertJson([
                 'success' => true,
                 'data' => [
-                    'nis' => '87654321',
-                    'fullName' => 'Marvello Cikiwaw Updated',
-                    'email' => 'marvello.updated@skariga.sch.id',
+                    'nis' => '12345678', // unchanged
+                    'fullName' => $this->studentUser->full_name, // unchanged
+                    'email' => $this->studentUser->email, // unchanged
+                    'phone' => '081234567899',
                     'socialMedia' => [
                         ['platform' => 'linkedin', 'username' => 'marvello', 'url' => 'https://linkedin.com/in/marvello'],
                         ['platform' => 'github', 'username' => 'marvellocikiwaw', 'url' => 'https://github.com/marvellocikiwaw'],
@@ -133,12 +134,20 @@ class StudentPortfolioTest extends TestCase
 
         $this->assertDatabaseHas('students_alumni', [
             'id' => $this->student->id,
+            'nis' => '12345678',
+        ]);
+
+        $this->assertDatabaseMissing('students_alumni', [
             'nis' => '87654321',
+        ]);
+
+        $this->assertDatabaseMissing('users', [
+            'email' => 'marvello.updated@skariga.sch.id',
         ]);
 
         $this->assertDatabaseHas('users', [
             'id' => $this->studentUser->id,
-            'email' => 'marvello.updated@skariga.sch.id',
+            'phone' => '081234567899',
         ]);
     }
 
@@ -336,18 +345,25 @@ class StudentPortfolioTest extends TestCase
         ]);
     }
 
-    public function test_student_class_id_remains_required(): void
+    public function test_student_cannot_tamper_readonly_academic_fields(): void
     {
-        $this->actingAs($this->studentUser)
+        $originalClassId = $this->student->class_id;
+        $originalMajorId = $this->student->major_id;
+
+        $response = $this->actingAs($this->studentUser)
             ->putJson('/api/siswa/portfolio/profile', [
-                'nis' => $this->student->nis,
-                'full_name' => $this->studentUser->full_name,
-                'email' => $this->studentUser->email,
                 'phone' => '081111111111',
-                'major_id' => $this->major->id,
-            ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['class_id']);
+                'class_id' => 99999,
+                'major_id' => 99999,
+                'nis' => 'hacked_nis',
+            ]);
+
+        $response->assertStatus(200);
+
+        $this->student->refresh();
+        $this->assertEquals($originalClassId, $this->student->class_id);
+        $this->assertEquals($originalMajorId, $this->student->major_id);
+        $this->assertEquals('12345678', $this->student->nis);
     }
 
     public function test_student_cannot_access_alumni_route(): void

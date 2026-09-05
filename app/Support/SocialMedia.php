@@ -20,7 +20,13 @@ class SocialMedia
     {
         $prefix = self::platforms()[$platform]['url'] ?? null;
 
-        return $prefix !== null ? $prefix.ltrim($username, '@') : $username;
+        if (empty($prefix)) {
+            return str_starts_with($username, 'http://') || str_starts_with($username, 'https://')
+                ? $username
+                : 'https://'.$username;
+        }
+
+        return $prefix.ltrim($username, '@');
     }
 
     /**
@@ -101,8 +107,12 @@ class SocialMedia
     {
         $prefix = self::platforms()[$platform]['url'] ?? null;
 
-        if ($prefix !== null && str_starts_with($url, $prefix)) {
+        if (! empty($prefix) && str_starts_with($url, $prefix)) {
             return rtrim(substr($url, strlen($prefix)), '/');
+        }
+
+        if ($platform === 'portfolio') {
+            return $url;
         }
 
         $pos = strrpos($url, '/');

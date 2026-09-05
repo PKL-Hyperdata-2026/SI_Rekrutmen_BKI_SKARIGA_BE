@@ -114,7 +114,7 @@ class AdminJobVacancyTest extends TestCase
             'company_id' => $this->company->id,
         ]);
 
-        $vacancyId = $response->json('data.id');
+        $vacancyId = decrypt($response->json('data.id'));
         $this->assertDatabaseHas('job_vacancy_majors', [
             'job_vacancy_id' => $vacancyId,
             'major_id' => $this->rplMajor->id,
@@ -202,9 +202,9 @@ class AdminJobVacancyTest extends TestCase
             ->getJson("/api/admin/job-vacancies/{$vacancy->id}");
 
         $responseById->assertStatus(200)
-            ->assertJsonPath('data.id', $vacancy->id)
             ->assertJsonCount(1, 'data.majors')
             ->assertJsonPath('data.majors.0.code', 'TKJ');
+        $this->assertEquals($vacancy->id, decrypt($responseById->json('data.id')));
 
         // Fetch by Slug
         $responseBySlug = $this->actingAs($this->adminUser)

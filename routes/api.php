@@ -29,8 +29,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    Route::apiResource('job-vacancies', JobVacancyController::class);
-
     Route::prefix('notification')->group(function () {
         Route::get('/', [NotificationController::class, 'index']);
         Route::get('/unread', [NotificationController::class, 'unread']);
@@ -44,7 +42,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('companies', CompanyController::class); // CRUD lengkap perusahaan (Index, Store, Show, Update, Delete)
         Route::get('/job-vacancies/options', [JobVacancyController::class, 'options']); // Ambil opsi dropdown form (Perusahaan, Status, Target, Tipe Kerja)
         Route::patch('/job-vacancies/{jobVacancy}/toggle-active', [JobVacancyController::class, 'toggleActive']); // Toggle saklar status aktif/non-aktif lowongan
-        Route::apiResource('job-vacancies', JobVacancyController::class); // CRUD lengkap lowongan kerja (Index, Store, Show, Update, Delete)
+        Route::apiResource('job-vacancies', JobVacancyController::class)
+            ->parameters(['job-vacancies' => 'jobVacancy']); // CRUD lengkap lowongan kerja (Index, Store, Show, Update, Delete)
         Route::get('/students/options', [StudentController::class, 'options']); // Ambil opsi dropdown form siswa (Jurusan, Kelas, Status, Portfolio Type, Perusahaan, Tahun Lulus)
         Route::post('/students/{student}/portfolios', [StudentController::class, 'uploadPortfolio']); // Upload portofolio/berkas siswa
         Route::delete('/students/{student}/portfolios/{portfolio}', [StudentController::class, 'destroyPortfolio']); // Hapus portofolio/berkas siswa

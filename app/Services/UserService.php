@@ -11,9 +11,13 @@ use Illuminate\Support\Facades\DB;
 
 class UserService
 {
-    public function getUsers(array $filters = [], int $perPage = 15): LengthAwarePaginator
+    public function getUsers(array $filters = [], int $perPage = 15, ?int $authUserId = null): LengthAwarePaginator
     {
         $query = User::query()->with('company');
+
+        if ($authUserId) {
+            $query->where('id', '!=', $authUserId);
+        }
 
         if (! empty($filters['search'])) {
             $search = $filters['search'];
@@ -55,8 +59,10 @@ class UserService
 
         return [
             'roles' => [
-                ['value' => 'admin', 'label' => 'Admin BKI'],
-                ['value' => 'hrd', 'label' => 'HRD Perusahaan'],
+                ['value' => 'admin', 'label' => 'Admin'],
+                ['value' => 'hrd', 'label' => 'HRD'],
+                ['value' => 'siswa', 'label' => 'Siswa'],
+                ['value' => 'alumni', 'label' => 'Alumni'],
             ],
             'companies' => $companies,
         ];

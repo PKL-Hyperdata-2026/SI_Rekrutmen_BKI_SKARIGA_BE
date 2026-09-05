@@ -33,7 +33,7 @@ class UserController extends Controller
         ]);
 
         $perPage = $request->integer('per_page', 15);
-        $users = $this->userService->getUsers($filters, $perPage);
+        $users = $this->userService->getUsers($filters, $perPage, $request->user()?->id);
 
         return $this->response
             ->message('Daftar data pengguna berhasil diambil.')

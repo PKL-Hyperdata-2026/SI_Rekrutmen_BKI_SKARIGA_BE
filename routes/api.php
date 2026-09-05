@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\JobPlacementController;
 use App\Http\Controllers\Api\JobVacancyController;
+use App\Http\Controllers\Api\StudentJobVacancyController;
 use App\Http\Controllers\Api\MajorController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\PortfolioController;
@@ -101,5 +102,10 @@ Route::middleware('auth:sanctum')->group(function () {
         // Tracer Study Endpoints
         Route::get('/tracer-study', [TracerStudyController::class, 'show']);
         Route::post('/tracer-study', [TracerStudyController::class, 'store']);
+    });
+
+    Route::middleware('role:siswa,alumni')->group(function () {
+        Route::get('/my-applications', [StudentJobApplicationController::class, 'index']);
+        Route::get('/my-applications/{id}', [StudentJobApplicationController::class, 'show']);
     });
 });

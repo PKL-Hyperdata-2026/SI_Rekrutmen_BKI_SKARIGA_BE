@@ -62,7 +62,7 @@ class StudentAlumniService
             $query->where('current_company_id', $filters['current_company_id']);
         }
 
-        $sortBy = in_array($filters['sort_by'] ?? 'id', $this->sortableColumns, true)
+        $sortBy = isset($filters['sort_by']) && in_array($filters['sort_by'], $this->sortableColumns, true)
             ? $filters['sort_by']
             : 'id';
         $sortDir = strtolower((string) ($filters['sort_dir'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';

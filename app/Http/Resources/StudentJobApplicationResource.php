@@ -18,32 +18,18 @@ class StudentJobApplicationResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'vacancy' => $this->whenLoaded('jobVacancy', function () {
-                return $this->jobVacancy ? [
-                    'id' => $this->jobVacancy->id,
-                    'title' => $this->jobVacancy->title,
-                    'companyName' => $this->jobVacancy->company?->name,
-                    'companyLogo' => $this->jobVacancy->company?->logo_path,
-                    'jobType' => $this->jobVacancy->jobType?->name,
-                    'location' => $this->jobVacancy->work_location,
-                ] : null;
-            }),
-            'status' => $this->whenLoaded('status', function () {
-                return $this->status ? [
-                    'id' => $this->status->id,
-                    'name' => $this->status->name,
-                    'code' => $this->status->code,
-                ] : null;
-            }),
-            'currentStage' => $this->whenLoaded('currentStage', function () {
-                return $this->currentStage ? [
-                    'id' => $this->currentStage->id,
-                    'name' => $this->currentStage->name,
-                ] : null;
-            }),
+            'jobVacancyId' => $this->job_vacancy_id,
+            'vacancy' => $this->whenLoaded('jobVacancy', fn() => [
+                'id' => $this->jobVacancy->id,
+                'title' => $this->jobVacancy->title,
+                'position' => $this->jobVacancy->position,
+                'companyName' => $this->jobVacancy->company?->name,
+                'workLocation' => $this->jobVacancy->work_location,
+                'deadline' => $this->jobVacancy->deadline?->format('Y-m-d')
+            ]),
+            'status' => $this->whenLoaded('status', fn() => ['id' => $this->status->id, 'code' => $this->status->code, 'name' => $this->status->name]),
             'appliedAt' => $this->applied_at?->toIso8601String(),
             'notes' => $this->notes,
-            'stageHistories' => ApplicationStageHistoryResource::collection($this->whenLoaded('stageHistories')),
             'createdAt' => $this->created_at?->toIso8601String(),
         ];
     }

@@ -54,6 +54,9 @@ class AdminUserManagementTest extends TestCase
                     ],
                 ],
             ]);
+
+        $ids = collect($response->json('data.data'))->pluck('id')->map(fn ($id) => decrypt($id))->all();
+        $this->assertNotContains($this->superadmin->id, $ids);
     }
 
     public function test_regular_admin_cannot_access_user_list_and_gets_403(): void
@@ -135,8 +138,9 @@ class AdminUserManagementTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonPath('data.email', 'hrdsukses@example.com')
-            ->assertJsonPath('data.role', 'hrd')
-            ->assertJsonPath('data.company.id', $company->id);
+            ->assertJsonPath('data.role', 'hrd');
+
+        $this->assertEquals($company->id, decrypt($response->json('data.company.id')));
 
         $user = User::where('email', 'hrdsukses@example.com')->first();
         $this->assertEquals($user->id, $company->fresh()->user_id);

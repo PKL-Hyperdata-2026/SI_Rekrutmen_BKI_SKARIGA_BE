@@ -122,33 +122,33 @@ class TracerStudyTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Data tracer study berhasil diambil.')
-            ->assertJsonPath('data.career_status', 'bekerja')
-            ->assertJsonPath('data.company_name', 'PT Teknologi Nusantara')
-            ->assertJsonPath('data.job_title', 'Software Engineer')
-            ->assertJsonPath('data.student_alumni_id', $this->alumni->id)
+            ->assertJsonPath('data.careerStatus', 'bekerja')
+            ->assertJsonPath('data.companyName', 'PT Teknologi Nusantara')
+            ->assertJsonPath('data.jobTitle', 'Software Engineer')
+            ->assertJsonPath('data.studentAlumniId', $this->alumni->id)
             ->assertJsonStructure([
                 'success',
                 'message',
                 'data' => [
                     'id',
-                    'student_alumni_id',
-                    'career_status',
-                    'company_name',
-                    'job_title',
-                    'minimum_salary',
-                    'maximum_salary',
-                    'waiting_period',
-                    'start_date',
-                    'business_name',
-                    'business_address',
-                    'instagram_handle',
-                    'average_income',
-                    'business_field',
-                    'business_start_date',
-                    'university_name',
-                    'study_program',
-                    'created_at',
-                    'updated_at',
+                    'studentAlumniId',
+                    'careerStatus',
+                    'companyName',
+                    'jobTitle',
+                    'minimumSalary',
+                    'maximumSalary',
+                    'waitingPeriod',
+                    'startDate',
+                    'businessName',
+                    'businessAddress',
+                    'instagramAccount',
+                    'averageRevenue',
+                    'businessField',
+                    'businessStartDate',
+                    'universityName',
+                    'studyProgram',
+                    'createdAt',
+                    'updatedAt',
                 ],
             ]);
     }
@@ -175,13 +175,13 @@ class TracerStudyTest extends TestCase
         $response->assertCreated()
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Data tracer study berhasil disimpan.')
-            ->assertJsonPath('data.career_status', 'bekerja')
-            ->assertJsonPath('data.company_name', 'PT Teknologi Nusantara')
-            ->assertJsonPath('data.job_title', 'Software Engineer')
-            ->assertJsonPath('data.minimum_salary', 5000000)
-            ->assertJsonPath('data.maximum_salary', 7000000)
-            ->assertJsonPath('data.waiting_period', '0-3 bulan')
-            ->assertJsonPath('data.start_date', '2025-01-15');
+            ->assertJsonPath('data.careerStatus', 'bekerja')
+            ->assertJsonPath('data.companyName', 'PT Teknologi Nusantara')
+            ->assertJsonPath('data.jobTitle', 'Software Engineer')
+            ->assertJsonPath('data.minimumSalary', 5000000)
+            ->assertJsonPath('data.maximumSalary', 7000000)
+            ->assertJsonPath('data.waitingPeriod', '0-3 bulan')
+            ->assertJsonPath('data.startDate', '2025-01-15');
 
         $this->assertDatabaseHas('tracer_studies', [
             'student_alumni_id' => $this->alumni->id,
@@ -213,12 +213,12 @@ class TracerStudyTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.career_status', 'wirausaha')
-            ->assertJsonPath('data.business_name', 'Toko Berkah Jaya')
-            ->assertJsonPath('data.business_address', 'Jl. Melati No. 10 Jakarta Selatan')
-            ->assertJsonPath('data.business_field', 'Kuliner')
-            ->assertJsonPath('data.instagram_handle', '@tokoberkah')
-            ->assertJsonPath('data.business_start_date', '2024-06-01');
+            ->assertJsonPath('data.careerStatus', 'wirausaha')
+            ->assertJsonPath('data.businessName', 'Toko Berkah Jaya')
+            ->assertJsonPath('data.businessAddress', 'Jl. Melati No. 10 Jakarta Selatan')
+            ->assertJsonPath('data.businessField', 'Kuliner')
+            ->assertJsonPath('data.instagramAccount', '@tokoberkah')
+            ->assertJsonPath('data.businessStartDate', '2024-06-01');
 
         $this->assertDatabaseHas('tracer_studies', [
             'student_alumni_id' => $this->alumni->id,
@@ -252,9 +252,9 @@ class TracerStudyTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.career_status', 'lanjut_studi')
-            ->assertJsonPath('data.university_name', 'Universitas Indonesia')
-            ->assertJsonPath('data.study_program', 'Teknik Informatika');
+            ->assertJsonPath('data.careerStatus', 'lanjut_studi')
+            ->assertJsonPath('data.universityName', 'Universitas Indonesia')
+            ->assertJsonPath('data.studyProgram', 'Teknik Informatika');
 
         $this->assertDatabaseHas('tracer_studies', [
             'student_alumni_id' => $this->alumni->id,
@@ -286,10 +286,10 @@ class TracerStudyTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.career_status', 'mencari_pekerjaan')
-            ->assertJsonPath('data.company_name', null)
-            ->assertJsonPath('data.business_name', null)
-            ->assertJsonPath('data.university_name', null);
+            ->assertJsonPath('data.careerStatus', 'mencari_pekerjaan')
+            ->assertJsonPath('data.companyName', null)
+            ->assertJsonPath('data.businessName', null)
+            ->assertJsonPath('data.universityName', null);
 
         $this->assertDatabaseHas('tracer_studies', [
             'student_alumni_id' => $this->alumni->id,

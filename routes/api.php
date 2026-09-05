@@ -80,18 +80,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);
         Route::post('/portfolio/upload', [PortfolioController::class, 'uploadPortfolio']);
         Route::delete('/portfolio/{portfolio}', [PortfolioController::class, 'destroyPortfolio']);
+    });
 
-        Route::middleware('role:siswa,alumni')->group(function () {
-            Route::get('/my-applications', [StudentJobApplicationController::class, 'index']);
-            Route::get('/my-applications/{id}', [StudentJobApplicationController::class, 'show']);
-        });
+    Route::middleware('role:alumni')->prefix('alumni')->group(function () {
+        Route::get('/portfolio/profile', [PortfolioController::class, 'getProfile']);
+        Route::get('/portfolio/options', [PortfolioController::class, 'getOptions']);
+        Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);
+        Route::post('/portfolio/upload', [PortfolioController::class, 'uploadPortfolio']);
+        Route::delete('/portfolio/{portfolio}', [PortfolioController::class, 'destroyPortfolio']);
+    });
 
-        Route::middleware('role:alumni')->prefix('alumni')->group(function () {
-            Route::get('/portfolio/profile', [PortfolioController::class, 'getProfile']);
-            Route::get('/portfolio/options', [PortfolioController::class, 'getOptions']);
-            Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);
-            Route::post('/portfolio/upload', [PortfolioController::class, 'uploadPortfolio']);
-            Route::delete('/portfolio/{portfolio}', [PortfolioController::class, 'destroyPortfolio']);
-        });
+    Route::middleware('role:siswa,alumni')->group(function () {
+        Route::get('/my-applications', [StudentJobApplicationController::class, 'index']);
+        Route::get('/my-applications/{id}', [StudentJobApplicationController::class, 'show']);
     });
 });

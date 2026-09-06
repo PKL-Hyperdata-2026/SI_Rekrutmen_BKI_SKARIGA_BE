@@ -80,39 +80,77 @@ class StudentAlumniService
     public function create(array $data, ?int $actorId = null): StudentAlumni
     {
         return DB::transaction(function () use ($data, $actorId) {
-            $user = User::where('id', $data['user_id'])->first();
+            if (! empty($data['user_id'])) {
+                $user = User::where('id', $data['user_id'])->first();
 
-            if (! $user || $user->role !== 'siswa') {
-                throw ValidationException::withMessages([
-                    'user_id' => ['Hanya akun dengan role siswa yang dapat di-upgrade menjadi alumni.'],
-                ]);
+                if (! $user || $user->role !== 'siswa') {
+                    throw ValidationException::withMessages([
+                        'user_id' => ['Hanya akun dengan role siswa yang dapat di-upgrade menjadi alumni.'],
+                    ]);
+                }
+
+                $existing = StudentAlumni::withTrashed()->where('user_id', $data['user_id'])->first();
+
+                if ($existing && $existing->graduation_year !== null) {
+                    throw ValidationException::withMessages([
+                        'user_id' => ['Akun ini sudah terdaftar sebagai alumni.'],
+                    ]);
+                }
+
+                if ($existing && $existing->trashed()) {
+                    $existing->restore();
+                }
+
+                $profileData = Arr::except($data, ['full_name', 'phone', 'email']);
+                $profileData['created_by'] = $actorId;
+                $profileData['updated_by'] = $actorId;
+
+                if ($existing) {
+                    $existing->update($profileData);
+                    $alumni = $existing;
+                } else {
+                    $this->assertNisAvailable($data['nis'] ?? null, null, $data['user_id']);
+                    $alumni = StudentAlumni::create($profileData);
+                }
+
+                $this->syncUser($user, $data, true);
+
+                return $alumni->load(['user', 'major', 'class', 'employmentStatus', 'currentCompany']);
             }
 
-            $existing = StudentAlumni::withTrashed()->where('user_id', $data['user_id'])->first();
+            // Manual alumni creation without existing user account
+            $email = $data['email'] ?? (($data['nis'] ?? 'alumni_'.uniqid()) . '@alumni.skariga.sch.id');
 
-            if ($existing && $existing->graduation_year !== null) {
-                throw ValidationException::withMessages([
-                    'user_id' => ['Akun ini sudah terdaftar sebagai alumni.'],
-                ]);
-            }
+            $user = User::create([
+                'full_name' => $data['full_name'],
+                'email' => $email,
+                'phone' => $data['phone'] ?? null,
+                'password' => bcrypt($data['nis'] ?? 'alumni123'),
+                'role' => 'alumni',
+                'is_active' => true,
+                'created_by' => $actorId,
+                'updated_by' => $actorId,
+            ]);
 
-            if ($existing && $existing->trashed()) {
-                $existing->restore();
-            }
-
-            $profileData = Arr::except($data, ['full_name', 'phone']);
+            $profileData = Arr::except($data, ['full_name', 'phone', 'email']);
+            $profileData['user_id'] = $user->id;
+            $profileData['is_active'] = $data['is_active'] ?? true;
             $profileData['created_by'] = $actorId;
             $profileData['updated_by'] = $actorId;
 
+            $existing = ! empty($data['nis'])
+                ? StudentAlumni::withTrashed()->where('nis', $data['nis'])->first()
+                : null;
+
             if ($existing) {
+                if ($existing->trashed()) {
+                    $existing->restore();
+                }
                 $existing->update($profileData);
                 $alumni = $existing;
             } else {
-                $this->assertNisAvailable($data['nis'] ?? null, null, $data['user_id']);
                 $alumni = StudentAlumni::create($profileData);
             }
-
-            $this->syncUser($user, $data, true);
 
             return $alumni->load(['user', 'major', 'class', 'employmentStatus', 'currentCompany']);
         });
@@ -176,12 +214,30 @@ class StudentAlumniService
         $currentYear = (int) date('Y');
         $graduationYears = range($currentYear - 10, $currentYear);
 
+        $eligibleStudents = StudentAlumni::with(['user', 'class', 'major'])
+            ->whereNull('graduation_year')
+            ->where('is_active', true)
+            ->get()
+            ->map(fn (StudentAlumni $student) => [
+                'id' => $student->id,
+                'userId' => $student->user_id,
+                'nis' => $student->nis,
+                'fullName' => $student->user?->full_name,
+                'email' => $student->user?->email,
+                'phone' => $student->user?->phone,
+                'classId' => $student->class_id,
+                'className' => $student->class?->name,
+                'majorId' => $student->major_id,
+                'majorName' => $student->major?->name,
+            ]);
+
         return [
             'companies' => $companies,
             'majors' => $majors,
             'classes' => $classes,
             'employment_statuses' => $employmentStatuses,
             'graduation_years' => $graduationYears,
+            'eligible_students' => $eligibleStudents,
         ];
     }
 

@@ -18,7 +18,7 @@ class StoreAlumniRequest extends FormRequest
     {
         return [
             'user_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('users', 'id')->where('role', 'siswa'),
             ],
@@ -28,9 +28,18 @@ class StoreAlumniRequest extends FormRequest
                 'max:20',
                 Rule::unique('students_alumni', 'nis')
                     ->whereNull('deleted_at')
-                    ->where('user_id', '!=', $this->input('user_id')),
+                    ->when($this->filled('user_id'), fn ($rule) => $rule->ignore($this->input('user_id'), 'user_id')),
             ],
             'full_name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'nullable',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')
+                    ->whereNull('deleted_at')
+                    ->when($this->filled('user_id'), fn ($rule) => $rule->ignore($this->input('user_id'))),
+            ],
             'phone' => ['nullable', 'string', 'max:20'],
             'major_id' => ['required', 'integer', 'exists:majors,id'],
             'class_id' => ['nullable', 'integer', 'exists:standard_types,id'],
@@ -51,7 +60,6 @@ class StoreAlumniRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'user_id.required' => 'Akun siswa wajib dipilih.',
             'user_id.exists' => 'Akun siswa yang dipilih tidak valid.',
             'full_name.required' => 'Nama lengkap wajib diisi.',
             'major_id.required' => 'Jurusan wajib diisi.',

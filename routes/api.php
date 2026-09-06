@@ -75,8 +75,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // TODO: API untuk HRD
     });
 
-    // Self-Service Siswa
-    Route::middleware('role:siswa')->prefix('siswa')->group(function () {
+    // Self-Service Siswa & Alumni Portfolio
+    Route::middleware('role:siswa,alumni')->prefix('siswa')->group(function () {
         Route::get('/portfolio/profile', [PortfolioController::class, 'getProfile']);
         Route::get('/portfolio/options', [PortfolioController::class, 'getOptions']);
         Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);

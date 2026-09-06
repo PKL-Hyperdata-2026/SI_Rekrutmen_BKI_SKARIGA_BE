@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
@@ -96,6 +97,11 @@ class StudentAlumni extends Model
     public function portfolios(): HasMany
     {
         return $this->hasMany(StudentPortfolio::class, 'student_alumni_id');
+    }
+
+    public function tracerStudy(): HasOne
+    {
+        return $this->hasOne(TracerStudy::class, 'student_alumni_id');
     }
 
     public function createdBy(): BelongsTo

@@ -251,8 +251,9 @@ class AdminStudentTest extends TestCase
             ->assertJsonPath('success', true);
 
         $this->assertSoftDeleted('student_portfolios', [
-            'id' => $portfolioId,
+            'id' => is_numeric($portfolioId) ? $portfolioId : (int) decrypt($portfolioId),
         ]);
+
     }
 
     public function test_admin_can_soft_delete_student(): void

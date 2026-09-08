@@ -11,6 +11,7 @@ use App\Models\StudentAlumni;
 use App\Models\User;
 use Database\Seeders\ClassSeeder;
 use Database\Seeders\MajorSeeder;
+use Database\Seeders\StudentPortfolioStandartTypeSeeder;
 use Database\Seeders\TracerStudyStandardTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -37,6 +38,7 @@ class AdminAlumniTest extends TestCase
             MajorSeeder::class,
             ClassSeeder::class,
             TracerStudyStandardTypeSeeder::class,
+            StudentPortfolioStandartTypeSeeder::class,
         ]);
 
         $this->adminUser = User::factory()->create([
@@ -86,6 +88,7 @@ class AdminAlumniTest extends TestCase
                     'majors',
                     'classes',
                     'employment_statuses',
+                    'portfolio_types',
                     'graduation_years',
                     'eligible_students',
                 ],
@@ -157,6 +160,161 @@ class AdminAlumniTest extends TestCase
         $this->assertDatabaseHas('students_alumni', [
             'nis' => '212299999',
             'graduation_year' => 2024,
+        ]);
+    }
+
+    public function test_can_create_alumni_with_custom_company_name(): void
+    {
+        $payload = [
+            'user_id' => null,
+            'nis' => '212299888',
+            'full_name' => 'Alumni Startup Baru',
+            'major_id' => $this->rplMajor->id,
+            'class_id' => $this->classType->id,
+            'graduation_year' => 2025,
+            'company_name' => 'PT Teknologi Masa Depan',
+        ];
+
+        $response = $this->actingAs($this->adminUser, 'sanctum')
+            ->postJson('/api/admin/alumni', $payload);
+
+        $response->assertCreated();
+
+        $this->assertDatabaseHas('companies', [
+            'name' => 'PT Teknologi Masa Depan',
+        ]);
+
+        $newCompany = Company::where('name', 'PT Teknologi Masa Depan')->firstOrFail();
+
+        $this->assertDatabaseHas('students_alumni', [
+            'nis' => '212299888',
+            'current_company_id' => $newCompany->id,
+        ]);
+    }
+
+    public function test_can_create_manual_alumni_when_user_with_same_email_was_soft_deleted(): void
+    {
+        $softDeletedUser = User::factory()->create([
+            'email' => 'alumni.terhapus@skariga.sch.id',
+            'role' => 'siswa',
+            'deleted_at' => now(),
+        ]);
+
+        $payload = [
+            'user_id' => null,
+            'nis' => '212299777',
+            'email' => 'alumni.terhapus@skariga.sch.id',
+            'full_name' => 'Alumni Aktif Kembali',
+            'major_id' => $this->rplMajor->id,
+            'class_id' => $this->classType->id,
+            'graduation_year' => 2025,
+        ];
+
+        $response = $this->actingAs($this->adminUser, 'sanctum')
+            ->postJson('/api/admin/alumni', $payload);
+
+        $response->assertCreated();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $softDeletedUser->id,
+            'email' => 'alumni.terhapus@skariga.sch.id',
+            'role' => 'alumni',
+            'deleted_at' => null,
+        ]);
+    }
+
+    public function test_show_endpoint_loads_portfolios_and_root_attributes(): void
+    {
+        $alumniUser = User::factory()->create([
+            'role' => 'alumni',
+            'full_name' => 'Alumni Berportofolio',
+            'email' => 'berportofolio@skariga.sch.id',
+            'phone' => '089912345678',
+            'is_active' => true,
+        ]);
+
+        $alumni = StudentAlumni::create([
+            'user_id' => $alumniUser->id,
+            'nis' => '212200555',
+            'major_id' => $this->rplMajor->id,
+            'class_id' => $this->classType->id,
+            'graduation_year' => 2024,
+            'is_active' => true,
+        ]);
+
+        $portfolioCategory = StandardType::byCategory('portfolio_type')->firstOrFail();
+
+        \App\Models\StudentPortfolio::create([
+            'student_alumni_id' => $alumni->id,
+            'category_id' => $portfolioCategory->id,
+            'title' => 'Sertifikat Magang Fullstack',
+            'description' => 'Magang di software house',
+            'file_path' => 'portfolios/sertifikat.pdf',
+        ]);
+
+        $response = $this->actingAs($this->adminUser, 'sanctum')
+            ->getJson("/api/admin/alumni/{$alumni->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('data.fullName', 'Alumni Berportofolio')
+            ->assertJsonPath('data.email', 'berportofolio@skariga.sch.id')
+            ->assertJsonPath('data.phone', '089912345678')
+            ->assertJsonStructure([
+                'data' => [
+                    'portfolios' => [
+                        '*' => [
+                            'id',
+                            'title',
+                            'category' => ['id', 'code', 'name'],
+                        ],
+                    ],
+                ],
+            ]);
+    }
+
+    public function test_can_update_alumni_profile_and_sync_email_and_company_name(): void
+    {
+        $alumniUser = User::factory()->create([
+            'role' => 'alumni',
+            'full_name' => 'Nama Lama',
+            'email' => 'lama@skariga.sch.id',
+            'phone' => '081234567890',
+            'is_active' => true,
+        ]);
+
+        $alumni = StudentAlumni::create([
+            'user_id' => $alumniUser->id,
+            'nis' => '212200666',
+            'major_id' => $this->rplMajor->id,
+            'class_id' => $this->classType->id,
+            'graduation_year' => 2024,
+            'is_active' => true,
+        ]);
+
+        $payload = [
+            'full_name' => 'Nama Baru Alumni',
+            'email' => 'baru@skariga.sch.id',
+            'phone' => '089988776655',
+            'company_name' => 'PT Perusahaan Terupdate',
+            'graduation_year' => 2024,
+            'is_active' => false,
+        ];
+
+        $response = $this->actingAs($this->adminUser, 'sanctum')
+            ->putJson("/api/admin/alumni/{$alumni->id}", $payload);
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $alumniUser->id,
+            'full_name' => 'Nama Baru Alumni',
+            'email' => 'baru@skariga.sch.id',
+            'phone' => '089988776655',
+            'is_active' => false,
+        ]);
+
+        $this->assertDatabaseHas('companies', [
+            'name' => 'PT Perusahaan Terupdate',
         ]);
     }
 }

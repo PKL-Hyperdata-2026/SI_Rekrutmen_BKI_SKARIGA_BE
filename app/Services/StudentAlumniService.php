@@ -74,12 +74,20 @@ class StudentAlumniService
 
     public function show(StudentAlumni $alumni): StudentAlumni
     {
-        return $alumni->load(['user', 'major', 'class', 'employmentStatus', 'currentCompany']);
+        return $alumni->load(['user', 'major', 'class', 'employmentStatus', 'currentCompany', 'portfolios.category']);
     }
 
     public function create(array $data, ?int $actorId = null): StudentAlumni
     {
         return DB::transaction(function () use ($data, $actorId) {
+            if (empty($data['current_company_id']) && ! empty($data['company_name'])) {
+                $company = Company::firstOrCreate(
+                    ['name' => trim((string) $data['company_name'])],
+                    ['is_active' => true, 'created_by' => $actorId, 'updated_by' => $actorId]
+                );
+                $data['current_company_id'] = $company->id;
+            }
+
             if (! empty($data['user_id'])) {
                 $user = User::where('id', $data['user_id'])->first();
 
@@ -101,7 +109,7 @@ class StudentAlumniService
                     $existing->restore();
                 }
 
-                $profileData = Arr::except($data, ['full_name', 'phone', 'email']);
+                $profileData = Arr::except($data, ['full_name', 'phone', 'email', 'company_name']);
                 $profileData['created_by'] = $actorId;
                 $profileData['updated_by'] = $actorId;
 
@@ -115,24 +123,39 @@ class StudentAlumniService
 
                 $this->syncUser($user, $data, true);
 
-                return $alumni->load(['user', 'major', 'class', 'employmentStatus', 'currentCompany']);
+                return $alumni->load(['user', 'major', 'class', 'employmentStatus', 'currentCompany', 'portfolios.category']);
             }
 
             // Manual alumni creation without existing user account
             $email = $data['email'] ?? (($data['nis'] ?? 'alumni_'.uniqid()) . '@alumni.skariga.sch.id');
 
-            $user = User::create([
-                'full_name' => $data['full_name'],
-                'email' => $email,
-                'phone' => $data['phone'] ?? null,
-                'password' => bcrypt($data['nis'] ?? 'alumni123'),
-                'role' => 'alumni',
-                'is_active' => true,
-                'created_by' => $actorId,
-                'updated_by' => $actorId,
-            ]);
+            $existingUser = User::withTrashed()->where('email', $email)->first();
+            if ($existingUser) {
+                if ($existingUser->trashed()) {
+                    $existingUser->restore();
+                }
+                $existingUser->update([
+                    'full_name' => $data['full_name'],
+                    'phone' => $data['phone'] ?? $existingUser->phone,
+                    'role' => 'alumni',
+                    'is_active' => true,
+                    'updated_by' => $actorId,
+                ]);
+                $user = $existingUser;
+            } else {
+                $user = User::create([
+                    'full_name' => $data['full_name'],
+                    'email' => $email,
+                    'phone' => $data['phone'] ?? null,
+                    'password' => bcrypt($data['nis'] ?? 'alumni123'),
+                    'role' => 'alumni',
+                    'is_active' => true,
+                    'created_by' => $actorId,
+                    'updated_by' => $actorId,
+                ]);
+            }
 
-            $profileData = Arr::except($data, ['full_name', 'phone', 'email']);
+            $profileData = Arr::except($data, ['full_name', 'phone', 'email', 'company_name']);
             $profileData['user_id'] = $user->id;
             $profileData['is_active'] = $data['is_active'] ?? true;
             $profileData['created_by'] = $actorId;
@@ -152,14 +175,22 @@ class StudentAlumniService
                 $alumni = StudentAlumni::create($profileData);
             }
 
-            return $alumni->load(['user', 'major', 'class', 'employmentStatus', 'currentCompany']);
+            return $alumni->load(['user', 'major', 'class', 'employmentStatus', 'currentCompany', 'portfolios.category']);
         });
     }
 
     public function update(StudentAlumni $alumni, array $data, ?int $actorId = null): StudentAlumni
     {
         return DB::transaction(function () use ($alumni, $data, $actorId) {
-            $profileData = Arr::except($data, ['full_name', 'phone']);
+            if (empty($data['current_company_id']) && ! empty($data['company_name'])) {
+                $company = Company::firstOrCreate(
+                    ['name' => trim((string) $data['company_name'])],
+                    ['is_active' => true, 'created_by' => $actorId, 'updated_by' => $actorId]
+                );
+                $data['current_company_id'] = $company->id;
+            }
+
+            $profileData = Arr::except($data, ['full_name', 'phone', 'email', 'company_name']);
             $profileData['updated_by'] = $actorId;
 
             $alumni->update($profileData);
@@ -170,7 +201,7 @@ class StudentAlumniService
                 $this->syncUser($user, $data, $alumni->graduation_year !== null);
             }
 
-            return $alumni->fresh(['user', 'major', 'class', 'employmentStatus', 'currentCompany']);
+            return $alumni->fresh(['user', 'major', 'class', 'employmentStatus', 'currentCompany', 'portfolios.category']);
         });
     }
 
@@ -211,6 +242,11 @@ class StudentAlumniService
             ->orderBy('sort_order')
             ->get(['id', 'code', 'name']);
 
+        $portfolioTypes = StandardType::byCategory('portfolio_type')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'code', 'name']);
+
         $currentYear = (int) date('Y');
         $graduationYears = range($currentYear - 10, $currentYear);
 
@@ -236,6 +272,7 @@ class StudentAlumniService
             'majors' => $majors,
             'classes' => $classes,
             'employment_statuses' => $employmentStatuses,
+            'portfolio_types' => $portfolioTypes,
             'graduation_years' => $graduationYears,
             'eligible_students' => $eligibleStudents,
         ];
@@ -311,8 +348,16 @@ class StudentAlumniService
             $userUpdate['full_name'] = $data['full_name'];
         }
 
+        if (array_key_exists('email', $data) && ! empty($data['email'])) {
+            $userUpdate['email'] = $data['email'];
+        }
+
         if (array_key_exists('phone', $data) && $data['phone'] !== null) {
             $userUpdate['phone'] = $data['phone'];
+        }
+
+        if (array_key_exists('is_active', $data) && $data['is_active'] !== null) {
+            $userUpdate['is_active'] = (bool) $data['is_active'];
         }
 
         if ($isAlumni) {

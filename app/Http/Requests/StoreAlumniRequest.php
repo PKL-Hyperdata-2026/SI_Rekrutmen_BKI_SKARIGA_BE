@@ -46,14 +46,17 @@ class StoreAlumniRequest extends FormRequest
             'graduation_year' => ['required', 'integer', 'between:1900,2100'],
             'employment_status_id' => ['nullable', 'integer', 'exists:standard_types,id'],
             'current_company_id' => ['nullable', 'integer', 'exists:companies,id'],
+            'company_name' => ['nullable', 'string', 'max:255'],
             'current_position' => ['nullable', 'string', 'max:255'],
             'starting_salary' => ['nullable', 'numeric', 'min:0', 'max:9999999999999.99'],
             'waiting_time_months' => ['nullable', 'integer', 'min:0'],
             'social_media' => ['nullable', 'array'],
+            'social_media.profile_url' => ['nullable', 'url'],
             'social_media.linkedin' => ['nullable', 'url'],
             'social_media.github' => ['nullable', 'url'],
             'social_media.instagram' => ['nullable', 'url'],
             'social_media.tiktok' => ['nullable', 'url'],
+            'is_active' => ['nullable', 'boolean'],
         ];
     }
 

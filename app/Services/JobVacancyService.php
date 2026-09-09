@@ -267,6 +267,7 @@ class JobVacancyService
                     'slug' => $vacancy->slug,
                     'company_name' => $companyName,
                     'position' => $vacancy->position,
+                    'quota' => $vacancy->quota,
                 ]
             );
         }

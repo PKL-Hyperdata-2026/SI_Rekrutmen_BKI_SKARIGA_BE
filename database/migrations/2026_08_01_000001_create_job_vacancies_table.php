@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// lowongan pekerjaan
 return new class extends Migration
 {
     public function up(): void
@@ -15,7 +16,7 @@ return new class extends Migration
             $table->foreignId('company_id')->constrained('companies')->restrictOnDelete();
 
             // Lookup Standard Types
-            $table->foreignId('job_type_id')->nullable()->constrained('standard_types')->nullOnDelete(); 
+            $table->foreignId('job_type_id')->nullable()->constrained('standard_types')->nullOnDelete();
             $table->foreignId('status_id')->nullable()->constrained('standard_types')->nullOnDelete();
             $table->foreignId('target_applicant_id')->nullable()->constrained('standard_types')->nullOnDelete();
 
@@ -28,7 +29,7 @@ return new class extends Migration
             $table->integer('quota')->default(1);
             $table->date('deadline')->nullable();
             $table->string('work_location')->nullable();
-            
+
             // Gaji (Range)
             $table->decimal('min_salary', 15, 2)->nullable();
             $table->decimal('max_salary', 15, 2)->nullable();

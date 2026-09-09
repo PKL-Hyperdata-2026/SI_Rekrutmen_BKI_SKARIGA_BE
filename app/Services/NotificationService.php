@@ -5,18 +5,28 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Events\NotificationSent;
+use App\Mail\GenericMail;
+use App\Mail\JobVacancyNotificationMail;
 use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Throwable;
 
 class NotificationService
 {
-    public function send(string $userId, string $type, string $title, string $message, array $data = []): bool
-    {
+    public function send(
+        string|int $userId,
+        string $type,
+        string $title,
+        string $message,
+        array $data = [],
+        bool $sendEmail = true
+    ): bool {
         try {
             $notification = Notification::create([
-                'id' => Str::uuid(),
+                'id' => (string) Str::uuid(),
                 'user_id' => $userId,
                 'type' => $type,
                 'title' => $title,
@@ -24,7 +34,22 @@ class NotificationService
                 'data' => $data,
             ]);
 
-            event(new NotificationSent($userId, $notification->toArray()));
+            event(new NotificationSent((string) $userId, $notification->toArray()));
+
+            if ($sendEmail) {
+                try {
+                    $user = User::find($userId);
+                    if ($user && ! empty($user->email)) {
+                        $mailable = $type === 'job_vacancy'
+                            ? new JobVacancyNotificationMail($user, $title, $message, $data)
+                            : new GenericMail($title, $message);
+
+                        Mail::to($user->email)->queue($mailable);
+                    }
+                } catch (Throwable $mailEx) {
+                    Log::error("Failed to queue notification email for user ID: $userId | " . $mailEx->getMessage());
+                }
+            }
 
             return true;
         } catch (Throwable $th) {
@@ -34,8 +59,14 @@ class NotificationService
         }
     }
 
-    public function sendMultiple(array $userIds, string $type, string $title, string $message, array $data = []): void
-    {
+    public function sendMultiple(
+        array $userIds,
+        string $type,
+        string $title,
+        string $message,
+        array $data = [],
+        bool $sendEmail = true
+    ): void {
         if (empty($userIds)) {
             return;
         }
@@ -80,6 +111,27 @@ class NotificationService
             if ($hasBroadcaster) {
                 foreach ($broadcastPayloads as $payload) {
                     event(new NotificationSent($payload['userId'], $payload['data']));
+                }
+            }
+
+            if ($sendEmail) {
+                try {
+                    $users = User::whereIn('id', $userIds)
+                        ->where('is_active', true)
+                        ->whereNotNull('email')
+                        ->get(['id', 'full_name', 'email']);
+
+                    foreach ($users as $user) {
+                        if (! empty($user->email)) {
+                            $mailable = $type === 'job_vacancy'
+                                ? new JobVacancyNotificationMail($user, $title, $message, $data)
+                                : new GenericMail($title, $message);
+
+                            Mail::to($user->email)->queue($mailable);
+                        }
+                    }
+                } catch (Throwable $mailEx) {
+                    Log::error("Failed to queue notification emails: " . $mailEx->getMessage());
                 }
             }
         } catch (Throwable $th) {

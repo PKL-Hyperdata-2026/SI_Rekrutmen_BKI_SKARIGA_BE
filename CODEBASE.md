@@ -1,6 +1,6 @@
 # Backend Codebase Reference (Laravel 13 API)
 
-Deep, factual reference for AI agents and developers. **Last verified: 2026-08-20.**
+Deep, factual reference for AI agents and developers. **Last verified: 2026-09-09.**
 If you modify code that alters any architecture, models, routes, or services documented here, update this file in the same change.
 Operational instructions & boundaries: [`AGENTS.md`](./AGENTS.md).
 
@@ -54,7 +54,8 @@ backend/app/
 ├── Models/                                    # Eloquent ORM entity models
 │   ├── User.php                               # Application users with role association
 │   ├── JobVacancy.php                         # Job openings posted by companies/BKI
-│   ├── JobApplication.php                     # Student/alumni job applications
+│   ├── JobApplication.php                     # Student/alumni job applications (hasOne SelectionResult)
+│   ├── SelectionResult.php                    # HRD input hasil seleksi per lamaran (draft/published, skor, decision)
 │   ├── SelectionStage.php                     # Recruitment pipeline stages (Admin/HRD)
 │   ├── ApplicationStageHistory.php            # Audit trail of applicant stage progression
 │   ├── JobPlacement.php                       # Accepted student work placement records
@@ -93,7 +94,8 @@ backend/app/
 - **`users`**: Base authentication table (`id`, `name`, `email`, `password`, `role`). Roles: `admin`, `hrd`, `siswa`, `alumni`.
 - **`student_alumni`**: Extended profile linked to `users.id`. Contains NISN, graduation year, major ID (`majors.id`), address, CV file path.
 - **`job_vacancies`**: Job postings linked to `companies.id`. Contains title, description, requirements, start/end dates, quota, status (`draft`, `published`, `closed`).
-- **`job_applications`**: Junction between `job_vacancies.id` and `student_alumni.id`. Tracks overall status (`pending`, `in_review`, `accepted`, `rejected`).
+- **`job_applications`**: Junction between `job_vacancies.id` and `student_alumni.id`. Tracks overall status (`pending`, `in_review`, `accepted`, `rejected`). HasOne `selection_results`.
+- **`selection_results`**: HRD input hasil seleksi per `job_applications.id` (`job_application_id` FK cascadeOnDelete). Columns: `admin_selection_status` enum(`lolos`,`tidak_lolos`) default `lolos`, `psychotest_score`/`interview_score`/`mcu_score`/`final_score` decimal(5,2) nullable, `decision` enum(`diterima`,`tidak_diterima`,`cadangan`,`pending`) default `pending`, `status` enum(`draft`,`published`) default `draft`, `notes` text nullable, `created_by`/`updated_by` FK `users.id` nullOnDelete, `timestamps`. Model `SelectionResult` with `#[Fillable]`, `decimal:2` casts, relations `jobApplication()` BelongsTo, `createdBy()`/`updatedBy()` BelongsTo; inverse `JobApplication::selectionResult()` HasOne.
 - **`selection_stages` & `application_stage_histories`**: Granular tracking of test stages (administrative, psychotest, technical interview, medical).
 - **`job_placements`**: Records work placement of students/alumni (`student_alumni_id`, `company_id`, `job_application_id`, `placement_status_id`, `accepted_date`, `start_date`, `notes`).
 - **`tracer_studies`**: Tercatat relasi ke `students_alumni.id`, menggunakan enum `career_status` (`bekerja`, `wirausaha`, `lanjut_studi`, `mencari_pekerjaan`), dengan atribut kondisional per status (bekerja, wirausaha, lanjut studi). Detail kolom: `bekerja` (`company_name`, `job_title`, `minimum_salary`, `maximum_salary`, `waiting_period`, `start_date`), `wirausaha` (`business_name`, `business_address`, `instagram_handle`, `average_income`, `business_field`, `business_start_date`), `lanjut_studi` (`university_name`, `study_program`), dan `mencari_pekerjaan` (tanpa atribut tambahan — semua kolom detail di-null-kan). Mendukung `created_by`/`updated_by`/`deleted_by` + `softDeletes` dan `DB::transaction` dengan reset null data lama saat ganti status.

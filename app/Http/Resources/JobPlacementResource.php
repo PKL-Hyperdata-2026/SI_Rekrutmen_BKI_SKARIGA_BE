@@ -11,6 +11,18 @@ class JobPlacementResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $evaluations = is_array($this->evaluations) ? $this->evaluations : [];
+        $eval3 = $evaluations['3'] ?? [];
+        $eval6 = $evaluations['6'] ?? [];
+        $eval12 = $evaluations['12'] ?? [];
+
+        $status3 = $this->getEvaluationStatusForPeriod(3);
+        $status6 = $this->getEvaluationStatusForPeriod(6);
+        $status12 = $this->getEvaluationStatusForPeriod(12);
+
+        $notes6 = $status6 === '-' ? null : ($eval6['notes'] ?? null);
+        $notes12 = $status12 === '-' ? null : ($eval12['notes'] ?? null);
+
         return [
             'id' => encrypt($this->id),
             'jobApplicationId' => $this->job_application_id ? encrypt($this->job_application_id) : null,
@@ -45,6 +57,8 @@ class JobPlacementResource extends JsonResource
                         'phone' => $this->studentAlumni->user->phone,
                     ] : null,
                     'major' => $this->studentAlumni->relationLoaded('major') ? $this->studentAlumni->major?->name : null,
+                    'graduationYear' => $this->studentAlumni->graduation_year,
+                    'currentPosition' => $this->studentAlumni->current_position,
                 ];
             }),
             'companyId' => $this->company_id ? encrypt($this->company_id) : null,
@@ -72,8 +86,19 @@ class JobPlacementResource extends JsonResource
                     'metadata' => $this->placementStatus->metadata,
                 ];
             }),
+            'position' => $this->jobApplication?->jobVacancy?->position
+                ?? $this->jobApplication?->jobVacancy?->title
+                ?? $this->studentAlumni?->current_position
+                ?? '-',
             'acceptedDate' => $this->accepted_date?->format('Y-m-d'),
             'startDate' => $this->start_date?->format('Y-m-d'),
+            'status3Months' => $status3,
+            'status6Months' => $status6,
+            'status12Months' => $status12,
+            'notes3Months' => $eval3['notes'] ?? null,
+            'notes6Months' => $notes6,
+            'notes12Months' => $notes12,
+            'evaluations' => $this->evaluations,
             'notes' => $this->notes,
             'createdAt' => $this->created_at?->toIso8601String(),
             'updatedAt' => $this->updated_at?->toIso8601String(),

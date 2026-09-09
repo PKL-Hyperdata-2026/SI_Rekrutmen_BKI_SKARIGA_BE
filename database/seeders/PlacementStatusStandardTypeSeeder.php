@@ -19,10 +19,20 @@ class PlacementStatusStandardTypeSeeder extends Seeder
         );
 
         $statuses = [
-            ['code' => 'active', 'name' => 'Aktif (Bertahan)', 'metadata' => ['badge_color' => 'green', 'icon' => 'user-check'], 'sort_order' => 1],
-            ['code' => 'resigned', 'name' => 'Resigned', 'metadata' => ['badge_color' => 'red', 'icon' => 'log-out'], 'sort_order' => 2],
-            ['code' => 'contract_end', 'name' => 'Kontrak Selesai', 'metadata' => ['badge_color' => 'gray', 'icon' => 'file-check'], 'sort_order' => 3],
+            ['code' => 'active', 'name' => 'Masih Bekerja / Aktif', 'metadata' => ['badge_color' => 'green', 'icon' => 'user-check'], 'sort_order' => 1],
+            ['code' => 'resigned', 'name' => 'Resign / Kontrak Habis', 'metadata' => ['badge_color' => 'red', 'icon' => 'log-out'], 'sort_order' => 2],
+            ['code' => 'moved', 'name' => 'Pindah Perusahaan Lain', 'metadata' => ['badge_color' => 'blue', 'icon' => 'building-2'], 'sort_order' => 3],
         ];
+
+        $contractEnd = StandardType::where('category_id', $statusCategory->id)->where('code', 'contract_end')->first();
+        if ($contractEnd) {
+            $contractEnd->update([
+                'code' => 'moved',
+                'name' => 'Pindah Perusahaan Lain',
+                'metadata' => ['badge_color' => 'blue', 'icon' => 'building-2'],
+                'sort_order' => 3,
+            ]);
+        }
 
         foreach ($statuses as $item) {
             StandardType::updateOrCreate(

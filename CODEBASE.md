@@ -39,7 +39,7 @@ backend/app/
 │   ├── Controllers/
 │   │   ├── Api/
 │   │   │   ├── PortfolioController.php         # Self-service E-Portfolio (role: siswa & alumni)
-│   │   │   ├── JobPlacementController.php     # Admin CRUD data penempatan kerja
+│   │   │   ├── JobPlacementController.php     # HRD CRUD data penempatan kerja
 │   │   │   ├── JobVacancyController.php       # Job vacancies CRUD & publishing
 │   │   │   ├── StudentAlumniController.php    # Admin CRUD data alumni (upgrade akun siswa)
 │   │   │   ├── StudentController.php          # Admin CRUD data siswa kelas 12 aktif & portfolio
@@ -137,12 +137,6 @@ backend/app/
   - `POST /api/admin/alumni` — Tambah alumni: upgrade akun siswa (`user_id` wajib, role `siswa`), isi data alumni, set `users.role = alumni`. Tanpa pembuatan akun baru / email. Dalam `DB::transaction()`.
   - `PUT|PATCH /api/admin/alumni/{alumni}` — Update data alumni; sinkron `users.full_name`/`phone`; role mengikuti `graduation_year` (terisi → `alumni`, kosong → `siswa`). Dalam `DB::transaction()`.
   - `DELETE /api/admin/alumni/{alumni}` — Soft delete + `deleted_by` + set `users.is_active = false`. Dalam `DB::transaction()`.
-  - `GET /api/admin/job-placements` — List penempatan kerja + pagination (`per_page`), search (nama/NIS/perusahaan/notes), filter (`student_alumni_id`, `company_id`, `placement_status_id`, `job_application_id`, `year`), sort (`sort_by`, `sort_dir`).
-  - `GET /api/admin/job-placements/options` — Dropdown opsi: `companies`, `placement_statuses`, `students_alumni`.
-  - `GET /api/admin/job-placements/{jobPlacement}` — Detail penempatan kerja (dengan relasi studentAlumni, company, placementStatus, jobApplication).
-  - `POST /api/admin/job-placements` — Tambah penempatan kerja. Dalam `DB::transaction()`.
-  - `PUT|PATCH /api/admin/job-placements/{jobPlacement}` — Update data penempatan kerja. Dalam `DB::transaction()`.
-  - `DELETE /api/admin/job-placements/{jobPlacement}` — Soft delete + `deleted_by`. Dalam `DB::transaction()`.
   - `GET /api/admin/companies` — List perusahaan mitra + pagination (`per_page`), search (nama/email/PIC/phone/industri), filter (`industry_id`, `is_active`), sort (`sort_by`, `sort_dir`).
   - `GET /api/admin/companies/options` — Dropdown opsi: `industries` (kategori `company_industry`).
   - `GET /api/admin/companies/{company}` — Detail perusahaan (dengan relasi industry/createdBy/updatedBy).
@@ -150,7 +144,14 @@ backend/app/
   - `PUT|PATCH /api/admin/companies/{company}` — Update data perusahaan.
   - `DELETE /api/admin/companies/{company}` — Soft delete + `deleted_by`.
   - `PATCH /api/admin/companies/{company}/toggle-active` — Toggle status aktif/non-aktif (status MoU BKK).
-- `/api/hrd/*` (`role:hrd`) — Company profile, vacancy management, candidate selection pipeline.
+- `/api/hrd/*` (`role:hrd`) — Company profile, vacancy management, candidate selection pipeline, job placements.
+  - `GET /api/hrd/job-placements` — List penempatan kerja perusahaan HRD + pagination (`per_page`), search (nama/NIS/notes), filter (`student_alumni_id`, `placement_status_id`, `job_application_id`, `year`), sort (`sort_by`, `sort_dir`).
+  - `GET /api/hrd/job-placements/options` — Dropdown opsi: `companies`, `placement_statuses`, `students_alumni`.
+  - `GET /api/hrd/job-placements/metrics` — Metrik evaluasi penempatan kerja (total, 3 bulan, 6 bulan, 12 bulan).
+  - `GET /api/hrd/job-placements/{jobPlacement}` — Detail penempatan kerja (dengan relasi studentAlumni, company, placementStatus, jobApplication).
+  - `POST /api/hrd/job-placements` — Tambah penempatan kerja. Dalam `DB::transaction()`.
+  - `PUT|PATCH /api/hrd/job-placements/{jobPlacement}` — Update data penempatan kerja. Dalam `DB::transaction()`.
+  - `DELETE /api/hrd/job-placements/{jobPlacement}` — Soft delete + `deleted_by`. Dalam `DB::transaction()`.
 - `/api/siswa/*` (`role:siswa`) — Self-service E-Portfolio siswa (profil + dokumen).
   - `GET /api/siswa/portfolio/profile` — Profil + portofolio siswa yang login.
   - `GET /api/siswa/portfolio/options` — Dropdown form: `majors`, `classes`, `employment_statuses`, `portfolio_types`, `graduation_years`.

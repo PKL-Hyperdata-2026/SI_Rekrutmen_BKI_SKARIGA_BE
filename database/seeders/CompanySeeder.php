@@ -18,8 +18,21 @@ class CompanySeeder extends Seeder
     public function run(): void
     {
         $admin = User::where('role', 'admin')->first();
+        $hrd = User::where('role', 'hrd')->where('email', 'hrd@email.com')->first();
 
         $companies = [
+            [
+                'name' => 'PT Kejayaan Terraloka',
+                'industry_code' => 'construction_property',
+                'address' => 'Jl. Mayjen Sungkono No. 88, Surabaya, Jawa Timur 60225',
+                'email' => 'hrd@kejayaan-terraloka.com',
+                'phone' => '081234567890',
+                'website' => 'https://www.kejayaan-terraloka.com',
+                'pic_name' => 'HRD PT Kejayaan Terraloka',
+                'pic_contact' => '081234567890',
+                'is_active' => true,
+                'user_id' => $hrd?->id,
+            ],
             [
                 'name' => 'PT Teknologi Maju Indonesia',
                 'industry_code' => 'software_house_it',
@@ -137,10 +150,12 @@ class CompanySeeder extends Seeder
                 ->where('code', $company['industry_code'])
                 ->first();
 
+            $userId = $company['user_id'] ?? $admin?->id;
+
             Company::firstOrCreate(
                 ['email' => $company['email']],
                 [
-                    'user_id' => $admin?->id,
+                    'user_id' => $userId,
                     'industry_id' => $industry?->id,
                     'name' => $company['name'],
                     'address' => $company['address'],
@@ -149,7 +164,7 @@ class CompanySeeder extends Seeder
                     'pic_name' => $company['pic_name'],
                     'pic_contact' => $company['pic_contact'],
                     'is_active' => $company['is_active'],
-                    'created_by' => $admin?->id,
+                    'created_by' => $userId,
                 ]
             );
         }

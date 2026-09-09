@@ -46,7 +46,7 @@ class AuthController extends Controller
         return $this->response
             ->message('Login success')
             ->with('access_token', $token)
-            ->with('user', new UserResource($user))
+            ->with('user', new UserResource($user->loadMissing('company')))
             ->code(200);
     }
 
@@ -67,7 +67,7 @@ class AuthController extends Controller
     public function me(): Responsable
     {
         return $this->response
-            ->with('user', new UserResource(Auth::user()))
+            ->with('user', new UserResource(Auth::user()?->loadMissing('company')))
             ->code(200);
     }
 

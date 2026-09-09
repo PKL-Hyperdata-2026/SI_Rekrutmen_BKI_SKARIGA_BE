@@ -52,9 +52,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/alumni/options', [StudentAlumniController::class, 'options']); // Ambil opsi dropdown form alumni (Jurusan, Kelas, Status, Perusahaan, Tahun Lulus)
         Route::apiResource('alumni', StudentAlumniController::class)
             ->parameters(['alumni' => 'alumni']); // CRUD lengkap data alumni (Index, Store, Show, Update, Delete)
-        Route::get('/job-placements/options', [JobPlacementController::class, 'options']); // Ambil opsi dropdown form penempatan kerja
-        Route::apiResource('job-placements', JobPlacementController::class)
-            ->parameters(['job-placements' => 'jobPlacement']); // CRUD lengkap penempatan kerja (Index, Store, Show, Update, Delete)
         Route::get('/departments/options', [DepartmentController::class, 'options']);
         Route::patch('/departments/{department}/toggle-active', [DepartmentController::class, 'toggleActive']);
         Route::apiResource('departments', DepartmentController::class);
@@ -64,6 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // TODO: API Admin lainnya
     });
 
+
     Route::middleware('role:superadmin')->prefix('admin')->group(function () {
         Route::get('/users/options', [UserController::class, 'options']);
         Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive']);
@@ -72,7 +70,10 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:hrd')->prefix('hrd')->group(function () {
-        // TODO: API untuk HRD
+        Route::get('/job-placements/metrics', [JobPlacementController::class, 'metrics']);
+        Route::get('/job-placements/options', [JobPlacementController::class, 'options']);
+        Route::apiResource('job-placements', JobPlacementController::class)
+            ->parameters(['job-placements' => 'jobPlacement']);
     });
 
     // Self-Service Siswa & Alumni Portfolio

@@ -11,8 +11,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-use function PHPUnit\Framework\isNull;
-
 class NotificationController extends Controller
 {
     public function __construct(
@@ -48,7 +46,7 @@ class NotificationController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
-        if (isNull($notification->read_at)) {
+        if (is_null($notification->read_at)) {
             $notification->update(['read_at' => now()]);
         }
 

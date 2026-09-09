@@ -31,21 +31,28 @@ class DevCommand extends Command
         // list command
         $server = new Process(['php', 'artisan', 'serve']);
         $queue = new Process(['php', 'artisan', 'queue:work']);
+        $reverb = new Process(['php', 'artisan', 'reverb:start']);
 
         $server->setTimeout(null);
         $queue->setTimeout(null);
+        $reverb->setTimeout(null);
 
         //execvute
         $server->start();
         $queue->start();
+        $reverb->start();
 
-        while ($server->isRunning() || $queue->isRunning()) {
+        while ($server->isRunning() || $queue->isRunning() || $reverb->isRunning()) {
             if ($serverOutput = $server->getIncrementalOutput()) {
                 $this->output->write('<fg=cyan>[SERVE]</fg=cyan> ' . $serverOutput);
             }
 
             if ($queueOutput = $queue->getIncrementalOutput()) {
                 $this->output->write('<fg=yellow>[QUEUE]</fg=yellow> ' . $queueOutput);
+            }
+
+            if ($reverbOutput = $reverb->getIncrementalOutput()) {
+                $this->output->write('<fg=magenta>[REVERB]</fg=magenta> ' . $reverbOutput);
             }
 
             usleep(100000);

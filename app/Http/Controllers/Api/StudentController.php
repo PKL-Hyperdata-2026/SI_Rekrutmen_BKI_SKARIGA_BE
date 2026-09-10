@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SelectOptionsRequest;
 use App\Http\Requests\StoreStudentPortfolioRequest;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
+use App\Http\Resources\SelectOptionResource;
 use App\Http\Resources\StudentResource;
 use App\Models\StudentAlumni;
 use App\Models\StudentPortfolio;
@@ -23,7 +25,7 @@ class StudentController extends Controller
         protected ResponseService $response
     ) {}
 
-    public function index(Request $request): Responsable
+    public function index(SelectOptionsRequest $request): Responsable
     {
         $filters = $request->only([
             'search',
@@ -34,10 +36,18 @@ class StudentController extends Controller
             'is_active',
             'sort_by',
             'sort_dir',
+            'for_select',
+            'eligible',
         ]);
 
         $perPage = $request->integer('per_page', 15);
         $students = $this->studentService->getStudents($filters, $perPage);
+
+        if ($request->boolean('for_select')) {
+            return $this->response
+                ->message('Opsi data siswa berhasil diambil.')
+                ->data(SelectOptionResource::collection($students)->response()->getData(true));
+        }
 
         return $this->response
             ->message('Daftar data siswa berhasil diambil.')

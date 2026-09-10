@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SelectOptionsRequest;
 use App\Http\Requests\StoreJobPlacementRequest;
 use App\Http\Requests\UpdateJobPlacementRequest;
 use App\Http\Resources\JobPlacementResource;
+use App\Http\Resources\SelectOptionResource;
 use App\Models\JobPlacement;
 use App\Services\JobPlacementService;
 use App\Services\ResponseService;
@@ -78,6 +80,18 @@ class JobPlacementController extends Controller
         return $this->response
             ->message('Opsi formulir penempatan kerja berhasil diambil.')
             ->data(encrypt_recursive($options));
+    }
+
+    public function studentsAlumni(SelectOptionsRequest $request): Responsable
+    {
+        $students = $this->jobPlacementService->getStudentsAlumniSelect(
+            $request->validated('search'),
+            $request->integer('per_page', 20)
+        );
+
+        return $this->response
+            ->message('Opsi data pelamar berhasil diambil.')
+            ->data(SelectOptionResource::collection($students)->response()->getData(true));
     }
 
     public function show(Request $request, JobPlacement $jobPlacement): Responsable

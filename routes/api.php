@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\PortfolioController;
 use App\Http\Controllers\Api\StudentAlumniController;
 use App\Http\Controllers\Api\StudentController;
+use App\Http\Controllers\Api\StandardTypeController;
 use App\Http\Controllers\Api\StudentJobApplicationController;
 use App\Http\Controllers\Api\TracerStudyController;
 use App\Http\Controllers\Api\UserController;
@@ -58,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/majors/options', [MajorController::class, 'options']);
         Route::patch('/majors/{major}/toggle-active', [MajorController::class, 'toggleActive']);
         Route::apiResource('majors', MajorController::class);
+        Route::get('/standard-types', [StandardTypeController::class, 'index']);
         // TODO: API Admin lainnya
     });
 
@@ -72,6 +74,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:hrd')->prefix('hrd')->group(function () {
         Route::get('/job-placements/metrics', [JobPlacementController::class, 'metrics']);
         Route::get('/job-placements/options', [JobPlacementController::class, 'options']);
+        Route::get('/students-alumni', [JobPlacementController::class, 'studentsAlumni']);
         Route::apiResource('job-placements', JobPlacementController::class)
             ->parameters(['job-placements' => 'jobPlacement']);
     });

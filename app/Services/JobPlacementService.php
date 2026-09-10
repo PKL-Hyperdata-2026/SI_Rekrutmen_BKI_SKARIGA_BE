@@ -285,6 +285,53 @@ class JobPlacementService
         ];
     }
 
+    /**
+     * Paginated lightweight student/alumni options for the HRD async select.
+     *
+     * @return LengthAwarePaginator<int, array{value: mixed, label: string, extra: array<string, mixed>}>
+     */
+    public function getStudentsAlumniSelect(?string $search = null, int $perPage = 20): LengthAwarePaginator
+    {
+        $query = StudentAlumni::query()
+            ->with([
+                'user:id,full_name',
+                'major:id,name',
+            ])
+            ->where('students_alumni.is_active', true)
+            ->select('students_alumni.*');
+
+        if ($search !== null && $search !== '') {
+            $query->where(function (Builder $q) use ($search) {
+                $q->where('students_alumni.nis', 'like', "%{$search}%")
+                    ->orWhereHas('user', function (Builder $userQuery) use ($search) {
+                        $userQuery->where('full_name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $query->join('users', 'users.id', '=', 'students_alumni.user_id')
+            ->orderBy('users.full_name');
+
+        return $query->paginate($perPage)->through(
+            function (StudentAlumni $item): array {
+                $fullName = $item->user?->full_name;
+                $majorName = $item->major?->name;
+
+                return [
+                    'value' => $item->id,
+                    'label' => $fullName
+                        ? ($majorName ? "{$fullName} ({$majorName})" : $fullName)
+                        : "Pelamar #{$item->id}",
+                    'extra' => [
+                        'nis' => $item->nis,
+                        'fullName' => $fullName,
+                        'majorName' => $majorName,
+                    ],
+                ];
+            }
+        );
+    }
+
     public function getMetrics(array $filters = []): array
     {
         $baseQuery = JobPlacement::query();

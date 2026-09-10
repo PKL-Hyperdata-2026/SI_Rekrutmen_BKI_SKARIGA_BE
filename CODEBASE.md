@@ -1,6 +1,6 @@
 # Backend Codebase Reference (Laravel 13 API)
 
-Deep, factual reference for AI agents and developers. **Last verified: 2026-08-20.**
+Deep, factual reference for AI agents and developers. **Last verified: 2026-09-10.**
 If you modify code that alters any architecture, models, routes, or services documented here, update this file in the same change.
 Operational instructions & boundaries: [`AGENTS.md`](./AGENTS.md).
 
@@ -44,12 +44,16 @@ backend/app/
 │   │   │   ├── StudentAlumniController.php    # Admin CRUD data alumni (upgrade akun siswa)
 │   │   │   ├── StudentController.php          # Admin CRUD data siswa kelas 12 aktif & portfolio
 │   │   │   ├── StudentJobApplicationController.php # Siswa/alumni daftar & detail lamaran saya
-│   │   │   └── TracerStudyController.php      # Tracer study submission & detail (role: alumni)
+│   │   │   ├── TracerStudyController.php      # Tracer study submission & detail (role: alumni)
+│   │   │   └── StandardTypeController.php     # Generic async-select options (?category=&search=&per_page=)
 │   │   ├── Auth/
 │   │   │   └── AuthController.php             # Login, logout, me endpoint + forgot/reset password
 │   │   └── NotificationController.php         # Notification listing & read status
 │   ├── Requests/                              # FormRequest classes for validation
+│   │   ├── SelectOptionsRequest.php           # Shared index select params (search, page, per_page, for_select, eligible)
+│   │   └── StandardTypeOptionsRequest.php     # category (required, must exist) + select params
 │   ├── Resources/                             # JsonResource transformers
+│   │   └── SelectOptionResource.php           # {value (encrypted id), label, extra} for async selects
 │   └── Middleware/                            # Role checks and custom filters
 ├── Models/                                    # Eloquent ORM entity models
 │   ├── User.php                               # Application users with role association
@@ -79,6 +83,7 @@ backend/app/
 │   ├── StudentService.php                     # Siswa aktif CRUD, filtering, form options, portofolio berkas
 │   ├── TracerStudyService.php                 # Alumni career status survey, conditional null resets, DB transactions
 │   ├── NotificationService.php                # Notification creation, broadcast, read flags
+│   ├── StandardTypeService.php                # Generic select options per category + class→major fuzzy resolution
 │   ├── ResponseService.php                    # Standard JSON response building
 │   └── MailService.php                        # Email notification dispatch
 ├── Events/                                    # Domain events (application submitted, stage updated)
@@ -169,6 +174,32 @@ backend/app/
 - `/api/my-applications` (`role:siswa,alumni`) — List lamaran saya siswa/alumni (pagination & filter `status_id`).
 - `/api/my-applications/{id}` (`role:siswa,alumni`) — Detail spesifik lamaran siswa beserta timeline tahapan seleksi (`stage_histories`).
 - `/api/alumni/*` (`role:alumni`) — Alumni job applications, portfolio updates, tracer study submissions.
+- `GET /api/admin/standard-types?category=&search=&page=&per_page=` (`role:admin`) — Generic async-select options for standard-type lookups (`class`, `employment_status`, `portfolio_type`, `company_industry`, ...). Paginated (`per_page` default 20, max 100). Category `class` items carry `extra.resolvedMajorId`/`resolvedMajorName` (server-side port of the FE `resolveMajorByClass` fuzzy match).
+- `GET /api/hrd/students-alumni?search=&page=&per_page=` (`role:hrd`) — Async-select options for active students/alumni ordered by name (used by the HRD placement form).
+
+### Select mode (`for_select=1`) on index endpoints
+
+`GET /api/admin/companies`, `/api/admin/students`, `/api/admin/majors`,
+`/api/admin/departments` accept `?for_select=1&search=&page=&per_page=20`.
+Instead of the full resource, they return a paginated
+`SelectOptionResource` collection: `{ value, label, extra? }[]` + Laravel
+`meta` (`current_page`, `last_page`, `total`).
+
+- `value` is always the `encrypt()`-ed id string (same representation the
+  `*/options` payloads and API resources already use), so submits keep working
+  through the `DecryptRequest` middleware. Never compare values across
+  responses: encryption uses a random IV.
+- `label` is pre-formatted server-side (`nis - name (class)`, `name (code)`).
+- `extra` carries id-like keys encrypted via `encrypt_recursive()` plus raw
+  display fields (`nis`, `fullName`, `code`, ...).
+- `/api/admin/students` also accepts `eligible=1` (active `siswa` accounts with
+  `graduation_year` null, ordered by user name) for the alumni-upgrade picker.
+  Its items use `user_id` as `value` and include autofill fields in `extra`.
+- Query params are validated by the shared `SelectOptionsRequest`
+  (`search` max 100, `per_page` 1–100); `StandardTypeOptionsRequest` additionally
+  requires an existing `standard_type_categories.code`.
+- Legacy full-load `*/options` endpoints are kept for tiny master lists used by
+  table filter dropdowns; forms must use the paginated select endpoints above.
 
 ## 6. Response and Error Envelope Standards
 

@@ -24,6 +24,10 @@ class CompanyService
 
     public function index(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
+        if (! empty($filters['for_select'])) {
+            return $this->selectOptions($filters, $perPage);
+        }
+
         $query = Company::with(['industry', 'createdBy', 'updatedBy']);
 
         if (! empty($filters['search'])) {
@@ -59,6 +63,32 @@ class CompanyService
     public function show(Company $company): Company
     {
         return $company->load(['industry', 'createdBy', 'updatedBy']);
+    }
+
+    /**
+     * Paginated lightweight options for async selects.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return LengthAwarePaginator<int, array{value: mixed, label: string, extra: array<string, mixed>}>
+     */
+    protected function selectOptions(array $filters, int $perPage): LengthAwarePaginator
+    {
+        $query = Company::query()
+            ->where('is_active', true)
+            ->select('id', 'name');
+
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        return $query->orderBy('name')->paginate($perPage)->through(
+            fn (Company $company): array => [
+                'value' => $company->id,
+                'label' => $company->name,
+                'extra' => [],
+            ]
+        );
     }
 
     public function create(array $data, ?int $actorId = null): Company

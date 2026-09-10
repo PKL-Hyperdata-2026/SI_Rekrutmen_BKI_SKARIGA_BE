@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SelectOptionsRequest;
 use App\Http\Requests\StoreMajorRequest;
 use App\Http\Requests\UpdateMajorRequest;
 use App\Http\Resources\MajorResource;
+use App\Http\Resources\SelectOptionResource;
 use App\Models\Major;
 use App\Services\MajorService;
 use App\Services\ResponseService;
@@ -22,7 +24,7 @@ class MajorController extends Controller
         protected ResponseService $response
     ) {}
 
-    public function index(Request $request): Responsable
+    public function index(SelectOptionsRequest $request): Responsable
     {
         $filters = $request->only([
             'search',
@@ -30,10 +32,17 @@ class MajorController extends Controller
             'is_active',
             'sort_by',
             'sort_dir',
+            'for_select',
         ]);
 
         $perPage = $request->integer('per_page', 15);
         $majors = $this->majorService->getMajors($filters, $perPage);
+
+        if ($request->boolean('for_select')) {
+            return $this->response
+                ->message('Opsi jurusan berhasil diambil.')
+                ->data(SelectOptionResource::collection($majors)->response()->getData(true));
+        }
 
         return $this->response
             ->message('Daftar jurusan berhasil diambil.')

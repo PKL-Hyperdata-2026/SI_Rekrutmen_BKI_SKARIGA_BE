@@ -31,6 +31,10 @@ class StudentService
 
     public function getStudents(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
+        if (! empty($filters['for_select'])) {
+            return $this->selectOptions($filters, $perPage);
+        }
+
         $query = StudentAlumni::with([
             'user',
             'class',
@@ -100,6 +104,75 @@ class StudentService
             'currentCompany',
             'portfolios.category',
         ]);
+    }
+
+    /**
+     * Paginated lightweight options for async selects.
+     * With the eligible flag, only active students without
+     * a graduation year are returned (alumni upgrade candidates).
+     *
+     * @param  array<string, mixed>  $filters
+     * @return LengthAwarePaginator<int, array{value: mixed, label: string, extra: array<string, mixed>}>
+     */
+    protected function selectOptions(array $filters, int $perPage): LengthAwarePaginator
+    {
+        $query = StudentAlumni::query()
+            ->with([
+                'user:id,full_name,email,phone',
+                'class:id,name',
+                'major:id,name',
+            ])
+            ->whereHas('user', function (Builder $userQuery) {
+                $userQuery->where('role', 'siswa');
+            })
+            ->where('students_alumni.is_active', true)
+            ->select('students_alumni.*');
+
+        if (! empty($filters['eligible'])) {
+            $query->student();
+        }
+
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function (Builder $q) use ($search) {
+                $q->where('students_alumni.nis', 'like', "%{$search}%")
+                    ->orWhereHas('user', function (Builder $userQuery) use ($search) {
+                        $userQuery->where('full_name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $query->join('users', 'users.id', '=', 'students_alumni.user_id')
+            ->orderBy('users.full_name');
+
+        return $query->paginate($perPage)->through(
+            fn (StudentAlumni $student): array => [
+                'value' => $student->user_id,
+                'label' => $this->buildSelectLabel($student),
+                'extra' => [
+                    'studentId' => $student->id,
+                    'userId' => $student->user_id,
+                    'nis' => $student->nis,
+                    'fullName' => $student->user?->full_name,
+                    'email' => $student->user?->email,
+                    'phone' => $student->user?->phone,
+                    'classId' => $student->class_id,
+                    'className' => $student->class?->name,
+                    'majorId' => $student->major_id,
+                    'majorName' => $student->major?->name,
+                ],
+            ]
+        );
+    }
+
+    protected function buildSelectLabel(StudentAlumni $student): string
+    {
+        $label = trim(($student->nis ?? '').' - '.($student->user?->full_name ?? ''));
+        $context = $student->class?->name ?? $student->major?->name;
+
+        return $context ? "{$label} ({$context})" : $label;
     }
 
     public function getStudentById(int $id): StudentAlumni

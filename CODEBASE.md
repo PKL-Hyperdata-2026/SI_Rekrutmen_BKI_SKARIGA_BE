@@ -46,7 +46,9 @@ backend/app/
 │   │   │   ├── StudentController.php          # Admin CRUD data siswa kelas 12 aktif & portfolio
 │   │   │   ├── StudentJobApplicationController.php # Siswa/alumni daftar & detail lamaran saya
 │   │   │   ├── TracerStudyController.php      # Tracer study submission & detail (role: alumni)
-│   │   │   └── StandardTypeController.php     # Generic async-select options (?category=&search=&per_page=)
+│   │   │   ├── StandardTypeController.php     # Generic async-select options (?category=&search=&per_page=)
+│   │   │   └── Hrd/
+│   │   │       └── TestScheduleController.php # HRD CRUD agenda & jadwal tes + list peserta + reminder
 │   │   ├── Auth/
 │   │   │   └── AuthController.php             # Login, logout, me endpoint + forgot/reset password
 │   │   └── NotificationController.php         # Notification listing & read status
@@ -86,6 +88,7 @@ backend/app/
 │   ├── TracerStudyService.php                 # Alumni career status survey, conditional null resets, DB transactions
 │   ├── NotificationService.php                # Notification creation, broadcast, read flags
 │   ├── StandardTypeService.php                # Generic select options per category + class→major fuzzy resolution
+│   ├── TestScheduleService.php                # HRD agenda & jadwal tes, alokasi pelamar lolos berkas, reminder, options
 │   ├── ResponseService.php                    # Standard JSON response building
 │   └── MailService.php                        # Email notification dispatch
 ├── Events/                                    # Domain events (application submitted, stage updated)
@@ -161,6 +164,14 @@ backend/app/
   - `POST /api/hrd/job-placements` — Tambah penempatan kerja. Dalam `DB::transaction()`.
   - `PUT|PATCH /api/hrd/job-placements/{jobPlacement}` — Update data penempatan kerja. Dalam `DB::transaction()`.
   - `DELETE /api/hrd/job-placements/{jobPlacement}` — Soft delete + `deleted_by`. Dalam `DB::transaction()`.
+  - `GET /api/hrd/test-schedules` — List agenda & jadwal tes perusahaan HRD + pagination (`per_page`), search (nama/lokasi/posisi), filter (`job_vacancy_id`, `session_status`), sort (`sort_by`, `sort_dir`).
+  - `GET /api/hrd/test-schedules/options` — Dropdown form jadwal tes: daftar lowongan kerja aktif milik perusahaan HRD.
+  - `POST /api/hrd/test-schedules` — Buat agenda tes baru + auto alokasikan peserta (hanya pelamar yang lolos berkas pada lowongan tersebut) + inisialisasi presensi + kirim notifikasi in-app otomatis jika dicentang. Dalam `DB::transaction()`.
+  - `GET /api/hrd/test-schedules/{id}` — Detail agenda tes (dengan relasi lowongan & total peserta).
+  - `PUT|PATCH /api/hrd/test-schedules/{id}` — Update data agenda tes + kirim notifikasi perubahan jika dicentang. Dalam `DB::transaction()`.
+  - `DELETE /api/hrd/test-schedules/{id}` — Soft delete agenda tes + `deleted_by`. Dalam `DB::transaction()`.
+  - `GET /api/hrd/test-schedules/{id}/participants` — List daftar peserta pada agenda tes terkait (nama, NIS, NISN, email, phone, status presensi).
+  - `POST /api/hrd/test-schedules/{id}/participants/{participantId}/remind` — Kirim notifikasi pengingat tes (*Kirim Reminder*) ke peserta.
 - `/api/siswa/*` (`role:siswa`) — Self-service E-Portfolio siswa (profil + dokumen).
   - `GET /api/siswa/portfolio/profile` — Profil + portofolio siswa yang login.
   - `GET /api/siswa/portfolio/options` — Dropdown form: `majors`, `classes`, `employment_statuses`, `portfolio_types`, `graduation_years`.

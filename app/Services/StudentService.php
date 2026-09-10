@@ -374,6 +374,7 @@ class StudentService
                 'title'             => $data['title'],
                 'description'       => $data['description'] ?? null,
                 'file_path'         => $filePath,
+                'original_filename' => $file->getClientOriginalName(),
                 'created_by'        => $authUserId,
                 'updated_by'        => $authUserId,
             ]);

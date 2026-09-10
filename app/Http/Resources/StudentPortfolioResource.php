@@ -13,11 +13,9 @@ class StudentPortfolioResource extends JsonResource
     public function toArray(Request $request): array
     {
         $fileSize = null;
-        $fileName = null;
-
+        $fileName = $this->original_filename ?? ($this->file_path ? basename($this->file_path) : null);
         if ($this->file_path && Storage::disk('public')->exists($this->file_path)) {
             $bytes = Storage::disk('public')->size($this->file_path);
-            $fileName = basename($this->file_path);
             if ($bytes >= 1048576) {
                 $fileSize = number_format($bytes / 1048576, 1).' MB';
             } elseif ($bytes >= 1024) {
@@ -40,6 +38,7 @@ class StudentPortfolioResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'fileName' => $fileName,
+            'originalFilename' => $this->original_filename ?? $fileName,
             'fileSize' => $fileSize,
             'filePath' => $this->file_path,
             'fileUrl' => $this->file_path ? Storage::disk('public')->url($this->file_path) : null,

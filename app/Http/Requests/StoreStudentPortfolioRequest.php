@@ -33,6 +33,7 @@ class StoreStudentPortfolioRequest extends FormRequest
             'file.file' => 'File yang diunggah harus berupa file yang valid.',
             'file.mimes' => 'Format file yang diperbolehkan: PDF, JPG, PNG, DOC, DOCX.',
             'file.max' => 'Ukuran file maksimal adalah 10 MB.',
+            'file.uploaded' => 'File gagal diunggah. Pastikan ukuran file tidak melebihi batas maksimal (10 MB).',
         ];
     }
 }

@@ -194,11 +194,57 @@ class StudentPortfolioTest extends TestCase
                 'data' => [
                     'categoryId' => $this->portfolioType->id,
                     'title' => 'Curriculum Vitae (CV)',
+                    'fileName' => 'cv_document.pdf',
+                    'originalFilename' => 'cv_document.pdf',
                 ],
             ]);
 
         $portfolio = StudentPortfolio::where('student_alumni_id', $this->student->id)->first();
         $this->assertNotNull($portfolio);
+        Storage::disk('public')->assertExists($portfolio->file_path);
+        $this->assertEquals('cv_document.pdf', $portfolio->original_filename);
+        $this->assertEquals('cv_document.pdf', $portfolio->fresh()->original_filename);
+    }
+
+    public function test_upload_portfolio_updates_existing_and_replaces_original_filename(): void
+    {
+        Storage::fake('public');
+
+        $oldFile = UploadedFile::fake()->create('old_cv.pdf', 300, 'application/pdf');
+        $oldPath = $oldFile->store('portfolios', 'public');
+
+        $portfolio = StudentPortfolio::create([
+            'student_alumni_id' => $this->student->id,
+            'category_id' => $this->portfolioType->id,
+            'title' => 'Curriculum Vitae (CV)',
+            'file_path' => $oldPath,
+            'original_filename' => 'old_cv.pdf',
+            'created_by' => $this->studentUser->id,
+        ]);
+
+        $newFile = UploadedFile::fake()->create('new_cv_final.pdf', 500, 'application/pdf');
+
+        $response = $this->actingAs($this->studentUser)
+            ->postJson('/api/siswa/portfolio/upload', [
+                'category_id' => $this->portfolioType->id,
+                'title' => 'Updated CV',
+                'file' => $newFile,
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'categoryId' => $this->portfolioType->id,
+                    'title' => 'Updated CV',
+                    'fileName' => 'new_cv_final.pdf',
+                    'originalFilename' => 'new_cv_final.pdf',
+                ],
+            ]);
+
+        $portfolio->refresh();
+        $this->assertEquals('new_cv_final.pdf', $portfolio->original_filename);
+        Storage::disk('public')->assertMissing($oldPath);
         Storage::disk('public')->assertExists($portfolio->file_path);
     }
 

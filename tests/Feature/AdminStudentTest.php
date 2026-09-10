@@ -240,7 +240,9 @@ class AdminStudentTest extends TestCase
 
         $uploadResponse->assertCreated()
             ->assertJsonPath('success', true)
-            ->assertJsonCount(1, 'data.portfolios');
+            ->assertJsonCount(1, 'data.portfolios')
+            ->assertJsonPath('data.portfolios.0.fileName', 'CV_AldiTaher.pdf')
+            ->assertJsonPath('data.portfolios.0.originalFilename', 'CV_AldiTaher.pdf');
 
         $portfolioId = $uploadResponse->json('data.portfolios.0.id');
 

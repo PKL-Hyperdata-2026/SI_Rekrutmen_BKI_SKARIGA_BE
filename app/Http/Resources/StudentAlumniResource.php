@@ -79,6 +79,8 @@ class StudentAlumniResource extends JsonResource
                         ] : null,
                         'title' => $portfolio->title,
                         'description' => $portfolio->description,
+                        'fileName' => $portfolio->original_filename ?? ($portfolio->file_path ? basename($portfolio->file_path) : null),
+                        'originalFilename' => $portfolio->original_filename,
                         'filePath' => $portfolio->file_path,
                         'fileUrl' => $portfolio->file_path ? Storage::disk('public')->url($portfolio->file_path) : null,
                         'createdAt' => $portfolio->created_at?->toIso8601String(),

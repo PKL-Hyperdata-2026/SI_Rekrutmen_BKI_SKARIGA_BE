@@ -118,10 +118,11 @@ class StudentPortfolioService
     {
         return DB::transaction(function () use ($user, $data, $file) {
             $student = $this->getProfileForUser($user);
+            $originalFilename = $file->getClientOriginalName();
             $filePath = $file->store('portfolios', 'public');
 
             $category = StandardType::find($data['category_id']);
-            $title = ! empty($data['title']) ? $data['title'] : ($category?->name ?? $file->getClientOriginalName());
+            $title = ! empty($data['title']) ? $data['title'] : ($category?->name ?? $originalFilename);
 
             // Check if portfolio for this category already exists, if so update/replace it
             $existingPortfolio = StudentPortfolio::where('student_alumni_id', $student->id)
@@ -137,6 +138,7 @@ class StudentPortfolioService
                     'title' => $title,
                     'description' => $data['description'] ?? $existingPortfolio->description,
                     'file_path' => $filePath,
+                    'original_filename' => $originalFilename,
                     'updated_by' => $user->id,
                 ]);
 
@@ -149,6 +151,7 @@ class StudentPortfolioService
                 'title' => $title,
                 'description' => $data['description'] ?? null,
                 'file_path' => $filePath,
+                'original_filename' => $originalFilename,
                 'created_by' => $user->id,
                 'updated_by' => $user->id,
             ]);
@@ -169,10 +172,6 @@ class StudentPortfolioService
             $portfolio->updated_by = $user->id;
             $portfolio->deleted_by = $user->id;
             $portfolio->save();
-
-            if ($portfolio->file_path && Storage::disk('public')->exists($portfolio->file_path)) {
-                Storage::disk('public')->delete($portfolio->file_path);
-            }
 
             return (bool) $portfolio->delete();
         });

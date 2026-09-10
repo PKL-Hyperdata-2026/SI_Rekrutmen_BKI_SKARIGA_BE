@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'title',
     'description',
     'file_path',
+    'original_filename',
     'created_by',
     'updated_by',
     'deleted_by',

@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SelectOptionsRequest;
 use App\Http\Requests\StoreDepartmentRequest;
 use App\Http\Requests\UpdateDepartmentRequest;
 use App\Http\Resources\DepartmentResource;
+use App\Http\Resources\SelectOptionResource;
 use App\Models\Department;
 use App\Services\DepartmentService;
 use App\Services\ResponseService;
@@ -22,17 +24,24 @@ class DepartmentController extends Controller
         protected ResponseService $response
     ) {}
 
-    public function index(Request $request): Responsable
+    public function index(SelectOptionsRequest $request): Responsable
     {
         $filters = $request->only([
             'search',
             'is_active',
             'sort_by',
             'sort_dir',
+            'for_select',
         ]);
 
         $perPage = $request->integer('per_page', 15);
         $departments = $this->departmentService->getDepartments($filters, $perPage);
+
+        if ($request->boolean('for_select')) {
+            return $this->response
+                ->message('Opsi departemen berhasil diambil.')
+                ->data(SelectOptionResource::collection($departments)->response()->getData(true));
+        }
 
         return $this->response
             ->message('Daftar departemen berhasil diambil.')

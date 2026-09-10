@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SelectOptionsRequest;
 use App\Http\Requests\StoreCompanyRequest;
 use App\Http\Requests\UpdateCompanyRequest;
 use App\Http\Resources\CompanyResource;
+use App\Http\Resources\SelectOptionResource;
 use App\Models\Company;
 use App\Services\CompanyService;
 use App\Services\ResponseService;
@@ -21,7 +23,7 @@ class CompanyController extends Controller
         protected ResponseService $response
     ) {}
 
-    public function index(Request $request): Responsable
+    public function index(SelectOptionsRequest $request): Responsable
     {
         $filters = $request->only([
             'search',
@@ -29,10 +31,17 @@ class CompanyController extends Controller
             'is_active',
             'sort_by',
             'sort_dir',
+            'for_select',
         ]);
 
         $perPage = $request->integer('per_page', 15);
         $companies = $this->companyService->index($filters, $perPage);
+
+        if ($request->boolean('for_select')) {
+            return $this->response
+                ->message('Opsi perusahaan berhasil diambil.')
+                ->data(SelectOptionResource::collection($companies)->response()->getData(true));
+        }
 
         return $this->response
             ->message('Daftar perusahaan berhasil diambil.')

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
@@ -69,6 +70,11 @@ class JobApplication extends Model
     public function stageHistories(): HasMany
     {
         return $this->hasMany(ApplicationStageHistory::class, 'job_application_id')->orderBy('created_at', 'asc');
+    }
+
+    public function selectionResult(): HasOne
+    {
+        return $this->hasOne(SelectionResult::class, 'job_application_id');
     }
 
     public function createdBy(): BelongsTo

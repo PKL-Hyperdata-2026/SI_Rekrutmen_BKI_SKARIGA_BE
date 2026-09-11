@@ -14,12 +14,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'student_alumni_id',
     'career_status',
 
-    // Status: Bekerja
+    // Status: Bekerja & Penempatan
     'company_name',
+    'company_sector',
     'job_title',
+    'job_location',
     'minimum_salary',
     'maximum_salary',
     'waiting_period',
+    'accepted_date',
     'start_date',
 
     // Status: Wirausaha
@@ -53,9 +56,36 @@ class TracerStudy extends Model
         return [
             'minimum_salary'      => 'integer',
             'maximum_salary'      => 'integer',
+            'accepted_date'       => 'date',
             'start_date'          => 'date',
             'business_start_date' => 'date',
         ];
+    }
+
+    public function getStatus12BulanAttribute(): string
+    {
+        if ($this->career_status === 'lanjut_studi') {
+            return 'Masih Kuliah';
+        }
+
+        if ($this->career_status === 'wirausaha') {
+            return 'Wirausaha';
+        }
+
+        if ($this->career_status === 'mencari_pekerjaan') {
+            return 'Mencari Kerja';
+        }
+
+        // Untuk status bekerja, cek evaluasi job placement jika ada
+        $placement = $this->studentAlumni?->jobPlacements?->first();
+        if ($placement) {
+            $evalStatus = $placement->getEvaluationStatusForPeriod(12);
+            if ($evalStatus && $evalStatus !== '-' && $evalStatus !== 'Belum Waktunya') {
+                return $evalStatus;
+            }
+        }
+
+        return 'Masih Bekerja';
     }
 
     public function studentAlumni(): BelongsTo

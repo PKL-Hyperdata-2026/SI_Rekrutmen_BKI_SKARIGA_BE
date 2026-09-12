@@ -1,13 +1,13 @@
- # Backend Agent Instructions (Laravel 13 API)
+# Backend Agent Instructions (Laravel 13 API)
 
 ## Project Context
 Decoupled REST API for SI Rekrutmen BKI SKARIGA.
-Laravel 13, PHP 8.2+, PostgreSQL, Laravel Sanctum authentication. Timezone: Asia/Jakarta.
+Laravel 13, PHP 8.3+, PostgreSQL, Laravel Sanctum authentication. Timezone: Asia/Jakarta.
 
 ## Documentation Map
-- `CODEBASE.md` — deep technical reference: architecture, DB schema, models, services, API routes. **Read at session start.**
-- `../AGENTS.md` — root orchestrator & shared API contract.
-- `routes/api.php` — API route declarations.
+- `CODEBASE.md`, deep technical reference: architecture, DB schema, models, services, API routes. Read at session start.
+- `../AGENTS.md`, root orchestrator & shared API contract.
+- `routes/api.php`, API route declarations.
 
 ## Commands Cheatsheet
 ```bash
@@ -36,7 +36,7 @@ php artisan make:model X -m                # Generate Model with migration
 - Response format: Use standard response helper or `ResponseService` (`success_response($data, $message, $code)` / `error_response($message, $code, $errors)`).
 - Model mass assignment: Fillable attributes must be explicitly defined with the `#[Fillable([...])]` attribute (Laravel 13). Do not use `$guarded = []`.
 - Database dates: Timestamps use PostgreSQL `timestamp with time zone` or default Laravel timestamps. Format outputs in UTC / Asia/Jakarta ISO string inside API Resources.
-- Role checks: Route middleware uses `role:admin`, `role:hrd`, `role:siswa,alumni`, or `role:alumni` defined in `routes/api.php`.
+- Role checks: Route middleware uses `role:admin`, `role:superadmin`, `role:hrd`, `role:siswa,alumni`, or `role:alumni` defined in `routes/api.php`. Note that `superadmin` automatically inherits access to all `role:admin` routes via `App\Http\Middleware\RBAC`.
 
 ## Git Workflow
 - Working branch: `development`.

@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\StandardTypeController;
 use App\Http\Controllers\Api\StudentJobApplicationController;
 use App\Http\Controllers\Api\TracerStudyController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\Hrd\TestScheduleController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
@@ -77,6 +78,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/students-alumni', [JobPlacementController::class, 'studentsAlumni']);
         Route::apiResource('job-placements', JobPlacementController::class)
             ->parameters(['job-placements' => 'jobPlacement']);
+
+        // Kelola Agenda & Jadwal Tes
+        Route::get('/test-schedules/options', [TestScheduleController::class, 'options']);
+        Route::get('/test-schedules/{id}/participants', [TestScheduleController::class, 'participants']);
+        Route::post('/test-schedules/{id}/participants/{participantId}/remind', [TestScheduleController::class, 'remindParticipant']);
+        Route::apiResource('test-schedules', TestScheduleController::class)
+            ->parameters(['test-schedules' => 'id']);
     });
 
     // Self-Service Siswa & Alumni Portfolio

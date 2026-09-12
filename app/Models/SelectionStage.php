@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'name',
     'sequence_order',
     'description',
+    'minimum_score',
     'scheduled_at',
     'location',
     'created_by',
@@ -42,8 +44,14 @@ class SelectionStage extends Model
     {
         return [
             'sequence_order' => 'integer',
+            'minimum_score' => 'decimal:2',
             'scheduled_at' => 'datetime',
         ];
+    }
+
+    public function stageHistories(): HasMany
+    {
+        return $this->hasMany(ApplicationStageHistory::class, 'selection_stage_id');
     }
 
     public function jobVacancy(): BelongsTo

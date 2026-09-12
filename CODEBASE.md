@@ -48,6 +48,10 @@ backend/app/
 │   │   │   ├── StudentAlumniController.php         # Admin CRUD data alumni (upgrade akun siswa)
 │   │   │   ├── StudentController.php               # Admin CRUD data siswa kelas 12 aktif & portfolio
 │   │   │   ├── StudentJobApplicationController.php # Siswa/alumni daftar & detail lamaran saya
+│   │   │   ├── TracerStudyController.php      # Tracer study submission & detail (role: alumni)
+│   │   │   ├── StandardTypeController.php     # Generic async-select options (?category=&search=&per_page=)
+│   │   │   └── Hrd/
+│   │   │       └── TestScheduleController.php # HRD CRUD agenda & jadwal tes + list peserta + reminder
 │   │   │   ├── StudentJobVacancyController.php     # Siswa/alumni eksplorasi lowongan kerja
 │   │   │   ├── TracerStudyController.php           # Tracer study submission & detail (role: alumni)
 │   │   │   ├── UserController.php                  # Superadmin user management & password reset
@@ -84,6 +88,22 @@ backend/app/
 │   ├── TracerStudy.php                             # Graduate employment tracking survey data
 │   └── User.php                                    # Application users with role association
 ├── Services/
+│   ├── JobPlacementService.php                # Job placement CRUD, filtering, audit trail, options
+│   ├── JobVacancyService.php                  # Vacancy business rules, filters, company checks
+│   ├── PasswordResetService.php               # Password reset flow end-to-end (broker token, mail, response mapping)
+│   ├── StudentAlumniService.php               # Alumni CRUD (list/filter, upgrade siswa→alumni, sync users, soft delete)
+│   ├── StudentPortfolioService.php            # Self-service E-Portfolio (profile, options, upload/delete dokumen) — shared siswa & alumni
+│   ├── StudentJobApplicationService.php       # Siswa/alumni lamaran saya queries & stage histories
+│   ├── StudentService.php                     # Siswa aktif CRUD, filtering, form options, portofolio berkas
+│   ├── TracerStudyService.php                 # Alumni career status survey, conditional null resets, DB transactions
+│   ├── NotificationService.php                # Notification creation, broadcast, read flags
+│   ├── StandardTypeService.php                # Generic select options per category + class→major fuzzy resolution
+│   ├── TestScheduleService.php                # HRD agenda & jadwal tes, alokasi pelamar lolos berkas, reminder, options
+│   ├── ResponseService.php                    # Standard JSON response building
+│   └── MailService.php                        # Email notification dispatch
+├── Events/                                    # Domain events (application submitted, stage updated)
+├── Mail/                                      # Mailable templates
+├── Traits/                                    # Shared traits (Auditable, HasStandardType)
 │   ├── CompanyService.php                          # Corporate partner CRUD, filtering, logo upload
 │   ├── DepartmentService.php                       # Department master data CRUD & status toggle
 │   ├── JobPlacementService.php                     # Job placement CRUD, filtering, audit trail, options
@@ -145,6 +165,63 @@ backend/app/
 - `PATCH /api/notification/read-all`, Mark all notifications as read.
 
 ### Role-Protected Routes
+- `/api/admin/*` (`role:admin`) — User management, school masters, verification, analytics.
+  - `GET /api/admin/students` — List data siswa aktif (role `siswa`) + pagination (`per_page`), search (nama/NIS/email/phone/jurusan/perusahaan), filter (`major_id`, `class_id`, `employment_status_id`, `graduation_year`, `is_active`), sort (`sort_by`, `sort_dir`).
+  - `GET /api/admin/students/options` — Dropdown: `majors`, `classes`, `employment_statuses`, `portfolio_types`, `companies`, `graduation_years`.
+  - `GET /api/admin/students/{student}` — Detail data siswa (dengan relasi user/major/class/employment_status/current_company/portfolios.category).
+  - `POST /api/admin/students` — Tambah siswa baru + pembuatan akun user (role `siswa`, is_active `true`). Dalam `DB::transaction()`.
+  - `PUT|PATCH /api/admin/students/{student}` — Update data siswa dan akun user terkait. Dalam `DB::transaction()`.
+  - `DELETE /api/admin/students/{student}` — Soft delete data siswa & akun user + set `users.is_active = false`. Dalam `DB::transaction()`.
+  - `POST /api/admin/students/{student}/portfolios` — Upload dokumen portofolio siswa (CV, Sertifikat PKL, dll).
+  - `DELETE /api/admin/students/{student}/portfolios/{portfolio}` — Hapus dokumen portofolio siswa.
+  - `GET /api/admin/alumni` — List alumni (`graduation_year` terisi) + pagination (`per_page`), search (nama/NIS/perusahaan), filter (`graduation_year`, `major_id`, `employment_status_id`, `current_company_id`), sort (`sort_by`, `sort_dir`).
+  - `GET /api/admin/alumni/options` — Dropdown: `majors`, `classes`, `employment_statuses`, `companies`, `graduation_years`.
+  - `GET /api/admin/alumni/{alumni}` — Detail alumni (dengan relasi user/major/class/employment_status/current_company).
+  - `POST /api/admin/alumni` — Tambah alumni: upgrade akun siswa (`user_id` wajib, role `siswa`), isi data alumni, set `users.role = alumni`. Tanpa pembuatan akun baru / email. Dalam `DB::transaction()`.
+  - `PUT|PATCH /api/admin/alumni/{alumni}` — Update data alumni; sinkron `users.full_name`/`phone`; role mengikuti `graduation_year` (terisi → `alumni`, kosong → `siswa`). Dalam `DB::transaction()`.
+  - `DELETE /api/admin/alumni/{alumni}` — Soft delete + `deleted_by` + set `users.is_active = false`. Dalam `DB::transaction()`.
+  - `GET /api/admin/companies` — List perusahaan mitra + pagination (`per_page`), search (nama/email/PIC/phone/industri), filter (`industry_id`, `is_active`), sort (`sort_by`, `sort_dir`).
+  - `GET /api/admin/companies/options` — Dropdown opsi: `industries` (kategori `company_industry`).
+  - `GET /api/admin/companies/{company}` — Detail perusahaan (dengan relasi industry/createdBy/updatedBy).
+  - `POST /api/admin/companies` — Tambah perusahaan baru (nama wajib, email/website valid, nomor HP Indonesia, `is_active` default true).
+  - `PUT|PATCH /api/admin/companies/{company}` — Update data perusahaan.
+  - `DELETE /api/admin/companies/{company}` — Soft delete + `deleted_by`.
+  - `PATCH /api/admin/companies/{company}/toggle-active` — Toggle status aktif/non-aktif (status MoU BKK).
+- `/api/hrd/*` (`role:hrd`) — Company profile, vacancy management, candidate selection pipeline, job placements.
+  - `GET /api/hrd/job-placements` — List penempatan kerja perusahaan HRD + pagination (`per_page`), search (nama/NIS/notes), filter (`student_alumni_id`, `placement_status_id`, `job_application_id`, `year`), sort (`sort_by`, `sort_dir`).
+  - `GET /api/hrd/job-placements/options` — Dropdown opsi: `companies`, `placement_statuses`, `students_alumni`.
+  - `GET /api/hrd/job-placements/metrics` — Metrik evaluasi penempatan kerja (total, 3 bulan, 6 bulan, 12 bulan).
+  - `GET /api/hrd/job-placements/{jobPlacement}` — Detail penempatan kerja (dengan relasi studentAlumni, company, placementStatus, jobApplication).
+  - `POST /api/hrd/job-placements` — Tambah penempatan kerja. Dalam `DB::transaction()`.
+  - `PUT|PATCH /api/hrd/job-placements/{jobPlacement}` — Update data penempatan kerja. Dalam `DB::transaction()`.
+  - `DELETE /api/hrd/job-placements/{jobPlacement}` — Soft delete + `deleted_by`. Dalam `DB::transaction()`.
+  - `GET /api/hrd/test-schedules` — List agenda & jadwal tes perusahaan HRD + pagination (`per_page`), search (nama/lokasi/posisi), filter (`job_vacancy_id`, `session_status`), sort (`sort_by`, `sort_dir`).
+  - `GET /api/hrd/test-schedules/options` — Dropdown form jadwal tes: daftar lowongan kerja aktif milik perusahaan HRD.
+  - `POST /api/hrd/test-schedules` — Buat agenda tes baru + auto alokasikan peserta (hanya pelamar yang lolos berkas pada lowongan tersebut) + inisialisasi presensi + kirim notifikasi in-app otomatis jika dicentang. Dalam `DB::transaction()`.
+  - `GET /api/hrd/test-schedules/{id}` — Detail agenda tes (dengan relasi lowongan & total peserta).
+  - `PUT|PATCH /api/hrd/test-schedules/{id}` — Update data agenda tes + kirim notifikasi perubahan jika dicentang. Dalam `DB::transaction()`.
+  - `DELETE /api/hrd/test-schedules/{id}` — Soft delete agenda tes + `deleted_by`. Dalam `DB::transaction()`.
+  - `GET /api/hrd/test-schedules/{id}/participants` — List daftar peserta pada agenda tes terkait (nama, NIS, NISN, email, phone, status presensi).
+  - `POST /api/hrd/test-schedules/{id}/participants/{participantId}/remind` — Kirim notifikasi pengingat tes (*Kirim Reminder*) ke peserta.
+- `/api/siswa/*` (`role:siswa`) — Self-service E-Portfolio siswa (profil + dokumen).
+  - `GET /api/siswa/portfolio/profile` — Profil + portofolio siswa yang login.
+  - `GET /api/siswa/portfolio/options` — Dropdown form: `majors`, `classes`, `employment_statuses`, `portfolio_types`, `graduation_years`.
+  - `PUT /api/siswa/portfolio/profile` — Update profil siswa (NIS, nama, email, telepon, kelas, jurusan, tahun lulus, sosial media).
+  - `POST /api/siswa/portfolio/upload` — Upload dokumen portofolio (CV, sertifikat, dll).
+  - `DELETE /api/siswa/portfolio/{portfolio}` — Hapus dokumen portofolio siswa.
+- `/api/alumni/*` (`role:alumni`) — Self-service E-Portfolio alumni (profil + dokumen + status karir).
+  - `GET /api/alumni/portfolio/profile` — Profil + portofolio alumni yang login (termasuk `employmentStatusId`).
+  - `GET /api/alumni/portfolio/options` — Dropdown form (sama dengan siswa, termasuk `employment_statuses`).
+  - `PUT /api/alumni/portfolio/profile` — Update profil alumni (plus `employment_status_id`).
+  - `POST /api/alumni/portfolio/upload` — Upload dokumen portofolio alumni.
+  - `DELETE /api/alumni/portfolio/{portfolio}` — Hapus dokumen portofolio alumni.
+  - `GET /api/alumni/tracer-study` — Ambil data pengisian tracer study alumni yang sedang login.
+  - `POST /api/alumni/tracer-study` — Submit atau update data tracer study alumni.
+- `/api/my-applications` (`role:siswa,alumni`) — List lamaran saya siswa/alumni (pagination & filter `status_id`).
+- `/api/my-applications/{id}` (`role:siswa,alumni`) — Detail spesifik lamaran siswa beserta timeline tahapan seleksi (`stage_histories`).
+- `/api/alumni/*` (`role:alumni`) — Alumni job applications, portfolio updates, tracer study submissions.
+- `GET /api/admin/standard-types?category=&search=&page=&per_page=` (`role:admin`) — Generic async-select options for standard-type lookups (`class`, `employment_status`, `portfolio_type`, `company_industry`, ...). Paginated (`per_page` default 20, max 100). Category `class` items carry `extra.resolvedMajorId`/`resolvedMajorName` (server-side port of the FE `resolveMajorByClass` fuzzy match).
+- `GET /api/hrd/students-alumni?search=&page=&per_page=` (`role:hrd`) — Async-select options for active students/alumni ordered by name (used by the HRD placement form).
 - `/api/admin/*` (`role:admin`, also accessible by `superadmin`)
   - `GET /api/admin/companies`, List perusahaan mitra + pagination (`per_page`), search, filter (`industry_id`, `is_active`), sort.
   - `GET /api/admin/companies/options`, Dropdown options for companies (`industries`).

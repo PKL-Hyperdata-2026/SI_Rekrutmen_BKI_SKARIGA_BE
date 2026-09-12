@@ -77,6 +77,11 @@ class JobApplication extends Model
         return $this->hasOne(SelectionResult::class, 'job_application_id');
     }
 
+    public function jobPlacement(): HasOne
+    {
+        return $this->hasOne(JobPlacement::class, 'job_application_id');
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

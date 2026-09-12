@@ -25,6 +25,10 @@ class StudentJobApplicationService
                 'jobVacancy.jobType',
                 'status',
                 'currentStage',
+                'stageHistories.selectionStage',
+                'stageHistories.status',
+                'jobPlacement',
+                'selectionResult',
             ]);
 
         if (! empty($filters['status_id'])) {

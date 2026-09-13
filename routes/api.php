@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StandardTypeController;
 use App\Http\Controllers\Api\StudentJobApplicationController;
 use App\Http\Controllers\Api\TracerStudyController;
+use App\Http\Controllers\Api\AdminTracerStudyController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\Hrd\TestScheduleController;
 use App\Http\Controllers\Auth\AuthController;
@@ -61,6 +62,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/majors/{major}/toggle-active', [MajorController::class, 'toggleActive']);
         Route::apiResource('majors', MajorController::class);
         Route::get('/standard-types', [StandardTypeController::class, 'index']);
+        Route::get('/tracer-studies/metrics', [AdminTracerStudyController::class, 'metrics']);
+        Route::get('/tracer-studies/options', [AdminTracerStudyController::class, 'options']);
+        Route::post('/tracer-studies/sync', [AdminTracerStudyController::class, 'sync']);
+        Route::apiResource('tracer-studies', AdminTracerStudyController::class)
+            ->parameters(['tracer-studies' => 'tracerStudy']);
         // TODO: API Admin lainnya
     });
 
@@ -113,10 +119,5 @@ Route::middleware('auth:sanctum')->group(function () {
         // Tracer Study Endpoints
         Route::get('/tracer-study', [TracerStudyController::class, 'show']);
         Route::post('/tracer-study', [TracerStudyController::class, 'store']);
-    });
-
-    Route::middleware('role:siswa,alumni')->group(function () {
-        Route::get('/my-applications', [StudentJobApplicationController::class, 'index']);
-        Route::get('/my-applications/{id}', [StudentJobApplicationController::class, 'show']);
     });
 });

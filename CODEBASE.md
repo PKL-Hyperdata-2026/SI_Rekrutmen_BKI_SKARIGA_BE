@@ -187,6 +187,14 @@ backend/app/
   - `PUT|PATCH /api/admin/companies/{company}` — Update data perusahaan.
   - `DELETE /api/admin/companies/{company}` — Soft delete + `deleted_by`.
   - `PATCH /api/admin/companies/{company}/toggle-active` — Toggle status aktif/non-aktif (status MoU BKK).
+  - `GET /api/admin/tracer-studies` — List tracer study alumni + pagination default 10 (`per_page`), search (nama/NIS/perusahaan/kampus/usaha), filter (`career_status`, `major_id`, `graduation_year`), sort (`sort_by`, `sort_dir`).
+  - `GET /api/admin/tracer-studies/metrics` — Metrik agregat 5 card tracer study (`total_alumni`, `bekerja`, `kuliah`, `wirausaha`, `mencari_kerja`).
+  - `GET /api/admin/tracer-studies/options` — Dropdown opsi: `majors`, `graduation_years`, `career_statuses`, `available_alumni`.
+  - `POST /api/admin/tracer-studies/sync` — Sinkronkan alumni yang telah memiliki penempatan (`job_placements`) atau profil karir langsung ke tabel tracer study.
+  - `GET /api/admin/tracer-studies/{tracerStudy}` — Detail data tracer study alumni.
+  - `POST /api/admin/tracer-studies` — Tambah data tracer study alumni (wajib memilih alumni terdaftar).
+  - `PUT|PATCH /api/admin/tracer-studies/{tracerStudy}` — Update data tracer study alumni (alumni readonly).
+  - `DELETE /api/admin/tracer-studies/{tracerStudy}` — Soft delete data tracer study + `deleted_by`.
 - `/api/hrd/*` (`role:hrd`) — Company profile, vacancy management, candidate selection pipeline, job placements.
   - `GET /api/hrd/job-placements` — List penempatan kerja perusahaan HRD + pagination (`per_page`), search (nama/NIS/notes), filter (`student_alumni_id`, `placement_status_id`, `job_application_id`, `year`), sort (`sort_by`, `sort_dir`).
   - `GET /api/hrd/job-placements/options` — Dropdown opsi: `companies`, `placement_statuses`, `students_alumni`.
@@ -217,8 +225,6 @@ backend/app/
   - `DELETE /api/alumni/portfolio/{portfolio}` — Hapus dokumen portofolio alumni.
   - `GET /api/alumni/tracer-study` — Ambil data pengisian tracer study alumni yang sedang login.
   - `POST /api/alumni/tracer-study` — Submit atau update data tracer study alumni.
-- `/api/my-applications` (`role:siswa,alumni`) — List lamaran saya siswa/alumni (pagination & filter `status_id`).
-- `/api/my-applications/{id}` (`role:siswa,alumni`) — Detail spesifik lamaran siswa beserta timeline tahapan seleksi (`stage_histories`).
 - `/api/alumni/*` (`role:alumni`) — Alumni job applications, portfolio updates, tracer study submissions.
 - `GET /api/admin/standard-types?category=&search=&page=&per_page=` (`role:admin`) — Generic async-select options for standard-type lookups (`class`, `employment_status`, `portfolio_type`, `company_industry`, ...). Paginated (`per_page` default 20, max 100). Category `class` items carry `extra.resolvedMajorId`/`resolvedMajorName` (server-side port of the FE `resolveMajorByClass` fuzzy match).
 - `GET /api/hrd/students-alumni?search=&page=&per_page=` (`role:hrd`) — Async-select options for active students/alumni ordered by name (used by the HRD placement form).

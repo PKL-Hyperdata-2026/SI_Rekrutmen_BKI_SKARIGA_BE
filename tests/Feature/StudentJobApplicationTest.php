@@ -7,8 +7,10 @@ namespace Tests\Feature;
 use App\Models\ApplicationStageHistory;
 use App\Models\Company;
 use App\Models\JobApplication;
+use App\Models\JobPlacement;
 use App\Models\JobVacancy;
 use App\Models\Major;
+use App\Models\SelectionResult;
 use App\Models\SelectionStage;
 use App\Models\StandardType;
 use App\Models\StudentAlumni;
@@ -17,6 +19,7 @@ use Database\Seeders\ApplicationStageHistoryStandardTypeSeeder;
 use Database\Seeders\JobApplicationStandardTypeSeeder;
 use Database\Seeders\JobVacancyStandardTypeSeeder;
 use Database\Seeders\MajorSeeder;
+use Database\Seeders\PlacementStatusStandardTypeSeeder;
 use Database\Seeders\SelectionStageStandardTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -62,6 +65,7 @@ class StudentJobApplicationTest extends TestCase
             ApplicationStageHistoryStandardTypeSeeder::class,
             SelectionStageStandardTypeSeeder::class,
             JobVacancyStandardTypeSeeder::class,
+            PlacementStatusStandardTypeSeeder::class,
             MajorSeeder::class,
         ]);
 
@@ -182,9 +186,9 @@ class StudentJobApplicationTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.data.0.id', $app1->id)
             ->assertJsonPath('data.data.0.vacancy.title', 'Junior Web Developer')
-            ->assertJsonPath('data.data.0.vacancy.company_name', 'PT Teknologi Nusantara')
+            ->assertJsonPath('data.data.0.vacancy.companyName', 'PT Teknologi Nusantara')
             ->assertJsonPath('data.data.0.status.code', 'pending')
-            ->assertJsonPath('data.data.0.current_stage.name', 'Seleksi Berkas Administrasi')
+            ->assertJsonPath('data.data.0.currentStage.name', 'Seleksi Berkas Administrasi')
             ->assertJsonStructure([
                 'success',
                 'message',
@@ -192,26 +196,32 @@ class StudentJobApplicationTest extends TestCase
                     'data' => [
                         '*' => [
                             'id',
+                            'jobVacancyId',
                             'vacancy' => [
                                 'id',
                                 'title',
-                                'company_name',
-                                'company_logo',
-                                'job_type',
-                                'location',
+                                'position',
+                                'companyName',
+                                'companyLogo',
+                                'workLocation',
+                                'deadline',
                             ],
                             'status' => [
                                 'id',
                                 'name',
                                 'code',
                             ],
-                            'current_stage' => [
+                            'currentStage' => [
                                 'id',
                                 'name',
+                                'order',
+                                'scheduledAt',
+                                'location',
+                                'instructions',
                             ],
-                            'applied_at',
+                            'appliedAt',
                             'notes',
-                            'created_at',
+                            'createdAt',
                         ],
                     ],
                 ],
@@ -271,24 +281,25 @@ class StudentJobApplicationTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.id', $application->id)
             ->assertJsonPath('data.vacancy.title', 'Junior Web Developer')
-            ->assertJsonPath('data.stage_histories.0.id', $history1->id)
-            ->assertJsonPath('data.stage_histories.0.stage.name', 'Seleksi Berkas Administrasi')
-            ->assertJsonPath('data.stage_histories.0.stage.order', 1)
-            ->assertJsonPath('data.stage_histories.0.status.code', 'passed')
-            ->assertJsonPath('data.stage_histories.0.assessor_name', 'HRD Penguji')
-            ->assertJsonPath('data.stage_histories.0.score', 88.5)
-            ->assertJsonPath('data.stage_histories.0.notes', 'Berkas lengkap dan sesuai kriteria')
+            ->assertJsonPath('data.stageHistories.0.id', $history1->id)
+            ->assertJsonPath('data.stageHistories.0.stage.name', 'Seleksi Berkas Administrasi')
+            ->assertJsonPath('data.stageHistories.0.stage.order', 1)
+            ->assertJsonPath('data.stageHistories.0.status.code', 'passed')
+            ->assertJsonPath('data.stageHistories.0.assessorName', 'HRD Penguji')
+            ->assertJsonPath('data.stageHistories.0.score', 88.5)
+            ->assertJsonPath('data.stageHistories.0.notes', 'Berkas lengkap dan sesuai kriteria')
             ->assertJsonStructure([
                 'success',
                 'message',
                 'data' => [
                     'id',
+                    'jobVacancyId',
                     'vacancy',
                     'status',
-                    'current_stage',
-                    'applied_at',
+                    'currentStage',
+                    'appliedAt',
                     'notes',
-                    'stage_histories' => [
+                    'stageHistories' => [
                         '*' => [
                             'id',
                             'stage' => [
@@ -301,13 +312,13 @@ class StudentJobApplicationTest extends TestCase
                                 'name',
                                 'code',
                             ],
-                            'assessor_name',
+                            'assessorName',
                             'score',
                             'notes',
-                            'created_at',
+                            'createdAt',
                         ],
                     ],
-                    'created_at',
+                    'createdAt',
                 ],
             ]);
     }
@@ -325,5 +336,50 @@ class StudentJobApplicationTest extends TestCase
             ->getJson("/api/my-applications/{$otherApplication->id}");
 
         $response->assertNotFound();
+    }
+
+    public function test_student_can_view_application_detail_with_placement_and_selection_result(): void
+    {
+        $application = JobApplication::create([
+            'job_vacancy_id' => $this->jobVacancy->id,
+            'student_alumni_id' => $this->studentProfile->id,
+            'status_id' => $this->appStatusAccepted->id,
+            'current_stage_id' => $this->stage2->id,
+            'applied_at' => now(),
+            'notes' => 'Lamaran diterima',
+        ]);
+
+        $placementStatus = StandardType::whereHas('category', fn ($q) => $q->where('code', 'placement_status'))->firstOrFail();
+
+        $placement = JobPlacement::create([
+            'job_application_id' => $application->id,
+            'student_alumni_id' => $this->studentProfile->id,
+            'company_id' => $this->company->id,
+            'placement_status_id' => $placementStatus->id,
+            'accepted_date' => '2026-09-01',
+            'start_date' => '2026-10-01',
+            'notes' => 'Penempatan divisi IT',
+        ]);
+
+        $selectionResult = SelectionResult::create([
+            'job_application_id' => $application->id,
+            'admin_selection_status' => 'lolos',
+            'decision' => 'diterima',
+            'status' => 'published',
+            'notes' => 'Lulus semua tahapan',
+        ]);
+
+        $response = $this->actingAs($this->studentUser, 'sanctum')
+            ->getJson("/api/my-applications/{$application->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.id', $application->id)
+            ->assertJsonPath('data.placement.id', $placement->id)
+            ->assertJsonPath('data.placement.acceptedDate', '2026-09-01')
+            ->assertJsonPath('data.placement.startDate', '2026-10-01')
+            ->assertJsonPath('data.placement.notes', 'Penempatan divisi IT')
+            ->assertJsonPath('data.selectionResult.id', $selectionResult->id)
+            ->assertJsonPath('data.selectionResult.decision', 'diterima');
     }
 }

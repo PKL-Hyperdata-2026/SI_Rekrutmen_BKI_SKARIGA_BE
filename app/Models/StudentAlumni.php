@@ -104,6 +104,11 @@ class StudentAlumni extends Model
         return $this->hasOne(TracerStudy::class, 'student_alumni_id');
     }
 
+    public function jobPlacements(): HasMany
+    {
+        return $this->hasMany(JobPlacement::class, 'student_alumni_id');
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

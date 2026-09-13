@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'decision',
     'status',
     'notes',
+    'letter_path',
     'created_by',
     'updated_by',
 ])]

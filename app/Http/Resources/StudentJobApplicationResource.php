@@ -52,6 +52,12 @@ class StudentJobApplicationResource extends JsonResource
             'selectionResult' => $this->whenLoaded('selectionResult', fn() => $this->selectionResult ? [
                 'id' => $this->selectionResult->id,
                 'decision' => $this->selectionResult->decision,
+                'letterPath' => $this->selectionResult->letter_path,
+                'letterUrl' => $this->selectionResult->letter_path ? (
+                    filter_var($this->selectionResult->letter_path, FILTER_VALIDATE_URL)
+                        ? $this->selectionResult->letter_path
+                        : asset('storage/' . $this->selectionResult->letter_path)
+                ) : null,
             ] : null),
             'stageHistories' => ApplicationStageHistoryResource::collection($this->whenLoaded('stageHistories')),
             'createdAt' => $this->created_at?->toIso8601String(),

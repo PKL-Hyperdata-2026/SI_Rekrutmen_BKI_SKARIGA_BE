@@ -55,6 +55,8 @@ class StudentJobApplicationService
                 'stageHistories.selectionStage',
                 'stageHistories.status',
                 'stageHistories.assessor',
+                'jobPlacement',
+                'selectionResult',
             ])
             ->firstOrFail();
     }

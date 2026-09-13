@@ -112,9 +112,4 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/tracer-study', [TracerStudyController::class, 'show']);
         Route::post('/tracer-study', [TracerStudyController::class, 'store']);
     });
-
-    Route::middleware('role:siswa,alumni')->group(function () {
-        Route::get('/my-applications', [StudentJobApplicationController::class, 'index']);
-        Route::get('/my-applications/{id}', [StudentJobApplicationController::class, 'show']);
-    });
 });

@@ -21,6 +21,7 @@ class StoreHrdJobVacancyRequest extends FormRequest
     {
         return [
             'position' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
             'quota' => 'required|integer|min:1',
             'deadline' => 'required|date|after_or_equal:today',
             'major_ids' => 'required|array|min:1',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreHrdJobVacancyRequest extends FormRequest
 {
@@ -19,15 +20,14 @@ class StoreHrdJobVacancyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'position' => 'nullable|string|max:255',
-            'title' => 'required_without:position|nullable|string|max:255',
-            'quota' => 'nullable|integer|min:1',
-            'deadline' => 'nullable|date',
-            'major_ids' => 'nullable|array',
+            'position' => 'required|string|max:255',
+            'quota' => 'required|integer|min:1',
+            'deadline' => 'required|date|after_or_equal:today',
+            'major_ids' => 'required|array|min:1',
             'major_ids.*' => 'exists:majors,id',
-            'target_applicant_id' => 'nullable|exists:standard_types,id',
-            'work_location' => 'nullable|string|max:255',
-            'qualification' => 'nullable|string',
+            'target_applicant_id' => 'required|exists:standard_types,id',
+            'work_location' => 'required|string|max:255',
+            'qualification' => 'required|string',
             'description' => 'nullable|string',
             'job_type_id' => 'nullable|exists:standard_types,id',
             'status_id' => 'nullable|exists:standard_types,id',
@@ -36,6 +36,27 @@ class StoreHrdJobVacancyRequest extends FormRequest
             'is_featured' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
             'send_notification' => 'nullable|boolean',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'position.required' => 'Posisi pekerjaan wajib diisi.',
+            'quota.required' => 'Kuota wajib diisi.',
+            'quota.integer' => 'Kuota harus berupa angka bulat.',
+            'quota.min' => 'Kuota minimal 1 orang.',
+            'deadline.required' => 'Batas pendaftaran wajib diisi.',
+            'deadline.date' => 'Batas pendaftaran harus berupa tanggal yang valid.',
+            'deadline.after_or_equal' => 'Batas pendaftaran tidak boleh di masa lalu.',
+            'major_ids.required' => 'Minimal satu kategori jurusan harus dipilih.',
+            'major_ids.array' => 'Kategori jurusan harus berupa array.',
+            'major_ids.min' => 'Minimal satu kategori jurusan harus dipilih.',
+            'major_ids.*.exists' => 'Kategori jurusan yang dipilih tidak valid.',
+            'target_applicant_id.required' => 'Target pelamar wajib dipilih.',
+            'target_applicant_id.exists' => 'Target pelamar yang dipilih tidak valid.',
+            'work_location.required' => 'Lokasi kerja wajib diisi.',
+            'qualification.required' => 'Kualifikasi/persyaratan wajib diisi.',
         ];
     }
 }

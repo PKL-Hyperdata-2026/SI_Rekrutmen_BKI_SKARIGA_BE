@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use App\Models\Major;
 use App\Models\StandardType;
 use App\Models\User;
+use App\Models\JobApplication;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -234,6 +235,111 @@ class JobVacancyService
             'vacancyStatuses' => $vacancyStatuses,
             'targetApplicants' => $targetApplicants,
             'jobTypes' => $jobTypes,
+        ];
+    }
+
+    public function getHrdVacancies(int $companyId, array $filters = [], int $perPage = 15): LengthAwarePaginator
+    {
+        $query = JobVacancy::with(['company', 'jobType', 'status', 'targetApplicant', 'majors', 'createdBy', 'updatedBy'])
+            ->where('company_id', $companyId)
+            ->withCount(['applications as applicants_count' => function ($q) {
+                $rejectedStatusId = StandardType::byCategory('job_application_status')->where('code', 'rejected')->first()?->id;
+                if ($rejectedStatusId) {
+                    $q->where('status_id', '!=', $rejectedStatusId);
+                }
+            }]);
+
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function (Builder $q) use ($search) {
+                $q->where('position', 'like', "%{$search}%")
+                    ->orWhere('work_location', 'like', "%{$search}%")
+                    ->orWhereHas('majors', function (Builder $majorQuery) use ($search) {
+                        $majorQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('code', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if (!empty($filters['status_id'])) {
+            $query->where('status_id', $filters['status_id']);
+        }
+
+        if (!empty($filters['target_applicant_id']) && $filters['target_applicant_id'] !== 'all') {
+            $query->where('target_applicant_id', $filters['target_applicant_id']);
+        }
+
+        if (!empty($filters['job_type_id'])) {
+            $query->where('job_type_id', $filters['job_type_id']);
+        }
+
+        if (!empty($filters['major_id']) && $filters['major_id'] !== 'all') {
+            $query->whereHas('majors', fn($q) => $q->where('majors.id', $filters['major_id']));
+        }
+
+        if (isset($filters['is_active']) && $filters['is_active'] !== '') {
+            $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
+        }
+
+        return $query->latest()->paginate($perPage);
+    }
+
+    public function getHrdFormOptions(int $companyId): array
+    {
+        $majors = Major::where('is_active', true)
+            ->select('id', 'code', 'name')
+            ->orderBy('name')
+            ->get();
+
+        $targetApplicants = StandardType::byCategory('target_applicant')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'code', 'name', 'metadata']);
+
+        $jobTypes = StandardType::byCategory('job_type')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'code', 'name', 'metadata']);
+
+        $vacancyStatuses = StandardType::byCategory('vacancy_status')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'code', 'name', 'metadata']);
+
+        return [
+            'majors' => $majors,
+            'targetApplicants' => $targetApplicants,
+            'jobTypes' => $jobTypes,
+            'vacancyStatuses' => $vacancyStatuses,
+        ];
+    }
+
+    public function getHrdStatistics(int $companyId): array
+    {
+        $activeStatus = StandardType::byCategory('vacancy_status')->where('code', 'published')->first()?->id;
+        $closedStatus = StandardType::byCategory('vacancy_status')->where('code', 'closed')->first()?->id;
+
+        $activeCount = JobVacancy::where('company_id', $companyId)
+            ->where('is_active', true)
+            ->where(function ($q) use ($activeStatus, $closedStatus) {
+                $q->where('status_id', $activeStatus)
+                    ->orWhere(function ($q2) use ($closedStatus) {
+                        $q2->where('status_id', $closedStatus)->where('deadline', '>=', now()->toDateString());
+                    });
+            })
+            ->count();
+
+        $draftClosedCount = JobVacancy::where('company_id', $companyId)
+            ->where(function ($q) use ($activeStatus, $closedStatus) {
+                $q->where('is_active', false)
+                    ->orWhere('status_id', $closedStatus)
+                    ->orWhere('deadline', '<', now()->toDateString());
+            })
+            ->count();
+
+        return [
+            'active' => $activeCount,
+            'draft_closed' => $draftClosedCount,
         ];
     }
 

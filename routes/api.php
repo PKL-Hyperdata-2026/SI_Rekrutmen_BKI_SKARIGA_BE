@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\TracerStudyController;
 use App\Http\Controllers\Api\AdminTracerStudyController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\Hrd\TestScheduleController;
+use App\Http\Controllers\Api\Hrd\JobVacancyController as HrdJobVacancyController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
@@ -84,6 +85,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/students-alumni', [JobPlacementController::class, 'studentsAlumni']);
         Route::apiResource('job-placements', JobPlacementController::class)
             ->parameters(['job-placements' => 'jobPlacement']);
+
+        // Kelola Lowongan Kerja (HRD Perusahaan)
+        Route::get('/job-vacancies/statistics', [HrdJobVacancyController::class, 'statistics']);
+        Route::get('/job-vacancies/options', [HrdJobVacancyController::class, 'options']);
+        Route::apiResource('job-vacancies', HrdJobVacancyController::class)
+            ->parameters(['job-vacancies' => 'jobVacancy']);
 
         // Kelola Agenda & Jadwal Tes
         Route::get('/test-schedules/options', [TestScheduleController::class, 'options']);

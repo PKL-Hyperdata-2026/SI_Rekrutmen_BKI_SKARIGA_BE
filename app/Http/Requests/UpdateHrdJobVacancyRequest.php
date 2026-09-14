@@ -20,6 +20,7 @@ class UpdateHrdJobVacancyRequest extends FormRequest
     {
         return [
             'position' => 'sometimes|required|string|max:255',
+            'title' => 'nullable|string|max:255',
             'quota' => 'sometimes|required|integer|min:1',
             'deadline' => 'sometimes|required|date|after_or_equal:today',
             'major_ids' => 'sometimes|required|array|min:1',

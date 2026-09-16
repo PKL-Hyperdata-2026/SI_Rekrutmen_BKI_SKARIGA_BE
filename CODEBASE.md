@@ -1,6 +1,6 @@
 # Backend Codebase Reference (Laravel 13 API)
 
-Deep, factual reference for AI agents and developers. **Last verified: 2026-09-11.**
+Deep, factual reference for AI agents and developers. **Last verified: 2026-09-16.**
 If you modify code that alters any architecture, models, routes, or services documented here, update this file in the same change.
 Operational instructions & boundaries: [`AGENTS.md`](./AGENTS.md).
 
@@ -38,6 +38,8 @@ backend/app/
 ├── Http/
 │   ├── Controllers/
 │   │   ├── Api/
+│   │   │   ├── Admin/
+│   │   │   │   └── RecruitmentSelectionController.php  # [ADMIN] view-only seleksi rekrutmen: summary + paginasi + filter
 │   │   │   ├── CompanyController.php               # Admin CRUD perusahaan mitra & options
 │   │   │   ├── DepartmentController.php            # Admin CRUD departemen vokasi & toggle active
 │   │   │   ├── JobPlacementController.php          # HRD CRUD data penempatan kerja
@@ -61,9 +63,11 @@ backend/app/
 │   │   │   └── AuthController.php                  # Login, logout, me endpoint + forgot/reset password
 │   │   └── NotificationController.php              # Notification listing & read status
 │   ├── Requests/                                   # FormRequest classes for validation
+│   │   ├── RecruitmentSelectionIndexRequest.php    # [ADMIN] filter seleksi rekrutmen (vacancy, stage, attendance, search)
 │   │   ├── SelectOptionsRequest.php                # Shared index select params (search, page, per_page, for_select, eligible)
 │   │   └── StandardTypeOptionsRequest.php          # category (required, must exist) + select params
 │   ├── Resources/                                  # JsonResource transformers
+│   │   ├── RecruitmentSelectionResource.php        # [ADMIN] transform JobApplication untuk seleksi (student, stage, result, attendance)
 │   │   └── SelectOptionResource.php                # {value (encrypted id), label, extra} for async selects
 │   └── Middleware/                                 # Role checks (RBAC), DecryptRequest, filters
 ├── Models/                                         # Eloquent ORM entity models
@@ -91,6 +95,7 @@ backend/app/
 │   ├── JobPlacementService.php                # Job placement CRUD, filtering, audit trail, options
 │   ├── JobVacancyService.php                  # Vacancy business rules, filters, company checks
 │   ├── PasswordResetService.php               # Password reset flow end-to-end (broker token, mail, response mapping)
+│   ├── RecruitmentSelectionService.php        # [ADMIN] Seleksi Rekrutmen view-only: paginasi + summary + filter (vacancy/stage/attendance/search)
 │   ├── StudentAlumniService.php               # Alumni CRUD (list/filter, upgrade siswa→alumni, sync users, soft delete)
 │   ├── StudentPortfolioService.php            # Self-service E-Portfolio (profile, options, upload/delete dokumen) — shared siswa & alumni
 │   ├── StudentJobApplicationService.php       # Siswa/alumni lamaran saya queries & stage histories
@@ -104,6 +109,7 @@ backend/app/
 ├── Events/                                    # Domain events (application submitted, stage updated)
 ├── Mail/                                      # Mailable templates
 ├── Traits/                                    # Shared traits (Auditable, HasStandardType)
+│   ├── RecruitmentSelectionService.php             # [ADMIN] seleksi rekrutmen view-only summary & filter
 │   ├── CompanyService.php                          # Corporate partner CRUD, filtering, logo upload
 │   ├── DepartmentService.php                       # Department master data CRUD & status toggle
 │   ├── JobPlacementService.php                     # Job placement CRUD, filtering, audit trail, options
@@ -195,6 +201,7 @@ backend/app/
   - `POST /api/admin/tracer-studies` — Tambah data tracer study alumni (wajib memilih alumni terdaftar).
   - `PUT|PATCH /api/admin/tracer-studies/{tracerStudy}` — Update data tracer study alumni (alumni readonly).
   - `DELETE /api/admin/tracer-studies/{tracerStudy}` — Soft delete data tracer study + `deleted_by`.
+  - `GET /api/admin/recruitment-selections` — [ADMIN] view-only seleksi rekrutmen (Issue #67): `summary{total_applicants,total_passed_admin,total_accepted}` + `applicants` paginated `RecruitmentSelectionResource` (studentAlumni.user, major, currentStage, status, selectionResult, stageHistories.attendance.attendanceStatus). Filter `job_vacancy_id`, `stage_id` (current_stage_id), `attendance_status` (hadir/tidak_hadir/belum), `search` (nama/NIS), `per_page`.
 - `/api/hrd/*` (`role:hrd`) — Company profile, vacancy management, candidate selection pipeline, job placements.
   - `GET /api/hrd/job-vacancies/statistics` — Statistik lowongan HRD: `active` (aktif/dibuka) dan `draft_closed` (draft/ditutup/expired).
   - `GET /api/hrd/job-vacancies/options` — Dropdown opsi form lowongan: `majors`, `targetApplicants` (Siswa Kls 12 & Alumni, Siswa Kls 12, Alumni), `jobTypes`, `vacancyStatuses`.

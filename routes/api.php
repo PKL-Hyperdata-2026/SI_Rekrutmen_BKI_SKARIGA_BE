@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\StudentJobApplicationController;
 use App\Http\Controllers\Api\TracerStudyController;
 use App\Http\Controllers\Api\AdminTracerStudyController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\Admin\RecruitmentSelectionController;
 use App\Http\Controllers\Api\Hrd\TestScheduleController;
 use App\Http\Controllers\Api\Hrd\JobVacancyController as HrdJobVacancyController;
 use App\Http\Controllers\Auth\AuthController;
@@ -68,6 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/tracer-studies/sync', [AdminTracerStudyController::class, 'sync']);
         Route::apiResource('tracer-studies', AdminTracerStudyController::class)
             ->parameters(['tracer-studies' => 'tracerStudy']);
+        Route::get('/recruitment-selections', [RecruitmentSelectionController::class, 'index']); // [ADMIN] Seleksi Rekrutmen view-only (Issue #67)
         // TODO: API Admin lainnya
     });
 

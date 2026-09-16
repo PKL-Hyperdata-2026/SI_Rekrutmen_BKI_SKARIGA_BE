@@ -43,4 +43,8 @@ return [
         'name' => 'X (Twitter)',
         'url' => 'https://x.com/',
     ],
+    'threads' => [
+        'name' => 'Threads',
+        'url' => 'https://threads.com/@',
+    ],
 ];

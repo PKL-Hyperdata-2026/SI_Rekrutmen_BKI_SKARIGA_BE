@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\JobPlacement;
 use App\Models\Major;
+use App\Models\StandardType;
 use App\Models\StudentAlumni;
 use App\Models\TracerStudy;
 use App\Models\User;
@@ -21,11 +22,7 @@ class TracerStudyService
      */
     public function getAlumniTracerStudy(User $user): ?TracerStudy
     {
-        $alumni = StudentAlumni::where('user_id', $user->id)->first();
-
-        if (!$alumni) {
-            throw new NotFoundHttpException('Data alumni tidak ditemukan untuk pengguna ini.');
-        }
+        $alumni = $this->resolveAlumni($user);
 
         return TracerStudy::where('student_alumni_id', $alumni->id)->first();
     }
@@ -37,11 +34,7 @@ class TracerStudyService
      */
     public function submitTracerStudy(User $user, array $data): TracerStudy
     {
-        $alumni = StudentAlumni::where('user_id', $user->id)->first();
-
-        if (!$alumni) {
-            throw new NotFoundHttpException('Data alumni tidak ditemukan untuk pengguna ini.');
-        }
+        $alumni = $this->resolveAlumni($user);
 
         return DB::transaction(function () use ($user, $alumni, $data): TracerStudy {
             $payload = $this->buildPayload($alumni->id, $data, $user->id);
@@ -56,6 +49,38 @@ class TracerStudyService
             $payload['created_by'] = $user->id;
             return TracerStudy::create($payload);
         });
+    }
+
+    private function resolveAlumni(User $user): StudentAlumni
+    {
+        $alumni = StudentAlumni::where('user_id', $user->id)->first();
+
+        if (! $alumni) {
+            if ($user->role !== 'alumni') {
+                throw new NotFoundHttpException('Data alumni tidak ditemukan untuk pengguna ini.');
+            }
+
+            $defaultMajor = Major::where('is_active', true)->first();
+            $defaultClass = StandardType::byCategory('class')->where('is_active', true)->first();
+
+            $alumni = StudentAlumni::create([
+                'user_id' => $user->id,
+                'major_id' => $defaultMajor?->id ?? 1,
+                'class_id' => $defaultClass?->id,
+                'nis' => null,
+                'graduation_year' => (int) date('Y'),
+                'is_active' => true,
+                'created_by' => $user->id,
+                'updated_by' => $user->id,
+            ]);
+        } elseif (empty($alumni->graduation_year) && $user->role === 'alumni') {
+            $alumni->update([
+                'graduation_year' => (int) date('Y'),
+                'updated_by' => $user->id,
+            ]);
+        }
+
+        return $alumni;
     }
 
     /**

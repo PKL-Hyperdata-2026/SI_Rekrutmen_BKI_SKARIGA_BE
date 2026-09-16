@@ -419,7 +419,7 @@ class StudentPortfolioTest extends TestCase
             ->assertStatus(403);
     }
 
-    public function test_alumni_cannot_access_student_route(): void
+    public function test_alumni_can_access_student_route(): void
     {
         $alumniUser = User::factory()->create([
             'role' => 'alumni',
@@ -437,6 +437,29 @@ class StudentPortfolioTest extends TestCase
 
         $this->actingAs($alumniUser)
             ->getJson('/api/siswa/portfolio/profile')
-            ->assertStatus(403);
+            ->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'userId' => $alumniUser->id,
+                    'nis' => '77777777',
+                    'role' => 'alumni',
+                ],
+            ]);
+    }
+
+    public function test_alumni_can_access_options_via_siswa_route(): void
+    {
+        $alumniUser = User::factory()->create([
+            'role' => 'alumni',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($alumniUser)
+            ->getJson('/api/siswa/portfolio/options')
+            ->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
     }
 }

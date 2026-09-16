@@ -20,6 +20,7 @@ class AdminReportController extends Controller
     public function options(): Responsable
     {
         $options = $this->reportService->getFilterOptions();
+
         return $this->response->message('Opsi filter laporan berhasil diambil.')->data($options);
     }
 
@@ -27,6 +28,7 @@ class AdminReportController extends Controller
     {
         $filters = $request->only(['start_date', 'end_date', 'applicant_type']);
         $result = $this->reportService->getRecruitmentReport($filters);
+
         return $this->response->message('Laporan Rekrutmen berhasil diambil.')->data($result);
     }
 
@@ -34,6 +36,7 @@ class AdminReportController extends Controller
     {
         $filters = $request->only(['start_date', 'end_date', 'company_id']);
         $result = $this->reportService->getAttendanceReport($filters);
+
         return $this->response->message('Laporan Absensi berhasil diambil.')->data($result);
     }
 
@@ -41,12 +44,15 @@ class AdminReportController extends Controller
     {
         $filters = $request->only(['start_date', 'end_date', 'major_id']);
         $result = $this->reportService->getAbsorptionReport($filters);
+
         return $this->response->message('Laporan Keterserapan berhasil diambil.')->data($result);
     }
+
     public function tracerStudy(Request $request): Responsable
     {
         $filters = $request->only(['start_date', 'end_date', 'graduation_year']);
         $result = $this->reportService->getTracerStudyReport($filters);
+
         return $this->response->message('Laporan Tracer Study berhasil diambil.')->data($result);
     }
 }

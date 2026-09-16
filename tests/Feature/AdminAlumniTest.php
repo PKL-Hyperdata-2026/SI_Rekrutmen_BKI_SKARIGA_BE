@@ -11,7 +11,7 @@ use App\Models\StudentAlumni;
 use App\Models\User;
 use Database\Seeders\ClassSeeder;
 use Database\Seeders\MajorSeeder;
-use Database\Seeders\StudentPortfolioStandartTypeSeeder;
+use Database\Seeders\StudentPortfolioStandardTypeSeeder;
 use Database\Seeders\TracerStudyStandardTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -38,7 +38,7 @@ class AdminAlumniTest extends TestCase
             MajorSeeder::class,
             ClassSeeder::class,
             TracerStudyStandardTypeSeeder::class,
-            StudentPortfolioStandartTypeSeeder::class,
+            StudentPortfolioStandardTypeSeeder::class,
         ]);
 
         $this->adminUser = User::factory()->create([

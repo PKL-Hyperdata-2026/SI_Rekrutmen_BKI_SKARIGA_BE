@@ -21,7 +21,9 @@ class JobVacancyTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->user = User::factory()->create();
+        $this->user = User::factory()->create([
+            'role' => 'admin',
+        ]);
         $this->company = Company::create([
             'name' => 'PT Test Indonesia',
             'is_active' => true,
@@ -48,7 +50,7 @@ class JobVacancyTest extends TestCase
         ];
 
         $response = $this->actingAs($this->user)
-            ->postJson('/api/job-vacancies', $payload);
+            ->postJson('/api/admin/job-vacancies', $payload);
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
@@ -74,7 +76,7 @@ class JobVacancyTest extends TestCase
         ];
 
         $response = $this->actingAs($this->user)
-            ->postJson('/api/job-vacancies', $payload);
+            ->postJson('/api/admin/job-vacancies', $payload);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['max_salary']);
@@ -90,7 +92,7 @@ class JobVacancyTest extends TestCase
         ];
 
         $response = $this->actingAs($this->user)
-            ->postJson('/api/job-vacancies', $payload);
+            ->postJson('/api/admin/job-vacancies', $payload);
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
@@ -107,13 +109,13 @@ class JobVacancyTest extends TestCase
         ]);
 
         $fetchResponse = $this->actingAs($this->user)
-            ->getJson("/api/job-vacancies/{$vacancy->id}");
+            ->getJson("/api/admin/job-vacancies/{$vacancy->id}");
 
         $fetchResponse->assertStatus(200)
             ->assertJsonPath('data.title', 'Initial Title');
 
         $updateResponse = $this->actingAs($this->user)
-            ->putJson("/api/job-vacancies/{$vacancy->id}", [
+            ->putJson("/api/admin/job-vacancies/{$vacancy->id}", [
                 'title' => 'Updated Title',
             ]);
 

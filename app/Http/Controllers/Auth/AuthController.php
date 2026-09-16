@@ -9,44 +9,38 @@ use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
-use App\Models\User;
+use App\Services\AuthService;
 use App\Services\PasswordResetService;
 use App\Services\ResponseService;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
     public function __construct(
         protected ResponseService $response,
-        protected PasswordResetService $passwordResetService
+        protected PasswordResetService $passwordResetService,
+        protected AuthService $authService
     ) {}
 
     public function login(LoginRequest $request): Responsable
     {
-        $user = User::where('email', $request->validated('email'))->first();
+        $result = $this->authService->attemptLogin(
+            (string) $request->validated('email'),
+            (string) $request->validated('password')
+        );
 
-        if (!$user || !Hash::check($request->validated('password'), $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Invalid Credentials!'],
-            ]);
-        }
-
-        if (!$user->is_active) {
+        if (! $result['success']) {
             return $this->response
-                ->message('Your account is deactivated. Contact admin for further help.')
-                ->code(403);
+                ->message($result['message'])
+                ->code($result['code']);
         }
-
-        $token = $user->createToken('auth_token')->plainTextToken;
 
         return $this->response
             ->message('Login success')
-            ->with('access_token', $token)
-            ->with('user', new UserResource($user->loadMissing('company')))
+            ->with('access_token', $result['token'])
+            ->with('user', new UserResource($result['user']->loadMissing('company')))
             ->code(200);
     }
 

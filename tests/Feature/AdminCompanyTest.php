@@ -156,8 +156,8 @@ class AdminCompanyTest extends TestCase
             ->getJson("/api/admin/companies/{$company->id}");
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.id', $company->id)
             ->assertJsonPath('data.name', 'PT Astra Honda Motor');
+        $this->assertEquals($company->id, decrypt($response->json('data.id')));
     }
 
     public function test_admin_can_update_company(): void

@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             RecruitmentAttendanceStandardTypeSeeder::class,
             TracerStudyStandardTypeSeeder::class,
             PlacementStatusStandardTypeSeeder::class,
-            StudentPortfolioStandartTypeSeeder::class,
+            StudentPortfolioStandardTypeSeeder::class,
             StudentAlumniSeeder::class,
             JobPlacementSeeder::class,
             JobVacancySeeder::class,

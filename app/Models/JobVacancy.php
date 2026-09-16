@@ -79,6 +79,11 @@ class JobVacancy extends Model
         return $this->belongsToMany(Major::class, 'job_vacancy_majors', 'job_vacancy_id', 'major_id')->withTimestamps();
     }
 
+    public function applications(): HasMany
+    {
+        return $this->hasMany(JobApplication::class, 'job_vacancy_id');
+    }
+
     public function selectionStages(): HasMany
     {
         return $this->hasMany(SelectionStage::class, 'job_vacancy_id')->orderBy('sequence_order', 'asc');

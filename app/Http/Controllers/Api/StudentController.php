@@ -29,6 +29,7 @@ class StudentController extends Controller
     {
         $filters = $request->only([
             'search',
+            'department_id',
             'major_id',
             'class_id',
             'employment_status_id',

@@ -42,6 +42,13 @@ class StudentMyProfileResource extends JsonResource
                     'name' => $this->major->name,
                 ] : null;
             }),
+            'department' => $this->whenLoaded('major', function () {
+                return $this->major?->department ? [
+                    'id' => $this->major->department->id,
+                    'code' => $this->major->department->code,
+                    'name' => $this->major->department->name,
+                ] : null;
+            }),
             'employmentStatus' => $this->whenLoaded('employmentStatus', function () {
                 return $this->employmentStatus ? [
                     'id' => $this->employmentStatus->id,

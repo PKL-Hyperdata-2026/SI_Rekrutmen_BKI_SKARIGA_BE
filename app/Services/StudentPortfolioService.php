@@ -31,8 +31,14 @@ class StudentPortfolioService
                 'major_id' => $defaultMajor?->id ?? 1,
                 'class_id' => $defaultClass?->id,
                 'nis' => null,
+                'graduation_year' => $user->role === 'alumni' ? (int) date('Y') : null,
                 'is_active' => true,
                 'created_by' => $user->id,
+                'updated_by' => $user->id,
+            ]);
+        } elseif (empty($student->graduation_year) && $user->role === 'alumni') {
+            $student->update([
+                'graduation_year' => (int) date('Y'),
                 'updated_by' => $user->id,
             ]);
         }
@@ -40,7 +46,7 @@ class StudentPortfolioService
         return $student->load([
             'user',
             'class',
-            'major',
+            'major.department',
             'employmentStatus',
             'portfolios.category',
         ]);

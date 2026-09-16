@@ -508,4 +508,54 @@ class TracerStudyTest extends TestCase
             'start_date' => '2025-01-01',
         ])->assertUnauthorized();
     }
+
+    public function test_alumni_without_student_alumni_record_auto_provisions_on_get(): void
+    {
+        $freshAlumniUser = User::factory()->create([
+            'role' => 'alumni',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($freshAlumniUser, 'sanctum')
+            ->getJson('/api/alumni/tracer-study');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data', null);
+
+        $this->assertDatabaseHas('students_alumni', [
+            'user_id' => $freshAlumniUser->id,
+            'graduation_year' => (int) date('Y'),
+        ]);
+    }
+
+    public function test_alumni_without_student_alumni_record_auto_provisions_on_submit(): void
+    {
+        $freshAlumniUser = User::factory()->create([
+            'role' => 'alumni',
+            'is_active' => true,
+        ]);
+
+        $payload = [
+            'career_status' => 'mencari_pekerjaan',
+        ];
+
+        $response = $this->actingAs($freshAlumniUser, 'sanctum')
+            ->postJson('/api/alumni/tracer-study', $payload);
+
+        $response->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.careerStatus', 'mencari_pekerjaan');
+
+        $this->assertDatabaseHas('students_alumni', [
+            'user_id' => $freshAlumniUser->id,
+            'graduation_year' => (int) date('Y'),
+        ]);
+
+        $alumni = StudentAlumni::where('user_id', $freshAlumniUser->id)->firstOrFail();
+        $this->assertDatabaseHas('tracer_studies', [
+            'student_alumni_id' => $alumni->id,
+            'career_status' => 'mencari_pekerjaan',
+        ]);
+    }
 }

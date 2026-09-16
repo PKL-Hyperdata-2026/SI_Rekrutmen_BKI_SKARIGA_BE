@@ -46,6 +46,40 @@ if (!function_exists('decrypt')) {
     }
 }
 
+if (!function_exists('aes_encrypt')) {
+    function aes_encrypt(string $value, ?string $key = null): string
+    {
+        if ($key === null) {
+            return Crypt::encryptString($value);
+        }
+
+        $binaryKey = str_starts_with($key, 'base64:')
+            ? (string) base64_decode(substr($key, 7))
+            : (strlen($key) === 32 ? $key : hash('sha256', $key, true));
+
+        return (new Encrypter($binaryKey, 'AES-256-CBC'))->encryptString($value);
+    }
+}
+
+if (!function_exists('aes_decrypt')) {
+    function aes_decrypt(string $payload, ?string $key = null): ?string
+    {
+        try {
+            if ($key === null) {
+                return Crypt::decryptString($payload);
+            }
+
+            $binaryKey = str_starts_with($key, 'base64:')
+                ? (string) base64_decode(substr($key, 7))
+                : (strlen($key) === 32 ? $key : hash('sha256', $key, true));
+
+            return (new Encrypter($binaryKey, 'AES-256-CBC'))->decryptString($payload);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+}
+
 if (!function_exists('encrypt_recursive')) {
     /**
      * Recursively encrypt all ID fields in an array or collection (e.g. for dropdown options).

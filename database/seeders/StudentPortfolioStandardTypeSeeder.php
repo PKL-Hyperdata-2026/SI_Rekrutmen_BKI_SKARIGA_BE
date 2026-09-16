@@ -8,7 +8,7 @@ use App\Models\StandardType;
 use App\Models\StandardTypeCategory;
 use Illuminate\Database\Seeder;
 
-class StudentPortfolioStandartTypeSeeder extends Seeder
+class StudentPortfolioStandardTypeSeeder extends Seeder
 {
     /**
      * Run the database seeds.

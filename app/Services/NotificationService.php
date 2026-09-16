@@ -9,6 +9,8 @@ use App\Mail\GenericMail;
 use App\Mail\JobVacancyNotificationMail;
 use App\Models\Notification;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -137,5 +139,40 @@ class NotificationService
         } catch (Throwable $th) {
             Log::error("Failed to sendMultiple notifications: " . $th->getMessage());
         }
+    }
+
+    public function getUserNotifications(User $user, int $limit = 15): LengthAwarePaginator
+    {
+        return Notification::where('user_id', $user->id)
+            ->latest()
+            ->paginate($limit);
+    }
+
+    public function getUnreadNotifications(User $user): Collection
+    {
+        return Notification::where('user_id', $user->id)
+            ->whereNull('read_at')
+            ->latest()
+            ->get();
+    }
+
+    public function markAsRead(User $user, string $id): Notification
+    {
+        $notification = Notification::where('user_id', $user->id)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        if (is_null($notification->read_at)) {
+            $notification->update(['read_at' => now()]);
+        }
+
+        return $notification;
+    }
+
+    public function markAllAsRead(User $user): int
+    {
+        return Notification::where('user_id', $user->id)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
     }
 }

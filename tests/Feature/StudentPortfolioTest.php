@@ -10,9 +10,9 @@ use App\Models\StudentAlumni;
 use App\Models\StudentPortfolio;
 use App\Models\User;
 use Database\Seeders\ClassSeeder;
-use Database\Seeders\EmploymentStatusSeeder;
 use Database\Seeders\MajorSeeder;
-use Database\Seeders\StudentPortfolioStandartTypeSeeder;
+use Database\Seeders\StudentPortfolioStandardTypeSeeder;
+use Database\Seeders\TracerStudyStandardTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -41,8 +41,8 @@ class StudentPortfolioTest extends TestCase
         $this->seed([
             MajorSeeder::class,
             ClassSeeder::class,
-            EmploymentStatusSeeder::class,
-            StudentPortfolioStandartTypeSeeder::class,
+            TracerStudyStandardTypeSeeder::class,
+            StudentPortfolioStandardTypeSeeder::class,
         ]);
 
         $this->studentUser = User::factory()->create([
@@ -324,8 +324,8 @@ class StudentPortfolioTest extends TestCase
         ]);
 
         $targetStatus = StandardType::byCategory('employment_status')
-            ->where('code', 'bekerja')
-            ->first();
+            ->where('code', 'working')
+            ->first() ?? StandardType::byCategory('employment_status')->first();
 
         $this->actingAs($alumniUser)
             ->putJson('/api/alumni/portfolio/profile', [
@@ -419,7 +419,7 @@ class StudentPortfolioTest extends TestCase
             ->assertStatus(403);
     }
 
-    public function test_alumni_cannot_access_student_route(): void
+    public function test_alumni_can_access_student_route(): void
     {
         $alumniUser = User::factory()->create([
             'role' => 'alumni',
@@ -437,6 +437,29 @@ class StudentPortfolioTest extends TestCase
 
         $this->actingAs($alumniUser)
             ->getJson('/api/siswa/portfolio/profile')
-            ->assertStatus(403);
+            ->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'userId' => $alumniUser->id,
+                    'nis' => '77777777',
+                    'role' => 'alumni',
+                ],
+            ]);
+    }
+
+    public function test_alumni_can_access_options_via_siswa_route(): void
+    {
+        $alumniUser = User::factory()->create([
+            'role' => 'alumni',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($alumniUser)
+            ->getJson('/api/siswa/portfolio/options')
+            ->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
     }
 }

@@ -9,7 +9,6 @@ use App\Http\Requests\ApplyJobVacancyRequest;
 use App\Http\Requests\GetStudentJobVacanciesRequest;
 use App\Http\Resources\JobVacancyResource;
 use App\Http\Resources\StudentJobApplicationResource;
-use App\Models\JobApplication;
 use App\Models\JobVacancy;
 use App\Services\ResponseService;
 use App\Services\StudentJobVacancyService;
@@ -31,7 +30,7 @@ class StudentJobVacancyController extends Controller
     {
         $vacancy = $this->service->getStudentVacancyDetail($jobVacancy);
         $studentId = $request->user()->studentAlumni?->id;
-        $hasApplied = $studentId ? JobApplication::where('job_vacancy_id', $vacancy->id)->where('student_alumni_id', $studentId)->exists() : false;
+        $hasApplied = $this->service->hasStudentApplied($vacancy->id, $studentId);
 
         $data = (new JobVacancyResource($vacancy))->toArray($request);
         $data['hasApplied'] = $hasApplied;

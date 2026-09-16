@@ -64,6 +64,12 @@ class StudentService
             });
         }
 
+        if (! empty($filters['department_id'])) {
+            $query->whereHas('major', function (Builder $majorQuery) use ($filters) {
+                $majorQuery->where('department_id', $filters['department_id']);
+            });
+        }
+
         if (! empty($filters['major_id'])) {
             $query->where('major_id', $filters['major_id']);
         }
@@ -194,8 +200,13 @@ class StudentService
             ->orderBy('name')
             ->get();
 
-        $majors = Major::where('is_active', true)
+        $departments = \App\Models\Department::where('is_active', true)
             ->select('id', 'code', 'name')
+            ->orderBy('name')
+            ->get();
+
+        $majors = Major::where('is_active', true)
+            ->select('id', 'department_id', 'code', 'name')
             ->orderBy('name')
             ->get();
 
@@ -219,6 +230,7 @@ class StudentService
 
         return [
             'companies' => $companies,
+            'departments' => $departments,
             'majors' => $majors,
             'classes' => $classes,
             'employment_statuses' => $employmentStatuses,

@@ -98,6 +98,17 @@ class StudentJobVacancyService
         ];
     }
 
+    public function hasStudentApplied(int|string $vacancyId, ?int $studentAlumniId): bool
+    {
+        if (! $studentAlumniId) {
+            return false;
+        }
+
+        return JobApplication::where('job_vacancy_id', $vacancyId)
+            ->where('student_alumni_id', $studentAlumniId)
+            ->exists();
+    }
+
     public function applyToVacancy(JobVacancy $vacancy, int $userId, string $role, ?string $notes = null): JobApplication
     {
         $student = StudentAlumni::where('user_id', $userId)->firstOrFail();

@@ -57,12 +57,7 @@ class JobVacancyController extends Controller
 
     public function show(string $idOrSlug): Responsable
     {
-        $vacancy = JobVacancy::with(['company', 'jobType', 'status', 'targetApplicant', 'majors', 'createdBy', 'updatedBy'])
-            ->where(function ($query) use ($idOrSlug) {
-                $query->where('id', $idOrSlug)
-                    ->orWhere('slug', $idOrSlug);
-            })
-            ->firstOrFail();
+        $vacancy = $this->jobVacancyService->getJobVacancyDetail($idOrSlug);
 
         return $this->response->message('Detail lowongan kerja berhasil diambil.')
             ->data(new JobVacancyResource($vacancy));

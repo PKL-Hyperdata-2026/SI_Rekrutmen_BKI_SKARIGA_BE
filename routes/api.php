@@ -3,12 +3,13 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\DepartmentController;
-use App\Http\Controllers\Api\JobPlacementController;
+use App\Http\Controllers\Api\Hrd\JobPlacementController;
 use App\Http\Controllers\Api\JobVacancyController;
 use App\Http\Controllers\Api\StudentJobVacancyController;
 use App\Http\Controllers\Api\MajorController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\PortfolioController;
+use App\Http\Controllers\Api\RecruitmentAttendanceController;
 use App\Http\Controllers\Api\StudentAlumniController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StandardTypeController;
@@ -20,7 +21,7 @@ use App\Http\Controllers\Api\Admin\RecruitmentSelectionController;
 use App\Http\Controllers\Api\Hrd\TestScheduleController;
 use App\Http\Controllers\Api\Hrd\JobVacancyController as HrdJobVacancyController;
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Api\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -71,6 +72,15 @@ Route::middleware('auth:sanctum')->group(function () {
             ->parameters(['tracer-studies' => 'tracerStudy']);
         Route::get('/recruitment-selections', [RecruitmentSelectionController::class, 'index']); // [ADMIN] Seleksi Rekrutmen view-only (Issue #67)
         // TODO: API Admin lainnya
+            
+        Route::prefix('attendances')->group(function () {
+            Route::get('/vacancies', [RecruitmentAttendanceController::class, 'vacancyOptions']);
+            Route::get('/stage-summaries', [RecruitmentAttendanceController::class, 'stageSummaries']);
+            Route::get('/queue', [RecruitmentAttendanceController::class, 'queue']);
+            Route::get('/history', [RecruitmentAttendanceController::class, 'history']);
+            Route::patch('/bulk-validate', [RecruitmentAttendanceController::class, 'bulkValidate']);
+            Route::patch('/{attendance}/validate', [RecruitmentAttendanceController::class, 'validateAttendance']);
+        });
     });
 
 
@@ -91,6 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Kelola Lowongan Kerja (HRD Perusahaan)
         Route::get('/job-vacancies/statistics', [HrdJobVacancyController::class, 'statistics']);
         Route::get('/job-vacancies/options', [HrdJobVacancyController::class, 'options']);
+        Route::patch('/job-vacancies/{jobVacancy}/toggle-active', [HrdJobVacancyController::class, 'toggleActive']);
         Route::apiResource('job-vacancies', HrdJobVacancyController::class)
             ->parameters(['job-vacancies' => 'jobVacancy']);
 
@@ -113,6 +124,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Lamaran Pekerjaan (Bisa diakses Siswa maupun Alumni)
     Route::middleware('role:siswa,alumni')->group(function () {
+        Route::get('/job-vacancies', [StudentJobVacancyController::class, 'index']);
+        Route::get('/job-vacancies/options', [StudentJobVacancyController::class, 'options']);
+        Route::get('/job-vacancies/{jobVacancy}', [StudentJobVacancyController::class, 'show']);
+        Route::post('/job-vacancies/{jobVacancy}/apply', [StudentJobVacancyController::class, 'apply']);
+
         Route::get('/my-applications', [StudentJobApplicationController::class, 'index']);
         Route::get('/my-applications/{id}', [StudentJobApplicationController::class, 'show']);
     });

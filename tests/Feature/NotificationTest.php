@@ -83,7 +83,7 @@ class NotificationTest extends TestCase
         $response = $this->actingAs($this->user, 'sanctum')
             ->patchJson("/api/notification/{$notification->id}/read");
 
-        $response->assertStatus(201)
+        $response->assertStatus(200)
             ->assertJsonPath('success', true);
 
         $this->assertNotNull($notification->fresh()->read_at);
@@ -110,7 +110,7 @@ class NotificationTest extends TestCase
         $response = $this->actingAs($this->user, 'sanctum')
             ->patchJson('/api/notification/read-all');
 
-        $response->assertStatus(201)
+        $response->assertStatus(200)
             ->assertJsonPath('success', true);
 
         $this->assertEquals(

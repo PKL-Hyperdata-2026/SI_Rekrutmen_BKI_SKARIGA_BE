@@ -12,7 +12,6 @@ class SelectionStageStandardTypeSeeder extends Seeder
 {
     public function run(): void
     {
-        // Category: stage_type
         $stageTypeCategory = StandardTypeCategory::firstOrCreate(
             ['code' => 'stage_type'],
             ['name' => 'Tipe Tahapan Seleksi', 'description' => 'Kategori jenis atau tipe tahapan evaluasi rekrutmen']

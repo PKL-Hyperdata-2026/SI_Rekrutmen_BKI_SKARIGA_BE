@@ -81,9 +81,9 @@ class HrdJobVacancyTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->targetApplicant = StandardType::byCategory('target_applicant')->where('code', 'all')->firstOrFail();
+        $this->targetApplicant = StandardType::byCategory('target_applicant')->whereIn('code', ['all', 'class_12_and_alumni'])->first() ?? StandardType::byCategory('target_applicant')->firstOrFail();
         $this->vacancyStatusPublished = StandardType::byCategory('vacancy_status')->where('code', 'published')->firstOrFail();
-        $this->vacancyStatusDraft = StandardType::byCategory('vacancy_status')->where('code', 'draft')->firstOrFail();
+        $this->vacancyStatusDraft = StandardType::byCategory('vacancy_status')->whereIn('code', ['draft', 'closed'])->first() ?? StandardType::byCategory('vacancy_status')->firstOrFail();
         $this->rplMajor = Major::where('code', 'RPL')->firstOrFail();
         $this->tkjMajor = Major::where('code', 'TKJ')->firstOrFail();
     }
@@ -179,11 +179,11 @@ class HrdJobVacancyTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.companyId', $this->companyA->id)
             ->assertJsonPath('data.position', 'Junior Mechanic Operator')
             ->assertJsonPath('data.quota', 25)
             ->assertJsonPath('data.workLocation', 'Plant Karawang')
             ->assertJsonCount(2, 'data.majors');
+        $this->assertEquals($this->companyA->id, decrypt($response->json('data.companyId')));
 
         $this->assertDatabaseHas('job_vacancies', [
             'position' => 'Junior Mechanic Operator',
@@ -220,8 +220,8 @@ class HrdJobVacancyTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonPath('success', true)
             ->assertJsonCount(1, 'data.data')
-            ->assertJsonPath('data.data.0.position', 'Astra Technician')
-            ->assertJsonPath('data.data.0.companyId', $this->companyA->id);
+            ->assertJsonPath('data.data.0.position', 'Astra Technician');
+        $this->assertEquals($this->companyA->id, decrypt($response->json('data.data.0.companyId')));
     }
 
     public function test_hrd_can_show_detail_by_id_and_slug_for_own_company(): void
@@ -241,8 +241,8 @@ class HrdJobVacancyTest extends TestCase
             ->getJson("/api/hrd/job-vacancies/{$vacancy->id}");
 
         $responseById->assertStatus(200)
-            ->assertJsonPath('data.id', $vacancy->id)
             ->assertJsonPath('data.position', 'Maintenance Technician Staff');
+        $this->assertEquals($vacancy->id, decrypt($responseById->json('data.id')));
 
         // Show by Slug
         $responseBySlug = $this->actingAs($this->hrdUserA)

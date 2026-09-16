@@ -67,5 +67,34 @@ class StudentAlumniSeeder extends Seeder
 
             StudentAlumni::factory()->create($data);
         }
+
+        $alumniUser = User::where('email', 'alumni@email.com')->first();
+        if ($alumniUser && !StudentAlumni::where('user_id', $alumniUser->id)->exists()) {
+            StudentAlumni::create([
+                'user_id' => $alumniUser->id,
+                'major_id' => $rpl->id,
+                'nis' => '19000001',
+                'graduation_year' => 2024,
+                'current_position' => 'Software Engineer',
+                'starting_salary' => 5500000,
+                'waiting_time_months' => 1,
+                'is_active' => true,
+                'created_by' => $alumniUser->id,
+                'updated_by' => $alumniUser->id,
+            ]);
+        }
+
+        $siswaUser = User::where('email', 'faisalmarvello53@gmail.com')->first();
+        if ($siswaUser && !StudentAlumni::where('user_id', $siswaUser->id)->exists()) {
+            StudentAlumni::create([
+                'user_id' => $siswaUser->id,
+                'major_id' => $rpl->id,
+                'nis' => '20000001',
+                'graduation_year' => null,
+                'is_active' => true,
+                'created_by' => $siswaUser->id,
+                'updated_by' => $siswaUser->id,
+            ]);
+        }
     }
 }

@@ -202,6 +202,26 @@ class JobVacancyService
         return $vacancy->fresh(['company', 'jobType', 'status', 'targetApplicant', 'majors', 'createdBy', 'updatedBy']);
     }
 
+    public function getJobVacancyDetail(string $idOrSlug): JobVacancy
+    {
+        return JobVacancy::with(['company', 'jobType', 'status', 'targetApplicant', 'majors', 'createdBy', 'updatedBy'])
+            ->where(function ($query) use ($idOrSlug) {
+                $query->where('id', $idOrSlug)
+                    ->orWhere('slug', $idOrSlug);
+            })
+            ->firstOrFail();
+    }
+
+    public function findJobVacancyDetail(string $idOrSlug): ?JobVacancy
+    {
+        return JobVacancy::with(['company', 'jobType', 'status', 'targetApplicant', 'majors', 'createdBy', 'updatedBy'])
+            ->where(function ($query) use ($idOrSlug) {
+                $query->where('id', $idOrSlug)
+                    ->orWhere('slug', $idOrSlug);
+            })
+            ->first();
+    }
+
     public function getFormOptions(): array
     {
         $companies = Company::where('is_active', true)
@@ -284,8 +304,11 @@ class JobVacancyService
         return $query->latest()->paginate($perPage);
     }
 
-    public function getHrdFormOptions(int $companyId): array
+    public function getHrdFormOptions(Company|int $company): array
     {
+        $companyModel = $company instanceof Company ? $company : Company::find($company);
+        $companyId = $companyModel?->id ?? (int) $company;
+
         $majors = Major::where('is_active', true)
             ->select('id', 'code', 'name')
             ->orderBy('name')
@@ -306,7 +329,14 @@ class JobVacancyService
             ->orderBy('sort_order')
             ->get(['id', 'code', 'name', 'metadata']);
 
+        $statistics = $this->getHrdStatistics($companyId);
+
         return [
+            'company' => $companyModel ? [
+                'id' => $companyModel->id,
+                'name' => $companyModel->name,
+            ] : null,
+            'statistics' => $statistics,
             'majors' => $majors,
             'targetApplicants' => $targetApplicants,
             'jobTypes' => $jobTypes,
@@ -337,9 +367,12 @@ class JobVacancyService
             })
             ->count();
 
+        $totalCount = JobVacancy::where('company_id', $companyId)->count();
+
         return [
-            'active' => $activeCount,
-            'draft_closed' => $draftClosedCount,
+            'activeCount' => $activeCount,
+            'draftOrClosedCount' => $draftClosedCount,
+            'totalCount' => $totalCount,
         ];
     }
 

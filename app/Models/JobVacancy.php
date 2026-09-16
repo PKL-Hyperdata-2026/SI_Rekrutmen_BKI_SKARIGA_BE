@@ -84,6 +84,16 @@ class JobVacancy extends Model
         return $this->hasMany(JobApplication::class, 'job_vacancy_id');
     }
 
+    public function selectionStages(): HasMany
+    {
+        return $this->hasMany(SelectionStage::class, 'job_vacancy_id')->orderBy('sequence_order', 'asc');
+    }
+
+    public function jobApplications(): HasMany
+    {
+        return $this->hasMany(JobApplication::class, 'job_vacancy_id');
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

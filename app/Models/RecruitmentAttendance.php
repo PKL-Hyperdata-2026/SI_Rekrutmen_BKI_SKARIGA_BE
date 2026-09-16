@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,34 +13,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'stage_history_id',
     'attendance_status_id',
-    'qr_code_token',
+    'validation_status',
+    'validated_by',
+    'validated_at',
     'attended_at',
-    'latitude',
-    'longitude',
-    'photo_selfie_path',
+    'notes',
+    'system_action',
 ])]
 class RecruitmentAttendance extends Model
 {
     use HasFactory;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
     protected $table = 'recruitment_attendances';
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'attended_at' => 'datetime',
-            'latitude' => 'float',
-            'longitude' => 'float',
+            'validated_at' => 'datetime',
         ];
     }
 
@@ -52,5 +43,25 @@ class RecruitmentAttendance extends Model
     {
         return $this->belongsTo(StandardType::class, 'attendance_status_id')
             ->byCategory('attendance_status');
+    }
+
+    public function validator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'validated_by');
+    }
+
+    public function scopePending(Builder $query): Builder
+    {
+        return $query->where('validation_status', 'pending');
+    }
+
+    public function scopeVerified(Builder $query): Builder
+    {
+        return $query->where('validation_status', 'verified');
+    }
+
+    public function scopeRejected(Builder $query): Builder
+    {
+        return $query->where('validation_status', 'rejected');
     }
 }

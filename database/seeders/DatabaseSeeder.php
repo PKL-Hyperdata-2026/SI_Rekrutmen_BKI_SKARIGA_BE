@@ -11,9 +11,6 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**1
-     * Seed the application's database.
-     */
     public function run(): void
     {
         $this->call([
@@ -34,6 +31,7 @@ class DatabaseSeeder extends Seeder
             StudentAlumniSeeder::class,
             JobPlacementSeeder::class,
             JobVacancySeeder::class,
+            RecruitmentAttendanceSeeder::class,
         ]);
     }
 }

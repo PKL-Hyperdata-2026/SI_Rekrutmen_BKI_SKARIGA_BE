@@ -12,7 +12,6 @@ class RecruitmentAttendanceStandardTypeSeeder extends Seeder
 {
     public function run(): void
     {
-        // Category: attendance_status
         $statusCategory = StandardTypeCategory::firstOrCreate(
             ['code' => 'attendance_status'],
             ['name' => 'Status Kehadiran Rekrutmen', 'description' => 'Status presensi fisik/online peserta pada tahapan seleksi']

@@ -15,7 +15,7 @@ class StoreHrdJobVacancyRequest extends FormRequest
     }
 
     /**
-     * @return array<string, array<int, string>|string>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
@@ -25,7 +25,9 @@ class StoreHrdJobVacancyRequest extends FormRequest
             'quota' => 'required|integer|min:1',
             'deadline' => 'required|date|after_or_equal:today',
             'major_ids' => 'required|array|min:1',
-            'major_ids.*' => 'exists:majors,id',
+            'major_ids.*' => [
+                Rule::exists('majors', 'id')->where('is_active', true),
+            ],
             'target_applicant_id' => 'required|exists:standard_types,id',
             'work_location' => 'required|string|max:255',
             'qualification' => 'required|string',
@@ -53,7 +55,7 @@ class StoreHrdJobVacancyRequest extends FormRequest
             'major_ids.required' => 'Minimal satu kategori jurusan harus dipilih.',
             'major_ids.array' => 'Kategori jurusan harus berupa array.',
             'major_ids.min' => 'Minimal satu kategori jurusan harus dipilih.',
-            'major_ids.*.exists' => 'Kategori jurusan yang dipilih tidak valid.',
+            'major_ids.*.exists' => 'Kategori jurusan yang dipilih tidak valid atau tidak aktif.',
             'target_applicant_id.required' => 'Target pelamar wajib dipilih.',
             'target_applicant_id.exists' => 'Target pelamar yang dipilih tidak valid.',
             'work_location.required' => 'Lokasi kerja wajib diisi.',

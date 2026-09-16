@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Models\JobVacancy;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateHrdJobVacancyRequest extends FormRequest
 {
@@ -14,7 +17,7 @@ class UpdateHrdJobVacancyRequest extends FormRequest
     }
 
     /**
-     * @return array<string, array<int, string>|string>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
@@ -22,9 +25,30 @@ class UpdateHrdJobVacancyRequest extends FormRequest
             'position' => 'sometimes|required|string|max:255',
             'title' => 'nullable|string|max:255',
             'quota' => 'sometimes|required|integer|min:1',
-            'deadline' => 'sometimes|required|date|after_or_equal:today',
+            'deadline' => [
+                'sometimes',
+                'required',
+                'date',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    $vacancy = $this->route('jobVacancy');
+                    if (! ($vacancy instanceof JobVacancy) && (is_numeric($vacancy) || is_string($vacancy))) {
+                        $vacancy = JobVacancy::find($vacancy);
+                    }
+                    if ($vacancy instanceof JobVacancy) {
+                        $originalDeadline = $vacancy->deadline?->format('Y-m-d');
+                        if ($value === $originalDeadline) {
+                            return;
+                        }
+                    }
+                    if (is_string($value) && strtotime($value) < strtotime(today()->toDateString())) {
+                        $fail('Batas pendaftaran tidak boleh di masa lalu.');
+                    }
+                },
+            ],
             'major_ids' => 'sometimes|required|array|min:1',
-            'major_ids.*' => 'exists:majors,id',
+            'major_ids.*' => [
+                Rule::exists('majors', 'id')->where('is_active', true),
+            ],
             'target_applicant_id' => 'sometimes|required|exists:standard_types,id',
             'work_location' => 'sometimes|required|string|max:255',
             'qualification' => 'sometimes|required|string',
@@ -52,7 +76,7 @@ class UpdateHrdJobVacancyRequest extends FormRequest
             'major_ids.required' => 'Minimal satu kategori jurusan harus dipilih.',
             'major_ids.array' => 'Kategori jurusan harus berupa array.',
             'major_ids.min' => 'Minimal satu kategori jurusan harus dipilih.',
-            'major_ids.*.exists' => 'Kategori jurusan yang dipilih tidak valid.',
+            'major_ids.*.exists' => 'Kategori jurusan yang dipilih tidak valid atau tidak aktif.',
             'target_applicant_id.required' => 'Target pelamar wajib dipilih.',
             'target_applicant_id.exists' => 'Target pelamar yang dipilih tidak valid.',
             'work_location.required' => 'Lokasi kerja wajib diisi.',

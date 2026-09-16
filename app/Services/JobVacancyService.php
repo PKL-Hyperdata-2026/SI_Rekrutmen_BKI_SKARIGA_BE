@@ -4,30 +4,27 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\JobVacancy;
 use App\Models\Company;
-use Illuminate\Support\Str;
+use App\Models\JobVacancy;
 use App\Models\Major;
 use App\Models\StandardType;
 use App\Models\User;
-use App\Models\JobApplication;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class JobVacancyService
 {
-    public function __construct(protected NotificationService $notificationService)
-    {
-    }
+    public function __construct(protected NotificationService $notificationService) {}
 
     public function generateUniqueSlug(string $title, int $companyId): string
     {
         $baseSlug = Str::slug($title);
-        $slug = "{$baseSlug}-{$companyId}-" . Str::random(5);
+        $slug = "{$baseSlug}-{$companyId}-".Str::random(5);
 
         while (JobVacancy::where('slug', $slug)->exists()) {
-            $slug = "{$baseSlug}-{$companyId}-" . Str::random(6);
+            $slug = "{$baseSlug}-{$companyId}-".Str::random(6);
         }
 
         return $slug;
@@ -133,7 +130,7 @@ class JobVacancyService
 
             $vacancy = JobVacancy::create($data);
 
-            if (!empty($majorIds)) {
+            if (! empty($majorIds)) {
                 $vacancy->majors()->sync($majorIds);
             }
 
@@ -222,6 +219,16 @@ class JobVacancyService
             ->first();
     }
 
+    public function getHrdVacancyDetail(int $companyId, string $idOrSlug): ?JobVacancy
+    {
+        $vacancy = $this->findJobVacancyDetail($idOrSlug);
+        if (! $vacancy || $vacancy->company_id !== $companyId) {
+            return null;
+        }
+
+        return $vacancy;
+    }
+
     public function getFormOptions(): array
     {
         $companies = Company::where('is_active', true)
@@ -269,7 +276,7 @@ class JobVacancyService
                 }
             }]);
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function (Builder $q) use ($search) {
                 $q->where('position', 'like', "%{$search}%")
@@ -281,20 +288,20 @@ class JobVacancyService
             });
         }
 
-        if (!empty($filters['status_id'])) {
+        if (! empty($filters['status_id'])) {
             $query->where('status_id', $filters['status_id']);
         }
 
-        if (!empty($filters['target_applicant_id']) && $filters['target_applicant_id'] !== 'all') {
+        if (! empty($filters['target_applicant_id']) && $filters['target_applicant_id'] !== 'all') {
             $query->where('target_applicant_id', $filters['target_applicant_id']);
         }
 
-        if (!empty($filters['job_type_id'])) {
+        if (! empty($filters['job_type_id'])) {
             $query->where('job_type_id', $filters['job_type_id']);
         }
 
-        if (!empty($filters['major_id']) && $filters['major_id'] !== 'all') {
-            $query->whereHas('majors', fn($q) => $q->where('majors.id', $filters['major_id']));
+        if (! empty($filters['major_id']) && $filters['major_id'] !== 'all') {
+            $query->whereHas('majors', fn ($q) => $q->where('majors.id', $filters['major_id']));
         }
 
         if (isset($filters['is_active']) && $filters['is_active'] !== '') {
@@ -333,8 +340,10 @@ class JobVacancyService
 
         return [
             'company' => $companyModel ? [
-                'id' => $companyModel->id,
+                'id' => encrypt($companyModel->id),
                 'name' => $companyModel->name,
+                'email' => $companyModel->email,
+                'phone' => $companyModel->phone,
             ] : null,
             'statistics' => $statistics,
             'majors' => $majors,
@@ -360,7 +369,7 @@ class JobVacancyService
             ->count();
 
         $draftClosedCount = JobVacancy::where('company_id', $companyId)
-            ->where(function ($q) use ($activeStatus, $closedStatus) {
+            ->where(function ($q) use ($closedStatus) {
                 $q->where('is_active', false)
                     ->orWhere('status_id', $closedStatus)
                     ->orWhere('deadline', '<', now()->toDateString());

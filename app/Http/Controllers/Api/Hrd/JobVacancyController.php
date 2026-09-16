@@ -96,7 +96,7 @@ class JobVacancyController extends Controller
         if ($vacancy->company_id !== $company->id) {
             return $this->response
                 ->success(false)
-                ->message('Anda tidak memiliki akses ke lowongan kerja ini.')
+                ->message('Anda tidak memiliki akses ke lowongan kerja perusahaan lain.')
                 ->code(403);
         }
 
@@ -165,11 +165,18 @@ class JobVacancyController extends Controller
     public function options(Request $request): Responsable
     {
         $company = $request->user()?->company;
+        if (! $company) {
+            return $this->response
+                ->success(false)
+                ->message('Akun HRD belum terhubung dengan data perusahaan.')
+                ->code(403);
+        }
+
         $options = $this->jobVacancyService->getHrdFormOptions($company);
 
         return $this->response
             ->message('Opsi formulir lowongan kerja berhasil diambil.')
-            ->data($options);
+            ->data(encrypt_recursive($options));
     }
 
     public function statistics(Request $request): Responsable

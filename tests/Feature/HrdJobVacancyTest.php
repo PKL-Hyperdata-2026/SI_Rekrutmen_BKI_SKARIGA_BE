@@ -9,6 +9,7 @@ use App\Models\JobVacancy;
 use App\Models\Major;
 use App\Models\StandardType;
 use App\Models\User;
+use App\Services\JobVacancyService;
 use Database\Seeders\JobVacancyStandardTypeSeeder;
 use Database\Seeders\MajorSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -111,7 +112,12 @@ class HrdJobVacancyTest extends TestCase
                 'success',
                 'message',
                 'data' => [
-                    'company',
+                    'company' => [
+                        'id',
+                        'name',
+                        'email',
+                        'phone',
+                    ],
                     'statistics' => [
                         'activeCount',
                         'draftOrClosedCount',
@@ -123,8 +129,12 @@ class HrdJobVacancyTest extends TestCase
                     'jobTypes',
                 ],
             ])
-            ->assertJsonPath('data.company.id', $this->companyA->id)
+            ->assertJsonPath('data.company.name', $this->companyA->name)
+            ->assertJsonPath('data.company.email', $this->companyA->email)
+            ->assertJsonPath('data.company.phone', $this->companyA->phone)
             ->assertJsonPath('data.statistics.activeCount', 1);
+
+        $this->assertEquals($this->companyA->id, decrypt($response->json('data.company.id')));
     }
 
     public function test_hrd_can_fetch_statistics_endpoint(): void
@@ -190,6 +200,34 @@ class HrdJobVacancyTest extends TestCase
             'company_id' => $this->companyA->id,
             'quota' => 25,
         ]);
+    }
+
+    public function test_hrd_cannot_create_job_vacancy_with_inactive_major(): void
+    {
+        $inactiveMajor = Major::create([
+            'department_id' => $this->rplMajor->department_id,
+            'code' => 'INACTIVE',
+            'name' => 'Inactive Major',
+            'is_active' => false,
+        ]);
+
+        $payload = [
+            'position' => 'Junior Mechanic Operator',
+            'quota' => 25,
+            'deadline' => now()->addDays(30)->format('Y-m-d'),
+            'major_ids' => [$inactiveMajor->id],
+            'target_applicant_id' => $this->targetApplicant->id,
+            'work_location' => 'Plant Karawang',
+            'qualification' => 'Persyaratan lengkap mekanik',
+        ];
+
+        $response = $this->actingAs($this->hrdUserA)
+            ->postJson('/api/hrd/job-vacancies', $payload);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'major_ids.0' => 'Kategori jurusan yang dipilih tidak valid atau tidak aktif.',
+            ]);
     }
 
     public function test_hrd_can_only_list_their_own_company_vacancies(): void
@@ -266,7 +304,19 @@ class HrdJobVacancyTest extends TestCase
         $response = $this->actingAs($this->hrdUserA)
             ->getJson("/api/hrd/job-vacancies/{$vacancyB->id}");
 
-        $response->assertStatus(403);
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Anda tidak memiliki akses ke lowongan kerja perusahaan lain.');
+    }
+
+    public function test_hrd_cannot_show_non_existent_vacancy(): void
+    {
+        $response = $this->actingAs($this->hrdUserA)
+            ->getJson('/api/hrd/job-vacancies/non-existent-vacancy-id');
+
+        $response->assertStatus(404)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Data lowongan kerja tidak ditemukan.');
     }
 
     public function test_hrd_can_update_their_own_vacancy(): void
@@ -298,6 +348,73 @@ class HrdJobVacancyTest extends TestCase
             'position' => 'Updated Quality Control Inspector',
             'quota' => 20,
         ]);
+    }
+
+    public function test_hrd_can_update_vacancy_retaining_expired_deadline_but_cannot_change_to_different_past_deadline(): void
+    {
+        $expiredDeadline = now()->subDays(5)->format('Y-m-d');
+        $vacancy = JobVacancy::create([
+            'company_id' => $this->companyA->id,
+            'title' => 'Expired Position',
+            'position' => 'Expired Position',
+            'slug' => 'expired-pos',
+            'quota' => 5,
+            'deadline' => $expiredDeadline,
+            'is_active' => true,
+        ]);
+
+        // Retaining the same expired deadline should pass validation (200 OK)
+        $responseSame = $this->actingAs($this->hrdUserA)
+            ->putJson("/api/hrd/job-vacancies/{$vacancy->id}", [
+                'position' => 'Updated Expired Position',
+                'deadline' => $expiredDeadline,
+            ]);
+
+        $responseSame->assertStatus(200)
+            ->assertJsonPath('data.position', 'Updated Expired Position');
+
+        // Changing to a different past deadline should fail validation with 422
+        $differentPastDeadline = now()->subDays(10)->format('Y-m-d');
+        $responseDifferent = $this->actingAs($this->hrdUserA)
+            ->putJson("/api/hrd/job-vacancies/{$vacancy->id}", [
+                'deadline' => $differentPastDeadline,
+            ]);
+
+        $responseDifferent->assertStatus(422)
+            ->assertJsonValidationErrors(['deadline']);
+        $this->assertEquals(
+            'Batas pendaftaran tidak boleh di masa lalu.',
+            $responseDifferent->json('errors.deadline.0')
+        );
+    }
+
+    public function test_hrd_cannot_update_job_vacancy_with_inactive_major(): void
+    {
+        $vacancy = JobVacancy::create([
+            'company_id' => $this->companyA->id,
+            'title' => 'Active Position',
+            'position' => 'Active Position',
+            'slug' => 'active-pos-major',
+            'quota' => 5,
+            'is_active' => true,
+        ]);
+
+        $inactiveMajor = Major::create([
+            'department_id' => $this->rplMajor->department_id,
+            'code' => 'INACTIVE2',
+            'name' => 'Inactive Major 2',
+            'is_active' => false,
+        ]);
+
+        $response = $this->actingAs($this->hrdUserA)
+            ->putJson("/api/hrd/job-vacancies/{$vacancy->id}", [
+                'major_ids' => [$inactiveMajor->id],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'major_ids.0' => 'Kategori jurusan yang dipilih tidak valid atau tidak aktif.',
+            ]);
     }
 
     public function test_hrd_cannot_update_another_company_vacancy(): void
@@ -419,5 +536,46 @@ class HrdJobVacancyTest extends TestCase
         $response->assertStatus(403)
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Akun HRD belum terhubung dengan data perusahaan.');
+    }
+
+    public function test_hrd_without_company_cannot_access_options(): void
+    {
+        $orphanHrd = User::factory()->create([
+            'role' => 'hrd',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($orphanHrd)
+            ->getJson('/api/hrd/job-vacancies/options');
+
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Akun HRD belum terhubung dengan data perusahaan.');
+    }
+
+    public function test_job_vacancy_service_hrd_detail_methods(): void
+    {
+        /** @var JobVacancyService $service */
+        $service = app(JobVacancyService::class);
+
+        $vacancyA = JobVacancy::create([
+            'company_id' => $this->companyA->id,
+            'title' => 'Service Pos A',
+            'position' => 'Service Pos A',
+            'slug' => 'service-pos-a',
+            'quota' => 5,
+            'is_active' => true,
+        ]);
+
+        // findJobVacancyDetail finds by id or slug
+        $this->assertNotNull($service->findJobVacancyDetail((string) $vacancyA->id));
+        $this->assertNotNull($service->findJobVacancyDetail('service-pos-a'));
+        $this->assertNull($service->findJobVacancyDetail('non-existent-pos'));
+
+        // getHrdVacancyDetail verifies company ownership
+        $this->assertNotNull($service->getHrdVacancyDetail($this->companyA->id, (string) $vacancyA->id));
+        $this->assertNotNull($service->getHrdVacancyDetail($this->companyA->id, 'service-pos-a'));
+        $this->assertNull($service->getHrdVacancyDetail($this->companyB->id, (string) $vacancyA->id));
+        $this->assertNull($service->getHrdVacancyDetail($this->companyA->id, 'non-existent-pos'));
     }
 }

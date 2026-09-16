@@ -92,7 +92,10 @@ class JobVacancyResource extends JsonResource
             }),
             'createdAt' => $this->created_at?->toIso8601String(),
             'updatedAt' => $this->updated_at?->toIso8601String(),
-            'applicantsCount' => $this->whenCounted('applications', fn() => (int) $this->applications_count),
+            'applicantsCount' => $this->when(
+                array_key_exists('applicants_count', $this->resource->getAttributes()) || array_key_exists('applications_count', $this->resource->getAttributes()),
+                fn () => (int) ($this->applicants_count ?? $this->applications_count)
+            ),
         ];
     }
 }

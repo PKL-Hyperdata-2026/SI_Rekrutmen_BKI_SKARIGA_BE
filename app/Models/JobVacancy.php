@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -49,6 +50,26 @@ class JobVacancy extends Model
             'is_featured' => 'boolean',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function scopeOpen(Builder $query): Builder
+    {
+        return $query->where('is_active', true)
+            ->where(function (Builder $q) {
+                $q->whereNull('deadline')
+                    ->orWhere('deadline', '>=', now()->toDateString());
+            });
+    }
+
+    public function scopeExpired(Builder $query): Builder
+    {
+        return $query->whereNotNull('deadline')
+            ->where('deadline', '<', now()->toDateString());
     }
 
     public function company(): BelongsTo

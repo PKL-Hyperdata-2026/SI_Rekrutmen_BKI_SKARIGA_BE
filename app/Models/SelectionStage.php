@@ -28,18 +28,8 @@ class SelectionStage extends Model
 {
     use HasFactory, SoftDeletes;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
     protected $table = 'selection_stages';
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [

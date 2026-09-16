@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\StudentJobVacancyController;
 use App\Http\Controllers\Api\MajorController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\PortfolioController;
+use App\Http\Controllers\Api\RecruitmentAttendanceController;
 use App\Http\Controllers\Api\StudentAlumniController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StandardTypeController;
@@ -67,7 +68,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/tracer-studies/sync', [AdminTracerStudyController::class, 'sync']);
         Route::apiResource('tracer-studies', AdminTracerStudyController::class)
             ->parameters(['tracer-studies' => 'tracerStudy']);
-        // TODO: API Admin lainnya
+            
+        Route::prefix('attendances')->group(function () {
+            Route::get('/vacancies', [RecruitmentAttendanceController::class, 'vacancyOptions']);
+            Route::get('/stage-summaries', [RecruitmentAttendanceController::class, 'stageSummaries']);
+            Route::get('/queue', [RecruitmentAttendanceController::class, 'queue']);
+            Route::get('/history', [RecruitmentAttendanceController::class, 'history']);
+            Route::patch('/bulk-validate', [RecruitmentAttendanceController::class, 'bulkValidate']);
+            Route::patch('/{attendance}/validate', [RecruitmentAttendanceController::class, 'validateAttendance']);
+        });
     });
 
 

@@ -196,6 +196,14 @@ backend/app/
   - `PUT|PATCH /api/admin/tracer-studies/{tracerStudy}` — Update data tracer study alumni (alumni readonly).
   - `DELETE /api/admin/tracer-studies/{tracerStudy}` — Soft delete data tracer study + `deleted_by`.
 - `/api/hrd/*` (`role:hrd`) — Company profile, vacancy management, candidate selection pipeline, job placements.
+  - `GET /api/hrd/job-vacancies/statistics` — Statistik lowongan HRD: `active` (aktif/dibuka) dan `draft_closed` (draft/ditutup/expired).
+  - `GET /api/hrd/job-vacancies/options` — Dropdown opsi form lowongan: `majors`, `targetApplicants` (Siswa Kls 12 & Alumni, Siswa Kls 12, Alumni), `jobTypes`, `vacancyStatuses`.
+  - `GET /api/hrd/job-vacancies` — List lowongan kerja milik perusahaan HRD + pagination (`per_page`), search (posisi/lokasi/jurusan), filter (`status_id`, `target_applicant_id`, `job_type_id`, `major_id`, `is_active`), sort. Response includes `applicantsCount` (jumlah pelamar, exclude rejected).
+  - `POST /api/hrd/job-vacancies` — Buat lowongan baru (wajib: position, quota, deadline, major_ids[], target_applicant_id, work_location, qualification). Default status `published`, is_active `true`. Optional: `send_notification` untuk notif ke siswa/alumni target. Dalam `DB::transaction()`.
+  - `GET /api/hrd/job-vacancies/{jobVacancy}` — Detail lowongan (dengan relasi company, jobType, status, targetApplicant, majors, createdBy, updatedBy).
+  - `PUT|PATCH /api/hrd/job-vacancies/{jobVacancy}` — Update lowongan. Validasi sama create kecuali field opsional (`sometimes|required`). Dalam `DB::transaction()`.
+  - `DELETE /api/hrd/job-vacancies/{jobVacancy}` — Soft delete lowongan + `deleted_by`. Dalam `DB::transaction()`.
+  - `PATCH /api/hrd/job-vacancies/{jobVacancy}/toggle-active` — Toggle `is_active` (buka/tutup lowongan).
   - `GET /api/hrd/job-placements` — List penempatan kerja perusahaan HRD + pagination (`per_page`), search (nama/NIS/notes), filter (`student_alumni_id`, `placement_status_id`, `job_application_id`, `year`), sort (`sort_by`, `sort_dir`).
   - `GET /api/hrd/job-placements/options` — Dropdown opsi: `companies`, `placement_statuses`, `students_alumni`.
   - `GET /api/hrd/job-placements/metrics` — Metrik evaluasi penempatan kerja (total, 3 bulan, 6 bulan, 12 bulan).

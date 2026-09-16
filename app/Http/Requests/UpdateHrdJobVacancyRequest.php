@@ -19,15 +19,15 @@ class UpdateHrdJobVacancyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'position' => 'nullable|string|max:255',
+            'position' => 'sometimes|required|string|max:255',
             'title' => 'nullable|string|max:255',
-            'quota' => 'nullable|integer|min:1',
-            'deadline' => 'nullable|date',
-            'major_ids' => 'nullable|array',
+            'quota' => 'sometimes|required|integer|min:1',
+            'deadline' => 'sometimes|required|date|after_or_equal:today',
+            'major_ids' => 'sometimes|required|array|min:1',
             'major_ids.*' => 'exists:majors,id',
-            'target_applicant_id' => 'nullable|exists:standard_types,id',
-            'work_location' => 'nullable|string|max:255',
-            'qualification' => 'nullable|string',
+            'target_applicant_id' => 'sometimes|required|exists:standard_types,id',
+            'work_location' => 'sometimes|required|string|max:255',
+            'qualification' => 'sometimes|required|string',
             'description' => 'nullable|string',
             'job_type_id' => 'nullable|exists:standard_types,id',
             'status_id' => 'nullable|exists:standard_types,id',
@@ -36,6 +36,27 @@ class UpdateHrdJobVacancyRequest extends FormRequest
             'is_featured' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
             'send_notification' => 'nullable|boolean',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'position.required' => 'Posisi pekerjaan wajib diisi.',
+            'quota.required' => 'Kuota wajib diisi.',
+            'quota.integer' => 'Kuota harus berupa angka bulat.',
+            'quota.min' => 'Kuota minimal 1 orang.',
+            'deadline.required' => 'Batas pendaftaran wajib diisi.',
+            'deadline.date' => 'Batas pendaftaran harus berupa tanggal yang valid.',
+            'deadline.after_or_equal' => 'Batas pendaftaran tidak boleh di masa lalu.',
+            'major_ids.required' => 'Minimal satu kategori jurusan harus dipilih.',
+            'major_ids.array' => 'Kategori jurusan harus berupa array.',
+            'major_ids.min' => 'Minimal satu kategori jurusan harus dipilih.',
+            'major_ids.*.exists' => 'Kategori jurusan yang dipilih tidak valid.',
+            'target_applicant_id.required' => 'Target pelamar wajib dipilih.',
+            'target_applicant_id.exists' => 'Target pelamar yang dipilih tidak valid.',
+            'work_location.required' => 'Lokasi kerja wajib diisi.',
+            'qualification.required' => 'Kualifikasi/persyaratan wajib diisi.',
         ];
     }
 }

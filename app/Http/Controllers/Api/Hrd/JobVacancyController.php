@@ -84,12 +84,7 @@ class JobVacancyController extends Controller
                 ->code(403);
         }
 
-        $vacancy = JobVacancy::with(['company', 'jobType', 'status', 'targetApplicant', 'majors', 'createdBy', 'updatedBy'])
-            ->where(function ($query) use ($idOrSlug) {
-                $query->where('id', $idOrSlug)
-                    ->orWhere('slug', $idOrSlug);
-            })
-            ->first();
+        $vacancy = $this->jobVacancyService->findJobVacancyDetail($idOrSlug);
 
         if (! $vacancy) {
             return $this->response

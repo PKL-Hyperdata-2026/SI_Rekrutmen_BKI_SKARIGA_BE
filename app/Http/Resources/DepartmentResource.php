@@ -12,7 +12,7 @@ class DepartmentResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id' => encrypt($this->id),
             'code' => $this->code,
             'name' => $this->name,
             'description' => $this->description,

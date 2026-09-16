@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\DepartmentController;
-use App\Http\Controllers\Api\JobPlacementController;
+use App\Http\Controllers\Api\Hrd\JobPlacementController;
 use App\Http\Controllers\Api\JobVacancyController;
 use App\Http\Controllers\Api\StudentJobVacancyController;
 use App\Http\Controllers\Api\MajorController;
@@ -19,7 +19,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\Hrd\TestScheduleController;
 use App\Http\Controllers\Api\Hrd\JobVacancyController as HrdJobVacancyController;
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Api\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -89,6 +89,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Kelola Lowongan Kerja (HRD Perusahaan)
         Route::get('/job-vacancies/statistics', [HrdJobVacancyController::class, 'statistics']);
         Route::get('/job-vacancies/options', [HrdJobVacancyController::class, 'options']);
+        Route::patch('/job-vacancies/{jobVacancy}/toggle-active', [HrdJobVacancyController::class, 'toggleActive']);
         Route::apiResource('job-vacancies', HrdJobVacancyController::class)
             ->parameters(['job-vacancies' => 'jobVacancy']);
 
@@ -101,7 +102,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Self-Service Siswa & Alumni Portfolio
-    Route::middleware('role:siswa,alumni')->prefix('siswa')->group(function () {
+    Route::middleware('role:siswa')->prefix('siswa')->group(function () {
         Route::get('/portfolio/profile', [PortfolioController::class, 'getProfile']);
         Route::get('/portfolio/options', [PortfolioController::class, 'getOptions']);
         Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);
@@ -111,6 +112,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Lamaran Pekerjaan (Bisa diakses Siswa maupun Alumni)
     Route::middleware('role:siswa,alumni')->group(function () {
+        Route::get('/job-vacancies', [StudentJobVacancyController::class, 'index']);
+        Route::get('/job-vacancies/options', [StudentJobVacancyController::class, 'options']);
+        Route::get('/job-vacancies/{jobVacancy}', [StudentJobVacancyController::class, 'show']);
+        Route::post('/job-vacancies/{jobVacancy}/apply', [StudentJobVacancyController::class, 'apply']);
+
         Route::get('/my-applications', [StudentJobApplicationController::class, 'index']);
         Route::get('/my-applications/{id}', [StudentJobApplicationController::class, 'show']);
     });

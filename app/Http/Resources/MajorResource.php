@@ -12,11 +12,11 @@ class MajorResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'departmentId' => $this->department_id,
+            'id' => encrypt($this->id),
+            'departmentId' => $this->department_id ? encrypt($this->department_id) : null,
             'department' => $this->whenLoaded('department', function () {
                 return $this->department ? [
-                    'id' => $this->department->id,
+                    'id' => encrypt($this->department->id),
                     'code' => $this->department->code,
                     'name' => $this->department->name,
                 ] : null;

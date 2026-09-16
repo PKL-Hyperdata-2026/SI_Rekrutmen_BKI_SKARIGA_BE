@@ -12,12 +12,12 @@ class CompanyResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'userId' => $this->user_id,
-            'industryId' => $this->industry_id,
+            'id' => encrypt($this->id),
+            'userId' => $this->user_id ? encrypt($this->user_id) : null,
+            'industryId' => $this->industry_id ? encrypt($this->industry_id) : null,
             'industry' => $this->whenLoaded('industry', function () {
                 return $this->industry ? [
-                    'id' => $this->industry->id,
+                    'id' => encrypt($this->industry->id),
                     'code' => $this->industry->code,
                     'name' => $this->industry->name,
                     'metadata' => $this->industry->metadata,
@@ -34,14 +34,14 @@ class CompanyResource extends JsonResource
             'isActive' => (bool) $this->is_active,
             'createdByUser' => $this->whenLoaded('createdBy', function () {
                 return $this->createdBy ? [
-                    'id' => $this->createdBy->id,
+                    'id' => encrypt($this->createdBy->id),
                     'fullName' => $this->createdBy->full_name,
                     'email' => $this->createdBy->email,
                 ] : null;
             }),
             'updatedByUser' => $this->whenLoaded('updatedBy', function () {
                 return $this->updatedBy ? [
-                    'id' => $this->updatedBy->id,
+                    'id' => encrypt($this->updatedBy->id),
                     'fullName' => $this->updatedBy->full_name,
                     'email' => $this->updatedBy->email,
                 ] : null;

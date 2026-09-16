@@ -146,8 +146,8 @@ class HrdJobPlacementTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.id', $placement->id)
             ->assertJsonPath('data.notes', 'Software Engineer Placement');
+        $this->assertEquals($placement->id, decrypt($response->json('data.id')));
     }
 
     public function test_hrd_can_create_job_placement(): void

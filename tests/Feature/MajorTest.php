@@ -124,8 +124,8 @@ class MajorTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.code', 'SIJA')
-            ->assertJsonPath('data.departmentId', $this->tikDept->id);
+            ->assertJsonPath('data.code', 'SIJA');
+        $this->assertEquals($this->tikDept->id, decrypt($response->json('data.departmentId')));
 
         $this->assertDatabaseHas('majors', [
             'code' => 'SIJA',

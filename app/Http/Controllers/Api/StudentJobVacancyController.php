@@ -59,6 +59,7 @@ class StudentJobVacancyController extends Controller
     public function apply(ApplyJobVacancyRequest $request, JobVacancy $jobVacancy): Responsable
     {
         $app = $this->service->applyToVacancy($jobVacancy, $request->user()->id, $request->user()->role, $request->validated()['notes'] ?? null);
+
         return $this->response->message('Lamaran berhasil dikirim.')->data(new StudentJobApplicationResource($app->load(['jobVacancy.company', 'status'])))->code(201);
     }
 }

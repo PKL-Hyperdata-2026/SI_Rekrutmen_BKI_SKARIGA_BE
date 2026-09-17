@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Company;
+use App\Models\JobApplication;
 use App\Models\JobVacancy;
 use App\Models\Major;
 use App\Models\StandardType;
@@ -267,10 +268,12 @@ class JobVacancyService
 
     public function getHrdVacancies(int $companyId, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
+        $rejectedStatusId = StandardType::byCategory('job_application_status')->where('code', 'rejected')->first()?->id;
+        $today = now()->toDateString();
+
         $query = JobVacancy::with(['company', 'jobType', 'status', 'targetApplicant', 'majors', 'createdBy', 'updatedBy'])
             ->where('company_id', $companyId)
-            ->withCount(['applications as applicants_count' => function ($q) {
-                $rejectedStatusId = StandardType::byCategory('job_application_status')->where('code', 'rejected')->first()?->id;
+            ->withCount(['applications as applicants_count' => function ($q) use ($rejectedStatusId) {
                 if ($rejectedStatusId) {
                     $q->where('status_id', '!=', $rejectedStatusId);
                 }
@@ -308,7 +311,106 @@ class JobVacancyService
             $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
         }
 
-        return $query->latest()->paginate($perPage);
+        $this->applyEffectiveStatusFilter($query, $filters['effective_status'] ?? null, $today, $rejectedStatusId);
+        $this->applyVacancySort($query, $filters['sort'] ?? null, $today, $rejectedStatusId);
+
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * Count subquery for active (non-rejected, non-trashed) applications.
+     * Mirrors the applicants_count withCount above so filters and sorts
+     * use the exact same definition the API resource exposes.
+     *
+     * @param  array<int|string>  $bindings
+     */
+    private function activeApplicantsCountSql(?int $rejectedStatusId, array &$bindings): string
+    {
+        $table = (new JobApplication)->getTable();
+        $sql = "(SELECT COUNT(*) FROM {$table} WHERE {$table}.job_vacancy_id = job_vacancies.id AND {$table}.deleted_at IS NULL";
+        if ($rejectedStatusId) {
+            $sql .= " AND {$table}.status_id != ?";
+            $bindings[] = $rejectedStatusId;
+        }
+
+        return $sql.')';
+    }
+
+    /**
+     * Effective status combines the raw is_active flag with deadline and
+     * quota fullness. Unknown values are ignored on purpose so old
+     * clients keep working.
+     */
+    private function applyEffectiveStatusFilter(Builder $query, mixed $status, string $today, ?int $rejectedStatusId): void
+    {
+        if (! is_string($status) || $status === '' || $status === 'all') {
+            return;
+        }
+
+        $bindings = [];
+        $countSql = $this->activeApplicantsCountSql($rejectedStatusId, $bindings);
+
+        match ($status) {
+            'active' => $query->where('job_vacancies.is_active', true)
+                ->where(function (Builder $q) use ($today) {
+                    $q->whereNull('job_vacancies.deadline')
+                        ->orWhere('job_vacancies.deadline', '>=', $today);
+                })
+                ->where(function (Builder $q) use ($countSql, $bindings) {
+                    $q->where('job_vacancies.quota', '<=', 0)
+                        ->orWhereRaw("{$countSql} < job_vacancies.quota", $bindings);
+                }),
+            'closed' => $query->where(function (Builder $q) use ($today, $countSql, $bindings) {
+                $q->where('job_vacancies.is_active', false)
+                    ->orWhere(function (Builder $expired) use ($today) {
+                        $expired->whereNotNull('job_vacancies.deadline')
+                            ->where('job_vacancies.deadline', '<', $today);
+                    })
+                    ->orWhere(function (Builder $full) use ($countSql, $bindings) {
+                        $full->where('job_vacancies.quota', '>', 0)
+                            ->whereRaw("{$countSql} >= job_vacancies.quota", $bindings);
+                    });
+            }),
+            'quota_full' => $query->where('job_vacancies.quota', '>', 0)
+                ->whereRaw("{$countSql} >= job_vacancies.quota", $bindings),
+            'expiring' => $query->where('job_vacancies.is_active', true)
+                ->whereNotNull('job_vacancies.deadline')
+                ->whereBetween('job_vacancies.deadline', [$today, now()->addDays(7)->toDateString()])
+                ->where(function (Builder $q) use ($countSql, $bindings) {
+                    $q->where('job_vacancies.quota', '<=', 0)
+                        ->orWhereRaw("{$countSql} < job_vacancies.quota", $bindings);
+                }),
+            default => null,
+        };
+    }
+
+    /**
+     * Unknown sort values fall back to newest first so old clients
+     * keep working.
+     */
+    private function applyVacancySort(Builder $query, mixed $sort, string $today, ?int $rejectedStatusId): void
+    {
+        if ($sort === 'deadline') {
+            // Upcoming deadlines first, expired ones at the bottom.
+            $query->orderByRaw('CASE WHEN job_vacancies.deadline IS NULL OR job_vacancies.deadline >= ? THEN 0 ELSE 1 END', [$today])
+                ->orderBy('job_vacancies.deadline', 'asc')
+                ->orderBy('job_vacancies.id', 'desc');
+
+            return;
+        }
+
+        if ($sort === 'quota') {
+            // Fullest quota ratio first. CASE avoids NULLS/division
+            // dialect differences between PostgreSQL and SQLite.
+            $bindings = [];
+            $countSql = $this->activeApplicantsCountSql($rejectedStatusId, $bindings);
+            $query->orderByRaw("CASE WHEN job_vacancies.quota > 0 THEN ({$countSql}) * 1.0 / job_vacancies.quota ELSE -1 END DESC", $bindings)
+                ->orderBy('job_vacancies.id', 'desc');
+
+            return;
+        }
+
+        $query->latest();
     }
 
     public function getHrdFormOptions(Company|int $company): array
@@ -356,27 +458,26 @@ class JobVacancyService
     public function getHrdStatistics(int $companyId): array
     {
         $activeStatus = StandardType::byCategory('vacancy_status')->where('code', 'published')->first()?->id;
-        $closedStatus = StandardType::byCategory('vacancy_status')->where('code', 'closed')->first()?->id;
-
-        $activeCount = JobVacancy::where('company_id', $companyId)
-            ->where('is_active', true)
-            ->where(function ($q) use ($activeStatus, $closedStatus) {
-                $q->where('status_id', $activeStatus)
-                    ->orWhere(function ($q2) use ($closedStatus) {
-                        $q2->where('status_id', $closedStatus)->where('deadline', '>=', now()->toDateString());
-                    });
-            })
-            ->count();
-
-        $draftClosedCount = JobVacancy::where('company_id', $companyId)
-            ->where(function ($q) use ($closedStatus) {
-                $q->where('is_active', false)
-                    ->orWhere('status_id', $closedStatus)
-                    ->orWhere('deadline', '<', now()->toDateString());
-            })
-            ->count();
 
         $totalCount = JobVacancy::where('company_id', $companyId)->count();
+
+        $activeCount = JobVacancy::where('company_id', $companyId)
+            ->withCount(['applications as applicants_count' => function ($q) {
+                $rejectedStatusId = StandardType::byCategory('job_application_status')->where('code', 'rejected')->first()?->id;
+                if ($rejectedStatusId) {
+                    $q->where('status_id', '!=', $rejectedStatusId);
+                }
+            }])
+            ->where('is_active', true)
+            ->where('status_id', $activeStatus)
+            ->where(function (Builder $q): void {
+                $q->whereNull('deadline')->orWhere('deadline', '>=', now()->toDateString());
+            })
+            ->get()
+            ->filter(fn (JobVacancy $v) => empty($v->quota) || $v->applicants_count < $v->quota)
+            ->count();
+
+        $draftClosedCount = $totalCount - $activeCount;
 
         return [
             'activeCount' => $activeCount,

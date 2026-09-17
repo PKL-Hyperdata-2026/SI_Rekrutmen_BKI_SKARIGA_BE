@@ -40,6 +40,8 @@ class JobVacancyController extends Controller
             'major_ids',
             'majors',
             'is_active',
+            'effective_status',
+            'sort',
         ]);
 
         $perPage = $request->integer('per_page', 15);

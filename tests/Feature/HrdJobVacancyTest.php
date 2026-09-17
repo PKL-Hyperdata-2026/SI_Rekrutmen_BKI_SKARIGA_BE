@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Company;
+use App\Models\JobApplication;
 use App\Models\JobVacancy;
 use App\Models\Major;
 use App\Models\StandardType;
+use App\Models\StudentAlumni;
 use App\Models\User;
 use App\Services\JobVacancyService;
+use Database\Seeders\JobApplicationStandardTypeSeeder;
 use Database\Seeders\JobVacancyStandardTypeSeeder;
 use Database\Seeders\MajorSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -577,5 +580,209 @@ class HrdJobVacancyTest extends TestCase
         $this->assertNotNull($service->getHrdVacancyDetail($this->companyA->id, 'service-pos-a'));
         $this->assertNull($service->getHrdVacancyDetail($this->companyB->id, (string) $vacancyA->id));
         $this->assertNull($service->getHrdVacancyDetail($this->companyA->id, 'non-existent-pos'));
+    }
+
+    public function test_hrd_can_filter_vacancies_by_effective_status(): void
+    {
+        JobVacancy::create([
+            'company_id' => $this->companyA->id,
+            'title' => 'Active Position',
+            'position' => 'Active Position',
+            'slug' => 'active-position',
+            'quota' => 5,
+            'deadline' => now()->addDays(30)->format('Y-m-d'),
+            'is_active' => true,
+        ]);
+
+        // Still flagged active in DB but the deadline has passed.
+        JobVacancy::create([
+            'company_id' => $this->companyA->id,
+            'title' => 'Expired Flagged Position',
+            'position' => 'Expired Flagged Position',
+            'slug' => 'expired-flagged-position',
+            'quota' => 5,
+            'deadline' => now()->subDays(5)->format('Y-m-d'),
+            'is_active' => true,
+        ]);
+
+        JobVacancy::create([
+            'company_id' => $this->companyA->id,
+            'title' => 'Manual Closed Position',
+            'position' => 'Manual Closed Position',
+            'slug' => 'manual-closed-position',
+            'quota' => 5,
+            'deadline' => now()->addDays(30)->format('Y-m-d'),
+            'is_active' => false,
+        ]);
+
+        $activeResponse = $this->actingAs($this->hrdUserA)
+            ->getJson('/api/hrd/job-vacancies?effective_status=active');
+
+        $activeResponse->assertStatus(200)
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.position', 'Active Position');
+
+        $closedResponse = $this->actingAs($this->hrdUserA)
+            ->getJson('/api/hrd/job-vacancies?effective_status=closed');
+
+        $closedResponse->assertStatus(200)
+            ->assertJsonCount(2, 'data.data')
+            ->assertJsonPath('data.meta.total', 2);
+    }
+
+    public function test_hrd_quota_full_filter_ignores_rejected_applications(): void
+    {
+        $this->seed(JobApplicationStandardTypeSeeder::class);
+        $pending = StandardType::byCategory('job_application_status')->where('code', 'pending')->firstOrFail();
+        $rejected = StandardType::byCategory('job_application_status')->where('code', 'rejected')->firstOrFail();
+
+        $studentUser = User::factory()->create(['role' => 'siswa']);
+        $student = StudentAlumni::create([
+            'user_id' => $studentUser->id,
+            'major_id' => $this->rplMajor->id,
+            'nis' => '99001',
+            'nisn' => '9900000001',
+            'gender' => 'L',
+        ]);
+
+        $fullVacancy = JobVacancy::create([
+            'company_id' => $this->companyA->id,
+            'title' => 'Full Position',
+            'position' => 'Full Position',
+            'slug' => 'full-position',
+            'quota' => 1,
+            'deadline' => now()->addDays(30)->format('Y-m-d'),
+            'is_active' => true,
+        ]);
+        JobApplication::create([
+            'job_vacancy_id' => $fullVacancy->id,
+            'student_alumni_id' => $student->id,
+            'status_id' => $pending->id,
+            'applied_at' => now(),
+        ]);
+
+        // Only a rejected application: must NOT count as full.
+        $rejectedOnlyVacancy = JobVacancy::create([
+            'company_id' => $this->companyA->id,
+            'title' => 'Rejected Only Position',
+            'position' => 'Rejected Only Position',
+            'slug' => 'rejected-only-position',
+            'quota' => 2,
+            'deadline' => now()->addDays(30)->format('Y-m-d'),
+            'is_active' => true,
+        ]);
+        JobApplication::create([
+            'job_vacancy_id' => $rejectedOnlyVacancy->id,
+            'student_alumni_id' => $student->id,
+            'status_id' => $rejected->id,
+            'applied_at' => now(),
+        ]);
+
+        $fullResponse = $this->actingAs($this->hrdUserA)
+            ->getJson('/api/hrd/job-vacancies?effective_status=quota_full');
+
+        $fullResponse->assertStatus(200)
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.position', 'Full Position');
+
+        $activeResponse = $this->actingAs($this->hrdUserA)
+            ->getJson('/api/hrd/job-vacancies?effective_status=active');
+
+        $activeResponse->assertStatus(200)
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.position', 'Rejected Only Position');
+    }
+
+    public function test_hrd_can_filter_expiring_and_sort_by_deadline_and_quota(): void
+    {
+        $this->seed(JobApplicationStandardTypeSeeder::class);
+        $pending = StandardType::byCategory('job_application_status')->where('code', 'pending')->firstOrFail();
+
+        $studentUser = User::factory()->create(['role' => 'siswa']);
+        $student = StudentAlumni::create([
+            'user_id' => $studentUser->id,
+            'major_id' => $this->rplMajor->id,
+            'nis' => '99002',
+            'nisn' => '9900000002',
+            'gender' => 'L',
+        ]);
+
+        JobVacancy::create([
+            'company_id' => $this->companyA->id,
+            'title' => 'Far Deadline Position',
+            'position' => 'Far Deadline Position',
+            'slug' => 'far-deadline-position',
+            'quota' => 10,
+            'deadline' => now()->addDays(30)->format('Y-m-d'),
+            'is_active' => true,
+        ]);
+
+        $soonVacancy = JobVacancy::create([
+            'company_id' => $this->companyA->id,
+            'title' => 'Soon Deadline Position',
+            'position' => 'Soon Deadline Position',
+            'slug' => 'soon-deadline-position',
+            'quota' => 2,
+            'deadline' => now()->addDays(3)->format('Y-m-d'),
+            'is_active' => true,
+        ]);
+        JobApplication::create([
+            'job_vacancy_id' => $soonVacancy->id,
+            'student_alumni_id' => $student->id,
+            'status_id' => $pending->id,
+            'applied_at' => now(),
+        ]);
+
+        JobVacancy::create([
+            'company_id' => $this->companyA->id,
+            'title' => 'Old Expired Position',
+            'position' => 'Old Expired Position',
+            'slug' => 'old-expired-position',
+            'quota' => 10,
+            'deadline' => now()->subDays(10)->format('Y-m-d'),
+            'is_active' => true,
+        ]);
+
+        $expiringResponse = $this->actingAs($this->hrdUserA)
+            ->getJson('/api/hrd/job-vacancies?effective_status=expiring');
+
+        $expiringResponse->assertStatus(200)
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.position', 'Soon Deadline Position');
+
+        $deadlineSortResponse = $this->actingAs($this->hrdUserA)
+            ->getJson('/api/hrd/job-vacancies?sort=deadline');
+
+        $deadlineSortResponse->assertStatus(200)
+            ->assertJsonPath('data.data.0.position', 'Soon Deadline Position')
+            ->assertJsonPath('data.data.1.position', 'Far Deadline Position')
+            ->assertJsonPath('data.data.2.position', 'Old Expired Position');
+
+        $quotaSortResponse = $this->actingAs($this->hrdUserA)
+            ->getJson('/api/hrd/job-vacancies?sort=quota');
+
+        $quotaSortResponse->assertStatus(200)
+            ->assertJsonPath('data.data.0.position', 'Soon Deadline Position')
+            ->assertJsonPath('data.data.1.position', 'Old Expired Position')
+            ->assertJsonPath('data.data.2.position', 'Far Deadline Position');
+    }
+
+    public function test_hrd_ignores_unknown_effective_status_and_sort(): void
+    {
+        JobVacancy::create([
+            'company_id' => $this->companyA->id,
+            'title' => 'Plain Position',
+            'position' => 'Plain Position',
+            'slug' => 'plain-position',
+            'quota' => 5,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->hrdUserA)
+            ->getJson('/api/hrd/job-vacancies?effective_status=bogus&sort=bogus');
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.position', 'Plain Position');
     }
 }

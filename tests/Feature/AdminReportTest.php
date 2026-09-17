@@ -177,4 +177,18 @@ class AdminReportTest extends TestCase
                 ],
             ]);
     }
+
+    public function test_admin_can_filter_reports_with_partial_dates(): void
+    {
+        $responseStartOnly = $this->actingAs($this->adminUser)
+            ->getJson('/api/admin/reports/recruitment?start_date=2026-01-01');
+
+        $responseStartOnly->assertOk();
+
+        $responseEndOnly = $this->actingAs($this->adminUser)
+            ->getJson('/api/admin/reports/recruitment?end_date=2026-12-31');
+
+        $responseEndOnly->assertOk();
+    }
 }
+

@@ -44,21 +44,32 @@ class AdminReportService
     }
 
     /**
+     * Terapkan filter rentang tanggal fleksibel (start saja, end saja, atau keduanya)
+     */
+    protected function applyDateRange($query, string $column, array $filters): void
+    {
+        try {
+            if (! empty($filters['start_date'])) {
+                $start = Carbon::parse($filters['start_date'])->startOfDay();
+                $query->where($column, '>=', $start);
+            }
+            if (! empty($filters['end_date'])) {
+                $end = Carbon::parse($filters['end_date'])->endOfDay();
+                $query->where($column, '<=', $end);
+            }
+        } catch (\Throwable) {
+            // Abaikan input tanggal yang tidak valid
+        }
+    }
+
+    /**
      * 1. Laporan Rekrutmen
      */
     public function getRecruitmentReport(array $filters): array
     {
         $query = JobVacancy::with(['company', 'applications.selectionResult', 'applications.studentAlumni']);
 
-        if (! empty($filters['start_date']) && ! empty($filters['end_date'])) {
-            try {
-                $start = Carbon::parse($filters['start_date'])->startOfDay();
-                $end = Carbon::parse($filters['end_date'])->endOfDay();
-                $query->whereBetween('created_at', [$start, $end]);
-            } catch (\Throwable) {
-                // Abaikan filter tanggal yang tidak valid
-            }
-        }
+        $this->applyDateRange($query, 'created_at', $filters);
 
         if (! empty($filters['applicant_type'])) {
             $type = strtolower((string) $filters['applicant_type']);
@@ -144,15 +155,7 @@ class AdminReportService
             });
         }
 
-        if (! empty($filters['start_date']) && ! empty($filters['end_date'])) {
-            try {
-                $start = Carbon::parse($filters['start_date'])->startOfDay();
-                $end = Carbon::parse($filters['end_date'])->endOfDay();
-                $query->whereBetween('scheduled_at', [$start, $end]);
-            } catch (\Throwable) {
-                // Abaikan filter tanggal yang tidak valid
-            }
-        }
+        $this->applyDateRange($query, 'scheduled_at', $filters);
 
         $stages = $query->orderBy('scheduled_at', 'asc')->get();
 
@@ -213,22 +216,27 @@ class AdminReportService
      */
     public function getAbsorptionReport(array $filters): array
     {
-        $dateFilter = null;
-        if (! empty($filters['start_date']) && ! empty($filters['end_date'])) {
-            try {
-                $start = Carbon::parse($filters['start_date'])->startOfDay();
-                $end = Carbon::parse($filters['end_date'])->endOfDay();
-                $dateFilter = [$start, $end];
-            } catch (\Throwable) {
-                // Abaikan filter tanggal yang tidak valid
+        $startDate = null;
+        $endDate = null;
+        try {
+            if (! empty($filters['start_date'])) {
+                $startDate = Carbon::parse($filters['start_date'])->startOfDay();
             }
+            if (! empty($filters['end_date'])) {
+                $endDate = Carbon::parse($filters['end_date'])->endOfDay();
+            }
+        } catch (\Throwable) {
+            // Abaikan input tanggal yang tidak valid
         }
 
         $query = Major::with([
-            'studentsAlumni' => function ($q) use ($dateFilter) {
+            'studentsAlumni' => function ($q) use ($startDate, $endDate) {
                 $q->whereNotNull('graduation_year');
-                if ($dateFilter) {
-                    $q->whereBetween('created_at', $dateFilter);
+                if ($startDate) {
+                    $q->where('created_at', '>=', $startDate);
+                }
+                if ($endDate) {
+                    $q->where('created_at', '<=', $endDate);
                 }
                 $q->with('tracerStudy');
             },
@@ -297,9 +305,7 @@ class AdminReportService
         // Keterserapan kelas 12 = siswa aktif (belum lulus) yang sudah terserap via penempatan
         $studentsActive = StudentAlumni::student()->count();
         $placementQuery = JobPlacement::whereHas('studentAlumni', fn ($q) => $q->whereNull('graduation_year'));
-        if ($dateFilter) {
-            $placementQuery->whereBetween('start_date', $dateFilter);
-        }
+        $this->applyDateRange($placementQuery, 'start_date', $filters);
         $studentsPlaced = $placementQuery->distinct()->count('student_alumni_id');
         $class12Rate = $studentsActive > 0 ? round(($studentsPlaced / $studentsActive) * 100, 1) : 0.0;
 
@@ -319,17 +325,6 @@ class AdminReportService
      */
     public function getTracerStudyReport(array $filters): array
     {
-        $dateFilter = null;
-        if (! empty($filters['start_date']) && ! empty($filters['end_date'])) {
-            try {
-                $start = Carbon::parse($filters['start_date'])->startOfDay();
-                $end = Carbon::parse($filters['end_date'])->endOfDay();
-                $dateFilter = [$start, $end];
-            } catch (\Throwable) {
-                // Abaikan filter tanggal yang tidak valid
-            }
-        }
-
         $yearsQuery = StudentAlumni::query()
             ->whereNotNull('graduation_year');
 
@@ -337,9 +332,7 @@ class AdminReportService
             $yearsQuery->where('graduation_year', $filters['graduation_year']);
         }
 
-        if ($dateFilter) {
-            $yearsQuery->whereBetween('created_at', $dateFilter);
-        }
+        $this->applyDateRange($yearsQuery, 'created_at', $filters);
 
         $gradYears = $yearsQuery->distinct()
             ->orderByDesc('graduation_year')
@@ -355,14 +348,24 @@ class AdminReportService
 
         foreach ($gradYears as $year) {
             $alumni = StudentAlumni::where('graduation_year', $year)
-                ->with(['tracerStudy', 'jobPlacements'])
+                ->with(['tracerStudy', 'jobPlacements.placementStatus'])
                 ->get();
 
             $tracers = $alumni->pluck('tracerStudy')->filter();
             $placements = $alumni->flatMap->jobPlacements;
 
-            // Rata-rata masa tunggu dari kolom waiting_time_months (bulan)
-            $waitingMonths = $alumni->pluck('waiting_time_months')->filter(fn ($v) => $v !== null)->map(fn ($v) => (int) $v);
+            // Rata-rata masa tunggu dari kolom waiting_time_months (bulan) atau fallback string tracerStudy
+            $waitingMonths = $alumni->map(function ($stu) {
+                if ($stu->waiting_time_months !== null) {
+                    return (int) $stu->waiting_time_months;
+                }
+                if ($stu->tracerStudy?->waiting_period) {
+                    $digits = preg_replace('/[^0-9]/', '', (string) $stu->tracerStudy->waiting_period);
+                    return $digits !== '' ? (int) $digits : null;
+                }
+                return null;
+            })->filter(fn ($v) => $v !== null);
+
             foreach ($waitingMonths as $m) {
                 $allWaitingMonths[] = $m;
             }

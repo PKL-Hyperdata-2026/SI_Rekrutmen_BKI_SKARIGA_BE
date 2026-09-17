@@ -21,26 +21,39 @@ class StudentJobVacancyController extends Controller
 
     public function index(GetStudentJobVacanciesRequest $request): Responsable
     {
-        $paginator = $this->service->getStudentVacancies($request->validated(), $request->integer('per_page', 12), $request->user()->role);
+        $user = $request->user();
+        $studentProfile = $user->studentAlumni;
+        $studentId = $studentProfile?->id;
+        $majorId = $studentProfile?->major_id;
+
+        $paginator = $this->service->getStudentVacancies(
+            $request->validated(),
+            $request->integer('per_page', 12),
+            $user->role,
+            $studentId,
+            $majorId
+        );
         return $this->response->message('Daftar lowongan kerja berhasil diambil.')
             ->data(JobVacancyResource::collection($paginator)->response()->getData(true));
     }
 
     public function show(Request $request, string $jobVacancy): Responsable
     {
-        $vacancy = $this->service->getStudentVacancyDetail($jobVacancy);
         $studentId = $request->user()->studentAlumni?->id;
-        $hasApplied = $this->service->hasStudentApplied($vacancy->id, $studentId);
+        $vacancy = $this->service->getStudentVacancyDetail($jobVacancy, $studentId);
 
-        $data = (new JobVacancyResource($vacancy))->toArray($request);
-        $data['hasApplied'] = $hasApplied;
-
-        return $this->response->message('Detail lowongan kerja berhasil diambil.')->data($data);
+        return $this->response->message('Detail lowongan kerja berhasil diambil.')
+            ->data(new JobVacancyResource($vacancy));
     }
 
-    public function options(): Responsable
+    public function options(Request $request): Responsable
     {
-        return $this->response->message('Opsi filter lowongan berhasil diambil.')->data($this->service->getFormOptionsForStudent());
+        $user = $request->user();
+        $role = $user->role;
+        $majorId = $user->studentAlumni?->major_id;
+
+        return $this->response->message('Opsi filter lowongan berhasil diambil.')
+            ->data(encrypt_recursive($this->service->getFormOptionsForStudent($role, $majorId)));
     }
 
     public function apply(ApplyJobVacancyRequest $request, JobVacancy $jobVacancy): Responsable

@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             JobPlacementSeeder::class,
             JobVacancySeeder::class,
             RecruitmentAttendanceSeeder::class,
+            RecruitmentSelectionSeeder::class,
         ]);
     }
 }

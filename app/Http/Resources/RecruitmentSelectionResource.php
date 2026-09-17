@@ -128,10 +128,6 @@ class RecruitmentSelectionResource extends JsonResource
                             ] : null,
                             'attendanceLabel' => $attendanceLabel,
                             'attendedAt' => $attendance->attended_at?->toIso8601String(),
-                            'qrCodeToken' => $attendance->qr_code_token,
-                            'latitude' => $attendance->latitude !== null ? (float) $attendance->latitude : null,
-                            'longitude' => $attendance->longitude !== null ? (float) $attendance->longitude : null,
-                            'photoSelfiePath' => $attendance->photo_selfie_path,
                         ] : null,
                         'createdAt' => $history->created_at?->toIso8601String(),
                     ];

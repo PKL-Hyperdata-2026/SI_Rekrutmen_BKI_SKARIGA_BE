@@ -397,29 +397,17 @@ class RecruitmentSelectionSeeder extends Seeder
                 // Belum presensi: don't create attendance row at all (service treats this as 'belum')
                 return;
             }
-            // For present, fill attended_at + coords + qr token
+            // For present, fill attended_at
             $attendedAt = null;
-            $lat = null;
-            $lng = null;
-            $qr = null;
-            $photo = null;
             if ($isPresent) {
                 $attendedAt = $history->selectionStage->scheduled_at
                     ? Carbon::parse($history->selectionStage->scheduled_at)->addMinutes(random_int(0, 120))
                     : Carbon::now('Asia/Jakarta');
-                $lat = -7.15 + (random_int(-500, 500) / 10000); // ~ Gresik area
-                $lng = 112.65 + (random_int(-500, 500) / 10000);
-                $qr = Str::uuid()->toString();
-                $photo = null; // optional selfie path
             }
             RecruitmentAttendance::create([
                 'stage_history_id' => $history->id,
                 'attendance_status_id' => $attendanceStatusId,
-                'qr_code_token' => $qr,
                 'attended_at' => $attendedAt,
-                'latitude' => $lat,
-                'longitude' => $lng,
-                'photo_selfie_path' => $photo,
             ]);
         };
 
@@ -469,10 +457,7 @@ class RecruitmentSelectionSeeder extends Seeder
                     RecruitmentAttendance::create([
                         'stage_history_id' => $h2->id,
                         'attendance_status_id' => null,
-                        'qr_code_token' => null,
                         'attended_at' => null,
-                        'latitude' => null,
-                        'longitude' => null,
                     ]);
                 }
                 break;
@@ -571,10 +556,7 @@ class RecruitmentSelectionSeeder extends Seeder
                     RecruitmentAttendance::create([
                         'stage_history_id' => $h1->id,
                         'attendance_status_id' => $statusId,
-                        'qr_code_token' => null,
                         'attended_at' => null,
-                        'latitude' => null,
-                        'longitude' => null,
                     ]);
                 } else {
                     // Belum presensi - scheduled without attendance

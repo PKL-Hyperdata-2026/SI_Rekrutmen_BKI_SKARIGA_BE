@@ -35,13 +35,13 @@ class CompanyFactory extends Factory
 
                 return $industry->id;
             },
-            'name' => 'PT ' . fake()->company(),
-            'address' => fake()->address(),
-            'email' => fake()->unique()->companyEmail(),
-            'phone' => fake()->phoneNumber(),
-            'website' => 'https://www.' . fake()->domainName(),
-            'pic_name' => fake()->name(),
-            'pic_contact' => fake()->phoneNumber(),
+            'name' => 'PT ' . fake('id_ID')->company(),
+            'address' => fake('id_ID')->address(),
+            'email' => fake('id_ID')->unique()->companyEmail(),
+            'phone' => fake('id_ID')->phoneNumber(),
+            'website' => 'https://www.' . fake('id_ID')->domainName(),
+            'pic_name' => fake('id_ID')->name(),
+            'pic_contact' => fake('id_ID')->phoneNumber(),
             'logo_path' => null,
             'is_active' => true,
         ];

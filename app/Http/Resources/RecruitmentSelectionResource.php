@@ -25,6 +25,13 @@ class RecruitmentSelectionResource extends JsonResource
                     'title' => $this->jobVacancy->title,
                     'position' => $this->jobVacancy->position,
                     'companyName' => $this->jobVacancy->company?->name,
+                    'quota' => $this->jobVacancy->quota,
+                    'qualification' => $this->jobVacancy->qualification,
+                    'description' => $this->jobVacancy->description,
+                    'workLocation' => $this->jobVacancy->work_location,
+                    'deadline' => $this->jobVacancy->deadline?->toIso8601String(),
+                    'minSalary' => $this->jobVacancy->min_salary !== null ? (float) $this->jobVacancy->min_salary : null,
+                    'maxSalary' => $this->jobVacancy->max_salary !== null ? (float) $this->jobVacancy->max_salary : null,
                 ];
             }),
             'studentAlumni' => $this->whenLoaded('studentAlumni', function () {

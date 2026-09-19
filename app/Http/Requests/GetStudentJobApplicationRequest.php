@@ -22,18 +22,18 @@ class GetStudentJobApplicationRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
         return [
-            'search'      => ['nullable', 'string', 'max:100'],
-            'page'        => ['nullable', 'integer', 'min:1'],
-            'status_id'   => ['nullable', 'integer', 'exists:standard_types,id'],
+            'search' => ['nullable', 'string', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'status_id' => ['nullable', 'integer', 'exists:standard_types,id'],
             'status_code' => ['nullable', 'string', 'max:50'],
-            'per_page'    => ['nullable', 'integer', 'min:1', 'max:50'],
-            'start_date'  => ['nullable', 'date'],
-            'end_date'    => ['nullable', 'date', 'after_or_equal:start_date'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
         ];
     }
 
@@ -45,8 +45,8 @@ class GetStudentJobApplicationRequest extends FormRequest
         throw new HttpResponseException(response()->json([
             'success' => false,
             'message' => 'Validation error',
-            'data'    => null,
-            'errors'  => $validator->errors(),
+            'data' => null,
+            'errors' => $validator->errors(),
         ], Response::HTTP_UNPROCESSABLE_ENTITY));
     }
 }

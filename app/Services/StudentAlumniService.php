@@ -127,7 +127,7 @@ class StudentAlumniService
             }
 
             // Manual alumni creation without existing user account
-            $email = $data['email'] ?? (($data['nis'] ?? 'alumni_'.uniqid()) . '@alumni.skariga.sch.id');
+            $email = $data['email'] ?? (($data['nis'] ?? 'alumni_'.uniqid()).'@alumni.skariga.sch.id');
 
             $existingUser = User::withTrashed()->where('email', $email)->first();
             if ($existingUser) {

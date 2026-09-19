@@ -131,4 +131,3 @@ class StudentController extends Controller
             ->data(new StudentResource($this->studentService->show($student)));
     }
 }
-

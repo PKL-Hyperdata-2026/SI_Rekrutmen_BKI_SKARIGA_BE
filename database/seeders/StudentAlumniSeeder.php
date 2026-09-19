@@ -16,26 +16,26 @@ class StudentAlumniSeeder extends Seeder
     public function run(): void
     {
         $names = [
-            "Marvello Faisal",
-            "Surya Jayanata Wibawa",
+            'Marvello Faisal',
+            'Surya Jayanata Wibawa',
             "Mochammad Dafa AL Za'biy Nazarudin",
-            "Noval Abiansyah Tegar",
-            "Mirza Adliansyah Pratama",
-            "Muhammad Tiansyah Wahyudi Putra",
-            "Nouval Adibayu Kencono",
-            "Muhammad Rafif Rabbani",
-            "Shaila Tri Febrianti",
-            "Aulyvia Amalina",
-            "Kadek Giovani Putra Andika",
-            "Budi Santoso",
-            "Siti Aminah",
-            "Agus Pratama",
-            "Dewi Lestari",
-            "Rizky Hidayat",
-            "Putri Maharani",
-            "Hendra Saputra",
-            "Ayu Ningsih",
-            "Aditya Kusuma"
+            'Noval Abiansyah Tegar',
+            'Mirza Adliansyah Pratama',
+            'Muhammad Tiansyah Wahyudi Putra',
+            'Nouval Adibayu Kencono',
+            'Muhammad Rafif Rabbani',
+            'Shaila Tri Febrianti',
+            'Aulyvia Amalina',
+            'Kadek Giovani Putra Andika',
+            'Budi Santoso',
+            'Siti Aminah',
+            'Agus Pratama',
+            'Dewi Lestari',
+            'Rizky Hidayat',
+            'Putri Maharani',
+            'Hendra Saputra',
+            'Ayu Ningsih',
+            'Aditya Kusuma',
         ];
 
         $rpl = Major::firstOrCreate(
@@ -50,19 +50,19 @@ class StudentAlumniSeeder extends Seeder
 
             $user = User::factory()->create([
                 'full_name' => $name,
-                'email' => strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $name)) . '@gmail.com',
+                'email' => strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $name)).'@gmail.com',
                 'role' => $isStudent ? 'siswa' : 'alumni',
             ]);
 
             $data = [
                 'user_id' => $user->id,
-                'nis' => '2000' . str_pad((string)($index + 1), 2, '0', STR_PAD_LEFT),
+                'nis' => '2000'.str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT),
                 'graduation_year' => $isStudent ? null : 2024,
                 'current_company_id' => $isStudent ? null : $companies->random()?->id,
                 'current_position' => $isStudent ? null : 'IT Support',
                 'starting_salary' => $isStudent ? null : 4500000,
                 'waiting_time_months' => $isStudent ? null : 1,
-                'social_media' => ['linkedin' => 'https://linkedin.com/in/' . Str::slug($name)],
+                'social_media' => ['linkedin' => 'https://linkedin.com/in/'.Str::slug($name)],
             ];
 
             if ($isStudent) {
@@ -73,7 +73,7 @@ class StudentAlumniSeeder extends Seeder
         }
 
         $alumniUser = User::where('email', 'alumni@email.com')->first();
-        if ($alumniUser && !StudentAlumni::where('user_id', $alumniUser->id)->exists()) {
+        if ($alumniUser && ! StudentAlumni::where('user_id', $alumniUser->id)->exists()) {
             StudentAlumni::create([
                 'user_id' => $alumniUser->id,
                 'major_id' => $rpl->id,
@@ -89,7 +89,7 @@ class StudentAlumniSeeder extends Seeder
         }
 
         $siswaUser = User::where('email', 'faisalmarvello53@gmail.com')->first();
-        if ($siswaUser && !StudentAlumni::where('user_id', $siswaUser->id)->exists()) {
+        if ($siswaUser && ! StudentAlumni::where('user_id', $siswaUser->id)->exists()) {
             StudentAlumni::create([
                 'user_id' => $siswaUser->id,
                 'major_id' => $rpl->id,

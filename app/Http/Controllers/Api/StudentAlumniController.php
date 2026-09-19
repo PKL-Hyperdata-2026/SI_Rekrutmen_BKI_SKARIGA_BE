@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\GetStudentAlumniRequest;
 use App\Http\Requests\StoreAlumniRequest;
 use App\Http\Requests\UpdateAlumniRequest;
 use App\Http\Resources\StudentAlumniResource;
@@ -21,17 +22,9 @@ class StudentAlumniController extends Controller
         protected ResponseService $response
     ) {}
 
-    public function index(Request $request): Responsable
+    public function index(GetStudentAlumniRequest $request): Responsable
     {
-        $filters = $request->only([
-            'search',
-            'graduation_year',
-            'major_id',
-            'employment_status_id',
-            'current_company_id',
-            'sort_by',
-            'sort_dir',
-        ]);
+        $filters = $request->validated();
 
         $perPage = $request->integer('per_page', 15);
         $alumni = $this->studentAlumniService->index($filters, $perPage);

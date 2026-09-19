@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Company;
+use App\Models\Department;
 use App\Models\Major;
 use App\Models\StandardType;
 use App\Models\StudentAlumni;
@@ -200,7 +201,7 @@ class StudentService
             ->orderBy('name')
             ->get();
 
-        $departments = \App\Models\Department::where('is_active', true)
+        $departments = Department::where('is_active', true)
             ->select('id', 'code', 'name')
             ->orderBy('name')
             ->get();
@@ -243,12 +244,12 @@ class StudentService
     {
         return DB::transaction(function () use ($data, $authUserId) {
             $userData = [
-                'full_name'  => $data['full_name'],
-                'email'      => $data['email'],
-                'phone'      => $data['phone'] ?? null,
-                'password'   => ! empty($data['password']) ? $data['password'] : ($data['nis'] ?? 'siswa123'),
-                'role'       => 'siswa',
-                'is_active'  => $data['is_active'] ?? true,
+                'full_name' => $data['full_name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'] ?? null,
+                'password' => ! empty($data['password']) ? $data['password'] : ($data['nis'] ?? 'siswa123'),
+                'role' => 'siswa',
+                'is_active' => $data['is_active'] ?? true,
                 'created_by' => $authUserId,
                 'updated_by' => $authUserId,
             ];
@@ -263,20 +264,20 @@ class StudentService
             }
 
             $studentData = [
-                'user_id'              => $user->id,
-                'nis'                  => $data['nis'],
-                'class_id'             => $data['class_id'],
-                'major_id'             => $data['major_id'],
+                'user_id' => $user->id,
+                'nis' => $data['nis'],
+                'class_id' => $data['class_id'],
+                'major_id' => $data['major_id'],
                 'employment_status_id' => $data['employment_status_id'] ?? null,
-                'graduation_year'      => $data['graduation_year'] ?? null,
-                'social_media'         => $socialMedia,
-                'current_company_id'   => $data['current_company_id'] ?? null,
-                'current_position'     => $data['current_position'] ?? null,
-                'starting_salary'      => $data['starting_salary'] ?? null,
-                'waiting_time_months'  => $data['waiting_time_months'] ?? null,
-                'is_active'            => $data['is_active'] ?? true,
-                'created_by'           => $authUserId,
-                'updated_by'           => $authUserId,
+                'graduation_year' => $data['graduation_year'] ?? null,
+                'social_media' => $socialMedia,
+                'current_company_id' => $data['current_company_id'] ?? null,
+                'current_position' => $data['current_position'] ?? null,
+                'starting_salary' => $data['starting_salary'] ?? null,
+                'waiting_time_months' => $data['waiting_time_months'] ?? null,
+                'is_active' => $data['is_active'] ?? true,
+                'created_by' => $authUserId,
+                'updated_by' => $authUserId,
             ];
 
             $student = StudentAlumni::create($studentData);
@@ -297,9 +298,9 @@ class StudentService
         return DB::transaction(function () use ($student, $data, $authUserId) {
             if ($student->user_id && $student->user) {
                 $userUpdates = [
-                    'full_name'  => $data['full_name'] ?? $student->user->full_name,
-                    'email'      => $data['email'] ?? $student->user->email,
-                    'phone'      => $data['phone'] ?? $student->user->phone,
+                    'full_name' => $data['full_name'] ?? $student->user->full_name,
+                    'email' => $data['email'] ?? $student->user->email,
+                    'phone' => $data['phone'] ?? $student->user->phone,
                     'updated_by' => $authUserId,
                 ];
 
@@ -382,13 +383,13 @@ class StudentService
 
             $portfolio = StudentPortfolio::create([
                 'student_alumni_id' => $student->id,
-                'category_id'       => $data['category_id'],
-                'title'             => $data['title'],
-                'description'       => $data['description'] ?? null,
-                'file_path'         => $filePath,
+                'category_id' => $data['category_id'],
+                'title' => $data['title'],
+                'description' => $data['description'] ?? null,
+                'file_path' => $filePath,
                 'original_filename' => $file->getClientOriginalName(),
-                'created_by'        => $authUserId,
-                'updated_by'        => $authUserId,
+                'created_by' => $authUserId,
+                'updated_by' => $authUserId,
             ]);
 
             return $portfolio->load(['category', 'studentAlumni']);
@@ -410,4 +411,3 @@ class StudentService
         });
     }
 }
-

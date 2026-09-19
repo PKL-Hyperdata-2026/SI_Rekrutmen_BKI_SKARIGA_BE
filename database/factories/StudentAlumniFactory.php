@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Models\Company;
 use App\Models\Major;
 use App\Models\StandardType;
 use App\Models\StandardTypeCategory;

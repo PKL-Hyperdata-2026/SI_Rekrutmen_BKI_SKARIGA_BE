@@ -19,8 +19,8 @@ class UpdateUserRequest extends FormRequest
         $userId = $this->route('user')?->id ?? $this->route('user');
 
         return [
-            'full_name'  => ['sometimes', 'required', 'string', 'max:255'],
-            'email'      => [
+            'full_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'email' => [
                 'sometimes',
                 'required',
                 'string',
@@ -28,10 +28,10 @@ class UpdateUserRequest extends FormRequest
                 'max:255',
                 Rule::unique('users', 'email')->ignore($userId),
             ],
-            'phone'      => ['nullable', 'string', 'max:20'],
-            'password'   => ['nullable', 'string', 'min:6'],
-            'role'       => ['sometimes', 'required', 'string', Rule::in(['admin', 'hrd', 'siswa', 'alumni'])],
-            'is_active'  => ['sometimes', 'nullable', 'boolean'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'password' => ['nullable', 'string', 'min:6'],
+            'role' => ['sometimes', 'required', 'string', Rule::in(['admin', 'hrd', 'siswa', 'alumni'])],
+            'is_active' => ['sometimes', 'nullable', 'boolean'],
             'company_id' => [
                 'nullable',
                 'integer',

@@ -13,7 +13,6 @@ class UserResource extends JsonResource
     {
         return [
             'id' => encrypt($this->id),
-            'rawId' => $this->id,
             'fullName' => $this->full_name,
             'email' => $this->email,
             'phone' => $this->phone,

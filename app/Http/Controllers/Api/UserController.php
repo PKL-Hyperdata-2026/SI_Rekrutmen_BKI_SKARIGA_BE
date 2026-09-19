@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\GetUserListRequest;
 use App\Http\Requests\ResetUserPasswordRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
@@ -22,15 +23,9 @@ class UserController extends Controller
         protected ResponseService $response
     ) {}
 
-    public function index(Request $request): Responsable
+    public function index(GetUserListRequest $request): Responsable
     {
-        $filters = $request->only([
-            'search',
-            'role',
-            'is_active',
-            'sort_by',
-            'sort_dir',
-        ]);
+        $filters = $request->validated();
 
         $perPage = $request->integer('per_page', 15);
         $users = $this->userService->getUsers($filters, $perPage, $request->user()?->id);

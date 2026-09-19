@@ -21,8 +21,8 @@ return new class extends Migration
             $table->foreignId('placement_status_id')->nullable()->constrained('standard_types')->nullOnDelete();
 
             // Contents
-            $table->date('accepted_date')->nullable(); //tgl diterima
-            $table->date('start_date')->nullable(); //tgl mulai kerja
+            $table->date('accepted_date')->nullable(); // tgl diterima
+            $table->date('start_date')->nullable(); // tgl mulai kerja
             $table->text('notes')->nullable();
 
             // Footer (Audit Trail & Soft Deletes)

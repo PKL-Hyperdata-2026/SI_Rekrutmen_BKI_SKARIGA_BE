@@ -71,7 +71,7 @@ class JobPlacement extends Model
         $eval6 = $evaluations['6']['status'] ?? null;
         $eval12 = $evaluations['12']['status'] ?? null;
 
-        $status3 = $eval3 ?? $this->calculateFallbackEvaluationStatus(3); 
+        $status3 = $eval3 ?? $this->calculateFallbackEvaluationStatus(3);
         $isTerminatedAt3 = self::isTerminalStatus($status3);
 
         if ($months === 3) {

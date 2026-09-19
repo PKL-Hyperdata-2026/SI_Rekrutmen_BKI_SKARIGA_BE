@@ -29,7 +29,7 @@ class JobPlacementFactory extends Factory
             'company_id' => fn () => Company::inRandomOrder()->value('id') ?? Company::factory(),
             'placement_status_id' => function () {
                 $type = StandardType::byCategory('placement_status')->inRandomOrder()->first();
-                if (!$type) {
+                if (! $type) {
                     $category = StandardTypeCategory::firstOrCreate(['code' => 'placement_status'], ['name' => 'Placement Status']);
                     $type = StandardType::create([
                         'category_id' => $category->id,
@@ -38,6 +38,7 @@ class JobPlacementFactory extends Factory
                         'is_active' => true,
                     ]);
                 }
+
                 return $type->id;
             },
             'accepted_date' => fake('id_ID')->dateTimeBetween('-1 year', 'now'),

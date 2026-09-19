@@ -8,10 +8,10 @@ use App\Models\Company;
 use App\Models\JobPlacement;
 use App\Models\StandardType;
 use App\Models\StudentAlumni;
-use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class JobPlacementService
 {
@@ -173,10 +173,10 @@ class JobPlacementService
                 $period = (string) $data['period'];
 
                 if ($period === '6' && empty($evaluations['3']['status'])) {
-                    throw new \InvalidArgumentException('Evaluasi monitoring 3 bulan harus diisi terlebih dahulu sebelum 6 bulan.');
+                    throw new InvalidArgumentException('Evaluasi monitoring 3 bulan harus diisi terlebih dahulu sebelum 6 bulan.');
                 }
                 if ($period === '12' && (empty($evaluations['3']['status']) || empty($evaluations['6']['status']))) {
-                    throw new \InvalidArgumentException('Evaluasi monitoring 3 bulan dan 6 bulan harus diisi terlebih dahulu sebelum 12 bulan.');
+                    throw new InvalidArgumentException('Evaluasi monitoring 3 bulan dan 6 bulan harus diisi terlebih dahulu sebelum 12 bulan.');
                 }
 
                 $evaluations[$period] = [

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -51,6 +52,26 @@ class JobVacancy extends Model
         ];
     }
 
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function scopeOpen(Builder $query): Builder
+    {
+        return $query->where('is_active', true)
+            ->where(function (Builder $q) {
+                $q->whereNull('deadline')
+                    ->orWhere('deadline', '>=', now()->toDateString());
+            });
+    }
+
+    public function scopeExpired(Builder $query): Builder
+    {
+        return $query->whereNotNull('deadline')
+            ->where('deadline', '<', now()->toDateString());
+    }
+
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'company_id');
@@ -80,6 +101,16 @@ class JobVacancy extends Model
     }
 
     public function applications(): HasMany
+    {
+        return $this->hasMany(JobApplication::class, 'job_vacancy_id');
+    }
+
+    public function selectionStages(): HasMany
+    {
+        return $this->hasMany(SelectionStage::class, 'job_vacancy_id')->orderBy('sequence_order', 'asc');
+    }
+
+    public function jobApplications(): HasMany
     {
         return $this->hasMany(JobApplication::class, 'job_vacancy_id');
     }

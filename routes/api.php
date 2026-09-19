@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\StudentJobVacancyController;
 use App\Http\Controllers\Api\MajorController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\PortfolioController;
+use App\Http\Controllers\Api\RecruitmentAttendanceController;
 use App\Http\Controllers\Api\StudentAlumniController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StandardTypeController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\Api\TracerStudyController;
 use App\Http\Controllers\Api\AdminTracerStudyController;
 use App\Http\Controllers\Api\AdminReportController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\Admin\RecruitmentSelectionController;
 use App\Http\Controllers\Api\Hrd\TestScheduleController;
 use App\Http\Controllers\Api\Hrd\JobVacancyController as HrdJobVacancyController;
 use App\Http\Controllers\Auth\AuthController;
@@ -76,7 +78,17 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/absorption', [AdminReportController::class, 'absorption']);
             Route::get('/tracer-study', [AdminReportController::class, 'tracerStudy']);
         });
+        Route::get('/recruitment-selections', [RecruitmentSelectionController::class, 'index']); // [ADMIN] Seleksi Rekrutmen view-only (Issue #67)
         // TODO: API Admin lainnya
+            
+        Route::prefix('attendances')->group(function () {
+            Route::get('/vacancies', [RecruitmentAttendanceController::class, 'vacancyOptions']);
+            Route::get('/stage-summaries', [RecruitmentAttendanceController::class, 'stageSummaries']);
+            Route::get('/queue', [RecruitmentAttendanceController::class, 'queue']);
+            Route::get('/history', [RecruitmentAttendanceController::class, 'history']);
+            Route::patch('/bulk-validate', [RecruitmentAttendanceController::class, 'bulkValidate']);
+            Route::patch('/{attendance}/validate', [RecruitmentAttendanceController::class, 'validateAttendance']);
+        });
     });
 
 

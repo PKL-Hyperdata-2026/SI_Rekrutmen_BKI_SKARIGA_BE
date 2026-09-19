@@ -17,12 +17,16 @@ class GetStudentJobVacanciesRequest extends FormRequest
     {
         return [
             'search' => 'nullable|string|max:100',
+            'department_id' => 'nullable|exists:departments,id',
             'company_id' => 'nullable|exists:companies,id',
             'job_type_id' => 'nullable|exists:standard_types,id',
             'target_applicant_id' => 'nullable|exists:standard_types,id',
             'major_id' => 'nullable|exists:majors,id',
             'work_location' => 'nullable|string|max:255',
             'per_page' => 'nullable|integer|min:1|max:50',
+            'page' => 'nullable|integer|min:1',
+            'sort_direction' => 'nullable|string|in:asc,desc',
+            'order_by' => 'nullable|string|in:id,created_at,title,deadline',
         ];
     }
 }

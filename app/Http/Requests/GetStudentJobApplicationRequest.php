@@ -27,8 +27,13 @@ class GetStudentJobApplicationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status_id' => ['nullable', 'integer', 'exists:standard_types,id'],
-            'per_page'  => ['nullable', 'integer', 'min:1'],
+            'search'      => ['nullable', 'string', 'max:100'],
+            'page'        => ['nullable', 'integer', 'min:1'],
+            'status_id'   => ['nullable', 'integer', 'exists:standard_types,id'],
+            'status_code' => ['nullable', 'string', 'max:50'],
+            'per_page'    => ['nullable', 'integer', 'min:1', 'max:50'],
+            'start_date'  => ['nullable', 'date'],
+            'end_date'    => ['nullable', 'date', 'after_or_equal:start_date'],
         ];
     }
 

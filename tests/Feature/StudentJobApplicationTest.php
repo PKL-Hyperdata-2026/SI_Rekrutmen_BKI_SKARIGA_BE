@@ -382,4 +382,95 @@ class StudentJobApplicationTest extends TestCase
             ->assertJsonPath('data.selectionResult.id', $selectionResult->id)
             ->assertJsonPath('data.selectionResult.decision', 'diterima');
     }
+
+    public function test_student_can_list_job_vacancies_with_has_applied_field(): void
+    {
+        $response = $this->actingAs($this->studentUser, 'sanctum')
+            ->getJson('/api/job-vacancies');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.data.0.hasApplied', false);
+
+        JobApplication::create([
+            'job_vacancy_id' => $this->jobVacancy->id,
+            'student_alumni_id' => $this->studentProfile->id,
+            'status_id' => $this->appStatusPending->id,
+            'applied_at' => now(),
+        ]);
+
+        $appliedResponse = $this->actingAs($this->studentUser, 'sanctum')
+            ->getJson('/api/job-vacancies');
+
+        $appliedResponse->assertOk()
+            ->assertJsonPath('data.data.0.hasApplied', true);
+    }
+
+    public function test_student_can_view_job_vacancy_detail_with_has_applied(): void
+    {
+        $response = $this->actingAs($this->studentUser, 'sanctum')
+            ->getJson("/api/job-vacancies/{$this->jobVacancy->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.hasApplied', false);
+
+        JobApplication::create([
+            'job_vacancy_id' => $this->jobVacancy->id,
+            'student_alumni_id' => $this->studentProfile->id,
+            'status_id' => $this->appStatusPending->id,
+            'applied_at' => now(),
+        ]);
+
+        $appliedResponse = $this->actingAs($this->studentUser, 'sanctum')
+            ->getJson("/api/job-vacancies/{$this->jobVacancy->id}");
+
+        $appliedResponse->assertOk()
+            ->assertJsonPath('data.hasApplied', true);
+    }
+
+    public function test_student_filter_options_only_include_available_data_in_student_vacancies(): void
+    {
+        $response = $this->actingAs($this->studentUser, 'sanctum')
+            ->getJson('/api/job-vacancies/options');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'departments',
+                    'companies',
+                    'majors',
+                    'targetApplicants',
+                    'workLocations',
+                ],
+            ]);
+    }
+
+    public function test_student_can_list_job_vacancies_sorted_asc(): void
+    {
+        $status = StandardType::byCategory('vacancy_status')->where('code', 'published')->first()
+            ?? StandardType::byCategory('vacancy_status')->first();
+
+        JobVacancy::create([
+            'company_id' => $this->company->id,
+            'title' => 'Second Asc Vacancy',
+            'slug' => 'second-asc-vacancy',
+            'position' => 'Developer',
+            'status_id' => $status?->id,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->studentUser, 'sanctum')
+            ->getJson('/api/job-vacancies');
+
+        $response->assertOk();
+        $items = $response->json('data.data');
+        $this->assertGreaterThanOrEqual(2, count($items));
+        $firstId = (int) decrypt((string) $items[0]['id']);
+        $secondId = (int) decrypt((string) $items[1]['id']);
+        $this->assertLessThan($secondId, $firstId);
+    }
 }

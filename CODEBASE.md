@@ -1,6 +1,6 @@
 # Backend Codebase Reference (Laravel 13 API)
 
-Deep, factual reference for AI agents and developers. **Last verified: 2026-09-16.**
+Deep, factual reference for AI agents and developers. **Last verified: 2026-09-19.**
 If you modify code that alters any architecture, models, routes, or services documented here, update this file in the same change.
 Operational instructions & boundaries: [`AGENTS.md`](./AGENTS.md).
 
@@ -60,6 +60,7 @@ backend/app/
 │   │   │   ├── TracerStudyController.php      # Tracer study submission & detail (role: alumni)
 │   │   │   ├── StandardTypeController.php     # Generic async-select options (?category=&search=&per_page=)
 │   │   │   └── Hrd/
+│   │   │       ├── ApplicantReviewController.php # HRD review pelamar & verifikasi berkas: list + filter + detail + review tunggal/massal
 │   │   │       └── TestScheduleController.php # HRD CRUD agenda & jadwal tes + list peserta + reminder
 │   │   │   ├── StudentJobVacancyController.php     # Siswa/alumni eksplorasi lowongan kerja
 │   │   │   ├── TracerStudyController.php           # Tracer study submission & detail (role: alumni)
@@ -70,10 +71,14 @@ backend/app/
 │   │   │   └── AuthController.php                  # Login, logout, me endpoint + forgot/reset password
 │   │   └── NotificationController.php              # Notification listing & read status
 │   ├── Requests/                                   # FormRequest classes for validation
+│   │   ├── HrdApplicantReviewIndexRequest.php     # [HRD] filter review pelamar (vacancy, review_status, search, sort)
+│   │   ├── HrdApplicantReviewActionRequest.php    # [HRD] review tunggal (decision lolos/tidak_lolos, notes wajib saat tolak)
+│   │   ├── HrdApplicantBulkReviewRequest.php      # [HRD] review massal (application_ids 1-100, decision, notes)
 │   │   ├── RecruitmentSelectionIndexRequest.php    # [ADMIN] filter seleksi rekrutmen (vacancy, stage, attendance, search)
 │   │   ├── SelectOptionsRequest.php                # Shared index select params (search, page, per_page, for_select, eligible)
 │   │   └── StandardTypeOptionsRequest.php          # category (required, must exist) + select params
 │   ├── Resources/                                  # JsonResource transformers
+│   │   ├── HrdApplicantReviewResource.php          # [HRD] baris tabel review (applicant, education, vacancy, documents, reviewStatus, canScheduleTest), id terenkripsi
 │   │   ├── RecruitmentSelectionResource.php        # [ADMIN] transform JobApplication untuk seleksi (student, stage, result, attendance)
 │   │   └── SelectOptionResource.php                # {value (encrypted id), label, extra} for async selects
 │   └── Middleware/                                 # Role checks (RBAC), DecryptRequest, filters
@@ -130,6 +135,7 @@ backend/app/
 │   ├── Menu.php                               # System navigation menus
 │   └── AccessMenu.php                         # Role-to-menu permission mapping
 ├── Services/
+│   ├── HrdApplicantReviewService.php             # HRD review pelamar scope company: paginate + summary + options + detail + review/bulk (tulis selection_results + stage_histories + job_applications dalam transaksi)
 │   ├── AdminReportService.php                 # Agregasi data laporan admin, metrik, filter tanggal, dan statistik
 │   ├── RecruitmentAttendanceService.php       # Validasi presensi, status update, agregasi counter tahapan
 │   ├── JobPlacementService.php                # Job placement CRUD, filtering, audit trail, options
@@ -277,6 +283,11 @@ backend/app/
   - `DELETE /api/hrd/test-schedules/{id}` — Soft delete agenda tes + `deleted_by`. Dalam `DB::transaction()`.
   - `GET /api/hrd/test-schedules/{id}/participants` — List daftar peserta pada agenda tes terkait (nama, NIS, NISN, email, phone, status presensi).
   - `POST /api/hrd/test-schedules/{id}/participants/{participantId}/remind` — Kirim notifikasi pengingat tes (*Kirim Reminder*) ke peserta.
+  - `GET /api/hrd/applicant-reviews` — [HRD] Review pelamar scope perusahaan + pagination (`per_page`), search (nama/NIS/email/phone/posisi), filter (`job_vacancy_id`, `review_status`: semua/perlu_review/lolos_berkas/ditolak), sort (`applied_at`, `name`, `position`). Response berisi `summary{total,perlu_review,lolos_berkas,ditolak}` + `applicants` paginated `HrdApplicantReviewResource` + `filters{vacancies,review_statuses}`.
+  - `GET /api/hrd/applicant-reviews/options` — [HRD] Opsi filter review: `vacancies` milik perusahaan + `review_statuses` tetap.
+  - `GET /api/hrd/applicant-reviews/{id}` — [HRD] Detail pelamar (kontak, jurusan/kelas/tahun lulus, lowongan, daftar berkas portofolio, hasil seleksi, riwayat tahap).
+  - `PATCH /api/hrd/applicant-reviews/{id}/review` — [HRD] Keputusan tunggal (`decision`: lolos/tidak_lolos, `notes` wajib saat tolak). Dalam `DB::transaction()` menulis `selection_results.admin_selection_status`, `application_stage_histories` tahap administrasi (`passed`/`failed`, `assessor_id` = HRD), dan `job_applications.status` (`in_progress`/`rejected`, `current_stage_id` = tahap administrasi). Menolak 422 bila lamaran sudah `accepted` atau masuk penempatan.
+  - `POST /api/hrd/applicant-reviews/bulk-review` — [HRD] Keputusan massal untuk tombol Loloskan Terpilih (`application_ids[]` 1-100, `decision`, `notes`). Dalam `DB::transaction()`, mengembalikan `processed/succeeded/failed/failures`.
 - `/api/siswa/*` (`role:siswa`) — Self-service E-Portfolio siswa (profil + dokumen).
   - `GET /api/siswa/portfolio/profile` — Profil + portofolio siswa yang login.
   - `GET /api/siswa/portfolio/options` — Dropdown form: `majors`, `classes`, `employment_statuses`, `portfolio_types`, `graduation_years`.
@@ -355,6 +366,11 @@ backend/app/
   - `POST /api/hrd/job-placements`, Create job placement record.
   - `PUT|PATCH /api/hrd/job-placements/{jobPlacement}`, Update job placement.
   - `DELETE /api/hrd/job-placements/{jobPlacement}`, Soft delete job placement.
+  - `GET /api/hrd/applicant-reviews`, HRD applicant review list with summary and filters.
+  - `GET /api/hrd/applicant-reviews/options`, HRD applicant review filter options.
+  - `GET /api/hrd/applicant-reviews/{id}`, HRD applicant review detail.
+  - `PATCH /api/hrd/applicant-reviews/{id}/review`, HRD single applicant review decision.
+  - `POST /api/hrd/applicant-reviews/bulk-review`, HRD bulk applicant review decision.
   - `GET /api/hrd/students-alumni`, Async select options for students/alumni picker.
 - `/api/siswa/*` (`role:siswa,alumni`)
   - `GET /api/siswa/portfolio/profile`, Get self student profile and portfolio documents.

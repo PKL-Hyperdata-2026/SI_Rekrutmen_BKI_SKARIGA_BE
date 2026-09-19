@@ -9,29 +9,31 @@ use App\Http\Requests\StoreTracerStudyRequest;
 use App\Http\Resources\TracerStudyResource;
 use App\Services\ResponseService;
 use App\Services\TracerStudyService;
+use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\Request;
 
 class TracerStudyController extends Controller
 {
     public function __construct(
-        protected TracerStudyService $tracerStudyService
+        protected TracerStudyService $tracerStudyService,
+        protected ResponseService $response
     ) {}
 
     /**
      * Ambil data tracer study alumni yang sedang login.
      */
-    public function show(Request $request): ResponseService
+    public function show(Request $request): Responsable
     {
         $tracer = $this->tracerStudyService->getAlumniTracerStudy($request->user());
 
-        if (!$tracer) {
-            return ResponseService::make()
+        if (! $tracer) {
+            return $this->response
                 ->message('Belum ada data tracer study yang diisi.')
                 ->data(null)
                 ->code(200);
         }
 
-        return ResponseService::make()
+        return $this->response
             ->message('Data tracer study berhasil diambil.')
             ->data(new TracerStudyResource($tracer))
             ->code(200);
@@ -40,14 +42,14 @@ class TracerStudyController extends Controller
     /**
      * Simpan atau perbarui data tracer study alumni.
      */
-    public function store(StoreTracerStudyRequest $request): ResponseService
+    public function store(StoreTracerStudyRequest $request): Responsable
     {
         $tracer = $this->tracerStudyService->submitTracerStudy(
             $request->user(),
             $request->validated()
         );
 
-        return ResponseService::make()
+        return $this->response
             ->message('Data tracer study berhasil disimpan.')
             ->data(new TracerStudyResource($tracer))
             ->code(201);

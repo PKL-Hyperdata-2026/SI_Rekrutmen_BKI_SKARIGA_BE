@@ -54,10 +54,10 @@ class TracerStudy extends Model
     protected function casts(): array
     {
         return [
-            'minimum_salary'      => 'integer',
-            'maximum_salary'      => 'integer',
-            'accepted_date'       => 'date',
-            'start_date'          => 'date',
+            'minimum_salary' => 'integer',
+            'maximum_salary' => 'integer',
+            'accepted_date' => 'date',
+            'start_date' => 'date',
             'business_start_date' => 'date',
         ];
     }

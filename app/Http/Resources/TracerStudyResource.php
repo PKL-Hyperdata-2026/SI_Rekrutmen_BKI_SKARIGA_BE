@@ -19,52 +19,52 @@ class TracerStudyResource extends JsonResource
         $isAdmin = $request->is('api/admin/*');
 
         return [
-            'id'                => $isAdmin ? encrypt($this->id) : $this->id,
-            'studentAlumniId'   => $isAdmin ? encrypt($this->student_alumni_id) : $this->student_alumni_id,
-            'careerStatus'      => $this->career_status,
+            'id' => $isAdmin ? encrypt($this->id) : $this->id,
+            'studentAlumniId' => $isAdmin ? encrypt($this->student_alumni_id) : $this->student_alumni_id,
+            'careerStatus' => $this->career_status,
 
             // Detail Bekerja & Penempatan
-            'companyName'       => $this->company_name,
-            'companySector'     => $this->company_sector,
-            'jobTitle'          => $this->job_title,
-            'jobLocation'       => $this->job_location,
-            'minimumSalary'     => $this->minimum_salary,
-            'maximumSalary'     => $this->maximum_salary,
-            'waitingPeriod'     => $this->waiting_period,
-            'acceptedDate'      => $this->accepted_date?->format('Y-m-d'),
-            'startDate'         => $this->start_date?->format('Y-m-d'),
+            'companyName' => $this->company_name,
+            'companySector' => $this->company_sector,
+            'jobTitle' => $this->job_title,
+            'jobLocation' => $this->job_location,
+            'minimumSalary' => $this->minimum_salary,
+            'maximumSalary' => $this->maximum_salary,
+            'waitingPeriod' => $this->waiting_period,
+            'acceptedDate' => $this->accepted_date?->format('Y-m-d'),
+            'startDate' => $this->start_date?->format('Y-m-d'),
 
             // Detail Wirausaha
-            'businessName'      => $this->business_name,
-            'businessAddress'   => $this->business_address,
-            'instagramAccount'  => $this->instagram_handle,
-            'averageRevenue'    => $this->average_income,
-            'businessField'     => $this->business_field,
+            'businessName' => $this->business_name,
+            'businessAddress' => $this->business_address,
+            'instagramAccount' => $this->instagram_handle,
+            'averageRevenue' => $this->average_income,
+            'businessField' => $this->business_field,
             'businessStartDate' => $this->business_start_date?->format('Y-m-d'),
 
             // Detail Lanjut Studi
-            'universityName'    => $this->university_name,
-            'studyProgram'      => $this->study_program,
+            'universityName' => $this->university_name,
+            'studyProgram' => $this->study_program,
 
             // Status 12 Bulan (Evaluasi Karir/Penempatan)
-            'status12Bulan'     => $this->status_12_bulan,
+            'status12Bulan' => $this->status_12_bulan,
 
             // Relasi Alumni & Siswa
-            'studentAlumni'     => $this->whenLoaded('studentAlumni', function () use ($isAdmin) {
+            'studentAlumni' => $this->whenLoaded('studentAlumni', function () {
                 return [
-                    'id'             => $isAdmin ? encrypt($this->studentAlumni->id) : $this->studentAlumni->id,
-                    'nis'            => $this->studentAlumni->nis,
+                    'id' => encrypt($this->studentAlumni->id),
+                    'nis' => $this->studentAlumni->nis,
                     'graduationYear' => $this->studentAlumni->graduation_year,
-                    'fullName'       => $this->studentAlumni->user?->full_name,
-                    'email'          => $this->studentAlumni->user?->email,
-                    'phone'          => $this->studentAlumni->user?->phone,
-                    'major'          => $this->studentAlumni->major ? [
-                        'id'   => $isAdmin ? encrypt($this->studentAlumni->major->id) : $this->studentAlumni->major->id,
+                    'fullName' => $this->studentAlumni->user?->full_name,
+                    'email' => $this->studentAlumni->user?->email,
+                    'phone' => $this->studentAlumni->user?->phone,
+                    'major' => $this->studentAlumni->major ? [
+                        'id' => encrypt($this->studentAlumni->major->id),
                         'name' => $this->studentAlumni->major->name,
                         'code' => $this->studentAlumni->major->code,
                     ] : null,
-                    'class'          => $this->studentAlumni->class ? [
-                        'id'   => $isAdmin ? encrypt($this->studentAlumni->class->id) : $this->studentAlumni->class->id,
+                    'class' => $this->studentAlumni->class ? [
+                        'id' => encrypt($this->studentAlumni->class->id),
                         'name' => $this->studentAlumni->class->name,
                         'code' => $this->studentAlumni->class->code,
                     ] : null,
@@ -72,8 +72,8 @@ class TracerStudyResource extends JsonResource
             }),
 
             // Timestamps
-            'createdAt'         => $this->created_at?->toIso8601String(),
-            'updatedAt'         => $this->updated_at?->toIso8601String(),
+            'createdAt' => $this->created_at?->toIso8601String(),
+            'updatedAt' => $this->updated_at?->toIso8601String(),
         ];
     }
 }

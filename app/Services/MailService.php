@@ -18,7 +18,7 @@ class MailService
 
             return true;
         } catch (Throwable $th) {
-            Log::error("Failed to send email to $toEmail: " . $th->getMessage());
+            Log::error("Failed to send email to $toEmail: ".$th->getMessage());
 
             return false;
         }

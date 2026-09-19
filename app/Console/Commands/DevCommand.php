@@ -37,22 +37,22 @@ class DevCommand extends Command
         $queue->setTimeout(null);
         $reverb->setTimeout(null);
 
-        //execvute
+        // execvute
         $server->start();
         $queue->start();
         $reverb->start();
 
         while ($server->isRunning() || $queue->isRunning() || $reverb->isRunning()) {
             if ($serverOutput = $server->getIncrementalOutput()) {
-                $this->output->write('<fg=cyan>[SERVE]</fg=cyan> ' . $serverOutput);
+                $this->output->write('<fg=cyan>[SERVE]</fg=cyan> '.$serverOutput);
             }
 
             if ($queueOutput = $queue->getIncrementalOutput()) {
-                $this->output->write('<fg=yellow>[QUEUE]</fg=yellow> ' . $queueOutput);
+                $this->output->write('<fg=yellow>[QUEUE]</fg=yellow> '.$queueOutput);
             }
 
             if ($reverbOutput = $reverb->getIncrementalOutput()) {
-                $this->output->write('<fg=magenta>[REVERB]</fg=magenta> ' . $reverbOutput);
+                $this->output->write('<fg=magenta>[REVERB]</fg=magenta> '.$reverbOutput);
             }
 
             usleep(100000);

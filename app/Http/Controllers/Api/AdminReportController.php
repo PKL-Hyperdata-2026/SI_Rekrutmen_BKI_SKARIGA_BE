@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AdminReportFilterRequest;
+use App\Http\Resources\AdminReportResource;
 use App\Services\AdminReportService;
 use App\Services\ResponseService;
 use Illuminate\Contracts\Support\Responsable;
-use Illuminate\Http\Request;
 
 class AdminReportController extends Controller
 {
@@ -21,38 +22,34 @@ class AdminReportController extends Controller
     {
         $options = $this->reportService->getFilterOptions();
 
-        return $this->response->message('Opsi filter laporan berhasil diambil.')->data($options);
+        return $this->response->message('Opsi filter laporan berhasil diambil.')->data(encrypt_recursive($options));
     }
 
-    public function recruitment(Request $request): Responsable
+    public function recruitment(AdminReportFilterRequest $request): Responsable
     {
-        $filters = $request->only(['start_date', 'end_date', 'applicant_type']);
-        $result = $this->reportService->getRecruitmentReport($filters);
+        $result = $this->reportService->getRecruitmentReport($request->validated());
 
-        return $this->response->message('Laporan Rekrutmen berhasil diambil.')->data($result);
+        return $this->response->message('Laporan Rekrutmen berhasil diambil.')->data(new AdminReportResource($result));
     }
 
-    public function attendance(Request $request): Responsable
+    public function attendance(AdminReportFilterRequest $request): Responsable
     {
-        $filters = $request->only(['start_date', 'end_date', 'company_id']);
-        $result = $this->reportService->getAttendanceReport($filters);
+        $result = $this->reportService->getAttendanceReport($request->validated());
 
-        return $this->response->message('Laporan Absensi berhasil diambil.')->data($result);
+        return $this->response->message('Laporan Absensi berhasil diambil.')->data(new AdminReportResource($result));
     }
 
-    public function absorption(Request $request): Responsable
+    public function absorption(AdminReportFilterRequest $request): Responsable
     {
-        $filters = $request->only(['start_date', 'end_date', 'major_id']);
-        $result = $this->reportService->getAbsorptionReport($filters);
+        $result = $this->reportService->getAbsorptionReport($request->validated());
 
-        return $this->response->message('Laporan Keterserapan berhasil diambil.')->data($result);
+        return $this->response->message('Laporan Keterserapan berhasil diambil.')->data(new AdminReportResource($result));
     }
 
-    public function tracerStudy(Request $request): Responsable
+    public function tracerStudy(AdminReportFilterRequest $request): Responsable
     {
-        $filters = $request->only(['start_date', 'end_date', 'graduation_year']);
-        $result = $this->reportService->getTracerStudyReport($filters);
+        $result = $this->reportService->getTracerStudyReport($request->validated());
 
-        return $this->response->message('Laporan Tracer Study berhasil diambil.')->data($result);
+        return $this->response->message('Laporan Tracer Study berhasil diambil.')->data(new AdminReportResource($result));
     }
 }

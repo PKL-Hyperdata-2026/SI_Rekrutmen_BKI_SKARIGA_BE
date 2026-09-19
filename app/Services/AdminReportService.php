@@ -11,6 +11,7 @@ use App\Models\Major;
 use App\Models\SelectionStage;
 use App\Models\StudentAlumni;
 use Carbon\Carbon;
+use Throwable;
 
 class AdminReportService
 {
@@ -22,12 +23,12 @@ class AdminReportService
         $companies = Company::query()
             ->orderBy('name')
             ->get(['id', 'name'])
-            ->map(fn ($c) => ['value' => (string) $c->id, 'label' => $c->name]);
+            ->map(fn ($c) => ['value' => encrypt((string) $c->id), 'label' => $c->name]);
 
         $majors = Major::query()
             ->orderBy('name')
             ->get(['id', 'name'])
-            ->map(fn ($m) => ['value' => (string) $m->id, 'label' => $m->name]);
+            ->map(fn ($m) => ['value' => encrypt((string) $m->id), 'label' => $m->name]);
 
         $years = StudentAlumni::query()
             ->whereNotNull('graduation_year')
@@ -57,7 +58,7 @@ class AdminReportService
                 $end = Carbon::parse($filters['end_date'])->endOfDay();
                 $query->where($column, '<=', $end);
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // Abaikan input tanggal yang tidak valid
         }
     }
@@ -225,7 +226,7 @@ class AdminReportService
             if (! empty($filters['end_date'])) {
                 $endDate = Carbon::parse($filters['end_date'])->endOfDay();
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // Abaikan input tanggal yang tidak valid
         }
 
@@ -361,8 +362,10 @@ class AdminReportService
                 }
                 if ($stu->tracerStudy?->waiting_period) {
                     $digits = preg_replace('/[^0-9]/', '', (string) $stu->tracerStudy->waiting_period);
+
                     return $digits !== '' ? (int) $digits : null;
                 }
+
                 return null;
             })->filter(fn ($v) => $v !== null);
 

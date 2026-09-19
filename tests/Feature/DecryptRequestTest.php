@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\DecryptRequest;
 use App\Http\Resources\UserResource;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -11,14 +12,14 @@ test('DecryptApiIds decrypts body and query parameters', function () {
     $encryptedMajorId1 = encrypt(10);
     $encryptedMajorId2 = encrypt(20);
 
-    $request = Request::create('/api/test?filter_id=' . $encryptedId, 'POST', [
+    $request = Request::create('/api/test?filter_id='.$encryptedId, 'POST', [
         'company_id' => $encryptedCompanyId,
         'companyId' => $encryptedCompanyId,
         'major_ids' => [$encryptedMajorId1, $encryptedMajorId2],
         'name' => 'Tech Corp',
     ]);
 
-    $middleware = new DecryptRequest();
+    $middleware = new DecryptRequest;
     $response = $middleware->handle($request, function ($req) {
         expect($req->query('filter_id'))->toBe(42)
             ->and($req->input('company_id'))->toBe(99)
@@ -43,7 +44,7 @@ test('DecryptApiIds decrypts json request payload containing arrays of ids', fun
         'major_ids' => [$encryptedMajorId],
     ]));
 
-    $middleware = new DecryptRequest();
+    $middleware = new DecryptRequest;
     $response = $middleware->handle($request, function ($req) {
         expect($req->input('company_id'))->toBe(88)
             ->and($req->input('major_ids'))->toBe([15]);
@@ -61,7 +62,7 @@ test('DecryptApiIds decrypts route parameters before action', function () {
 
     $encryptedStudentId = encrypt(77);
 
-    $response = $this->getJson('/api/test-route/' . $encryptedStudentId);
+    $response = $this->getJson('/api/test-route/'.$encryptedStudentId);
 
     $response->assertOk()
         ->assertJson(['resolved_student' => '77']);
@@ -87,7 +88,7 @@ test('encrypt_ids_recursive encrypts nested array IDs', function () {
 });
 
 test('UserResource serializes ID as encrypted string', function () {
-    $user = new \App\Models\User([
+    $user = new User([
         'full_name' => 'John Doe',
         'email' => 'john@example.com',
         'role' => 'admin',

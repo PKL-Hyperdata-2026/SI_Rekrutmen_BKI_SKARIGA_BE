@@ -38,6 +38,7 @@ backend/app/
 ├── Http/
 │   ├── Controllers/
 │   │   ├── Api/
+│   │   │   ├── AdminReportController.php           # Admin rekapitulasi data laporan (rekrutmen, absensi, keterserapan, tracer)
 │   │   │   ├── Admin/
 │   │   │   │   └── RecruitmentSelectionController.php  # [ADMIN] view-only seleksi rekrutmen: summary + paginasi + filter
 │   │   │   ├── CompanyController.php               # Admin CRUD perusahaan mitra & options
@@ -129,6 +130,7 @@ backend/app/
 │   ├── Menu.php                               # System navigation menus
 │   └── AccessMenu.php                         # Role-to-menu permission mapping
 ├── Services/
+│   ├── AdminReportService.php                 # Agregasi data laporan admin, metrik, filter tanggal, dan statistik
 │   ├── RecruitmentAttendanceService.php       # Validasi presensi, status update, agregasi counter tahapan
 │   ├── JobPlacementService.php                # Job placement CRUD, filtering, audit trail, options
 │   ├── JobVacancyService.php                  # Vacancy business rules, filters, company checks
@@ -245,6 +247,11 @@ backend/app/
   - `POST /api/admin/tracer-studies` — Tambah data tracer study alumni (wajib memilih alumni terdaftar).
   - `PUT|PATCH /api/admin/tracer-studies/{tracerStudy}` — Update data tracer study alumni (alumni readonly).
   - `DELETE /api/admin/tracer-studies/{tracerStudy}` — Soft delete data tracer study + `deleted_by`.
+  - `GET /api/admin/reports/options` — Dropdown opsi filter laporan admin (`companies`, `majors`, `graduation_years`).
+  - `GET /api/admin/reports/recruitment` — Laporan rekapitulasi rekrutmen (filter: `start_date`, `end_date`, `applicant_type`) beserta ringkasan metrik.
+  - `GET /api/admin/reports/attendance` — Laporan rekapitulasi presensi tahapan seleksi (filter: `start_date`, `end_date`, `company_id`) beserta metrik kehadiran.
+  - `GET /api/admin/reports/absorption` — Laporan keterserapan alumni per jurusan (filter: `start_date`, `end_date`, `major_id`) beserta persentase keterserapan.
+  - `GET /api/admin/reports/tracer-study` — Laporan evaluasi tracer study & retensi kerja per tahun kelulusan (filter: `start_date`, `end_date`, `graduation_year`) beserta metrik masa tunggu dan industri.
   - `GET /api/admin/recruitment-selections` — [ADMIN] view-only seleksi rekrutmen (Issue #67): `summary{total_applicants,total_passed_admin,total_accepted}` + `applicants` paginated `RecruitmentSelectionResource` (studentAlumni.user, major, currentStage, status, selectionResult, stageHistories.attendance.attendanceStatus). Filter `job_vacancy_id`, `stage_id` (current_stage_id), `attendance_status` (hadir/tidak_hadir/belum), `search` (nama/NIS), `per_page`.
 - `/api/hrd/*` (`role:hrd`) — Company profile, vacancy management, candidate selection pipeline, job placements.
   - `GET /api/hrd/job-vacancies/statistics` — Statistik lowongan HRD: `active` (aktif/dibuka) dan `draft_closed` (draft/ditutup/expired).

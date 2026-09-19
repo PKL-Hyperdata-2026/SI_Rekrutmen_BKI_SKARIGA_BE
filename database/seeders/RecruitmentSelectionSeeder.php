@@ -16,7 +16,6 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class RecruitmentSelectionSeeder extends Seeder
 {

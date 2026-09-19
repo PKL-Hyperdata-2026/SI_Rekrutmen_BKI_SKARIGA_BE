@@ -17,11 +17,11 @@ class RecruitmentSelectionResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'jobVacancyId' => $this->job_vacancy_id,
+            'id' => encrypt($this->id),
+            'jobVacancyId' => $this->job_vacancy_id ? encrypt($this->job_vacancy_id) : null,
             'jobVacancy' => $this->whenLoaded('jobVacancy', function () {
                 return [
-                    'id' => $this->jobVacancy->id,
+                    'id' => encrypt($this->jobVacancy->id),
                     'title' => $this->jobVacancy->title,
                     'position' => $this->jobVacancy->position,
                     'companyName' => $this->jobVacancy->company?->name,
@@ -36,17 +36,17 @@ class RecruitmentSelectionResource extends JsonResource
             }),
             'studentAlumni' => $this->whenLoaded('studentAlumni', function () {
                 return [
-                    'id' => $this->studentAlumni->id,
+                    'id' => encrypt($this->studentAlumni->id),
                     'nis' => $this->studentAlumni->nis,
                     'graduationYear' => $this->studentAlumni->graduation_year,
                     'user' => $this->studentAlumni->relationLoaded('user') && $this->studentAlumni->user ? [
-                        'id' => $this->studentAlumni->user->id,
+                        'id' => encrypt($this->studentAlumni->user->id),
                         'fullName' => $this->studentAlumni->user->full_name,
                         'email' => $this->studentAlumni->user->email,
                         'phone' => $this->studentAlumni->user->phone,
                     ] : null,
                     'major' => $this->studentAlumni->relationLoaded('major') && $this->studentAlumni->major ? [
-                        'id' => $this->studentAlumni->major->id,
+                        'id' => encrypt($this->studentAlumni->major->id),
                         'name' => $this->studentAlumni->major->name,
                         'code' => $this->studentAlumni->major->code,
                     ] : null,
@@ -55,7 +55,7 @@ class RecruitmentSelectionResource extends JsonResource
             // Alias for frontend convenience (spec mentions studentAlumni.user.nama & major.nama)
             'student' => $this->whenLoaded('studentAlumni', function () {
                 return [
-                    'id' => $this->studentAlumni->id,
+                    'id' => encrypt($this->studentAlumni->id),
                     'name' => $this->studentAlumni->user?->full_name,
                     'nis' => $this->studentAlumni->nis,
                     'majorName' => $this->studentAlumni->major?->name,
@@ -64,7 +64,7 @@ class RecruitmentSelectionResource extends JsonResource
             }),
             'currentStage' => $this->whenLoaded('currentStage', function () {
                 return $this->currentStage ? [
-                    'id' => $this->currentStage->id,
+                    'id' => encrypt($this->currentStage->id),
                     'name' => $this->currentStage->name,
                     'sequenceOrder' => $this->currentStage->sequence_order,
                     'scheduledAt' => $this->currentStage->scheduled_at?->toIso8601String(),
@@ -73,7 +73,7 @@ class RecruitmentSelectionResource extends JsonResource
             }),
             'status' => $this->whenLoaded('status', function () {
                 return $this->status ? [
-                    'id' => $this->status->id,
+                    'id' => encrypt($this->status->id),
                     'code' => $this->status->code,
                     'name' => $this->status->name,
                     'metadata' => $this->status->metadata,
@@ -81,7 +81,7 @@ class RecruitmentSelectionResource extends JsonResource
             }),
             'selectionResult' => $this->whenLoaded('selectionResult', function () {
                 return $this->selectionResult ? [
-                    'id' => $this->selectionResult->id,
+                    'id' => encrypt($this->selectionResult->id),
                     'adminSelectionStatus' => $this->selectionResult->admin_selection_status,
                     'decision' => $this->selectionResult->decision,
                     'status' => $this->selectionResult->status,
@@ -106,30 +106,30 @@ class RecruitmentSelectionResource extends JsonResource
                     }
 
                     return [
-                        'id' => $history->id,
+                        'id' => encrypt($history->id),
                         'selectionStage' => $history->relationLoaded('selectionStage') && $history->selectionStage ? [
-                            'id' => $history->selectionStage->id,
+                            'id' => encrypt($history->selectionStage->id),
                             'name' => $history->selectionStage->name,
                             'sequenceOrder' => $history->selectionStage->sequence_order,
                             'scheduledAt' => $history->selectionStage->scheduled_at?->toIso8601String(),
                             'location' => $history->selectionStage->location,
                         ] : null,
                         'status' => $history->relationLoaded('status') && $history->status ? [
-                            'id' => $history->status->id,
+                            'id' => encrypt($history->status->id),
                             'code' => $history->status->code,
                             'name' => $history->status->name,
                         ] : null,
                         'score' => $history->score !== null ? (float) $history->score : null,
                         'notes' => $history->notes,
                         'assessor' => $history->relationLoaded('assessor') && $history->assessor ? [
-                            'id' => $history->assessor->id,
+                            'id' => encrypt($history->assessor->id),
                             'fullName' => $history->assessor->full_name,
                         ] : null,
                         'attendance' => $attendance ? [
-                            'id' => $attendance->id,
-                            'attendanceStatusId' => $attendance->attendance_status_id,
+                            'id' => encrypt($attendance->id),
+                            'attendanceStatusId' => $attendance->attendance_status_id ? encrypt($attendance->attendance_status_id) : null,
                             'attendanceStatus' => $attendanceStatus ? [
-                                'id' => $attendanceStatus->id,
+                                'id' => encrypt($attendanceStatus->id),
                                 'code' => $attendanceStatus->code,
                                 'name' => $attendanceStatus->name,
                             ] : null,

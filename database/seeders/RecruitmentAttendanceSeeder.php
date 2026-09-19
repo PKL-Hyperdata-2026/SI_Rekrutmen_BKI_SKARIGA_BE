@@ -100,4 +100,3 @@ class RecruitmentAttendanceSeeder extends Seeder
         }
     }
 }
-

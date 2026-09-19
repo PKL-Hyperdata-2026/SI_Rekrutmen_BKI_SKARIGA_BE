@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Hrd;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\GetHrdTestParticipantRequest;
+use App\Http\Requests\GetHrdTestScheduleRequest;
 use App\Http\Requests\StoreHrdTestScheduleRequest;
 use App\Http\Requests\UpdateHrdTestScheduleRequest;
 use App\Http\Resources\HrdTestParticipantResource;
@@ -21,7 +23,7 @@ class TestScheduleController extends Controller
         protected ResponseService $response
     ) {}
 
-    public function index(Request $request): Responsable
+    public function index(GetHrdTestScheduleRequest $request): Responsable
     {
         $company = $request->user()?->company;
         if (! $company) {
@@ -31,13 +33,7 @@ class TestScheduleController extends Controller
                 ->code(403);
         }
 
-        $filters = $request->only([
-            'search',
-            'job_vacancy_id',
-            'session_status',
-            'sort_by',
-            'sort_dir',
-        ]);
+        $filters = $request->validated();
 
         $perPage = $request->integer('per_page', 15);
         $schedules = $this->testScheduleService->getHrdTestSchedules($company->id, $filters, $perPage);
@@ -124,7 +120,7 @@ class TestScheduleController extends Controller
         return $this->response->message('Jadwal tes berhasil dihapus.');
     }
 
-    public function participants(Request $request, int $id): Responsable
+    public function participants(GetHrdTestParticipantRequest $request, int $id): Responsable
     {
         $company = $request->user()?->company;
         if (! $company) {
@@ -134,7 +130,7 @@ class TestScheduleController extends Controller
                 ->code(403);
         }
 
-        $filters = $request->only(['search']);
+        $filters = $request->validated();
         $perPage = $request->integer('per_page', 15);
         $participants = $this->testScheduleService->getScheduleParticipants($company->id, $id, $filters, $perPage);
 

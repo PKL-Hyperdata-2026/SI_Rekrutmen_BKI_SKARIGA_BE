@@ -33,6 +33,7 @@ class StudentJobVacancyController extends Controller
             $studentId,
             $majorId
         );
+
         return $this->response->message('Daftar lowongan kerja berhasil diambil.')
             ->data(JobVacancyResource::collection($paginator)->response()->getData(true));
     }
@@ -60,6 +61,6 @@ class StudentJobVacancyController extends Controller
     {
         $app = $this->service->applyToVacancy($jobVacancy, $request->user()->id, $request->user()->role, $request->validated()['notes'] ?? null);
 
-        return $this->response->message('Lamaran berhasil dikirim.')->data(new StudentJobApplicationResource($app->load(['jobVacancy.company', 'status'])))->code(201);
+        return $this->response->message('Lamaran berhasil dikirim.')->data(new StudentJobApplicationResource($app))->code(201);
     }
 }

@@ -74,10 +74,18 @@ class StudentJobVacancyService
             $did = $filters['department_id'];
             $query->whereHas('majors.department', fn (Builder $d) => $d->where('departments.id', $did));
         }
-        if (! empty($filters['company_id'])) $query->where('company_id', $filters['company_id']);
-        if (! empty($filters['job_type_id'])) $query->where('job_type_id', $filters['job_type_id']);
-        if (! empty($filters['target_applicant_id'])) $query->where('target_applicant_id', $filters['target_applicant_id']);
-        if (! empty($filters['work_location'])) $query->where('work_location', 'like', "%{$filters['work_location']}%");
+        if (! empty($filters['company_id'])) {
+            $query->where('company_id', $filters['company_id']);
+        }
+        if (! empty($filters['job_type_id'])) {
+            $query->where('job_type_id', $filters['job_type_id']);
+        }
+        if (! empty($filters['target_applicant_id'])) {
+            $query->where('target_applicant_id', $filters['target_applicant_id']);
+        }
+        if (! empty($filters['work_location'])) {
+            $query->where('work_location', 'like', "%{$filters['work_location']}%");
+        }
         if (! empty($filters['major_id'])) {
             $mid = $filters['major_id'];
             $query->whereHas('majors', fn (Builder $m) => $m->where('majors.id', $mid));
@@ -206,13 +214,23 @@ class StudentJobVacancyService
         $student = StudentAlumni::where('user_id', $userId)->firstOrFail();
         $vacancy->loadMissing(['status', 'targetApplicant', 'majors']);
 
-        if (! $vacancy->is_active) throw new HttpException(422, 'Lowongan tidak aktif.');
-        if ($vacancy->status && $vacancy->status->code !== 'published') throw new HttpException(422, 'Lowongan belum dibuka.');
-        if ($vacancy->deadline && $vacancy->deadline->isPast()) throw new HttpException(422, 'Lowongan sudah melewati batas pendaftaran.');
+        if (! $vacancy->is_active) {
+            throw new HttpException(422, 'Lowongan tidak aktif.');
+        }
+        if ($vacancy->status && $vacancy->status->code !== 'published') {
+            throw new HttpException(422, 'Lowongan belum dibuka.');
+        }
+        if ($vacancy->deadline && $vacancy->deadline->isPast()) {
+            throw new HttpException(422, 'Lowongan sudah melewati batas pendaftaran.');
+        }
 
         $targetCode = $vacancy->targetApplicant?->code;
-        if ($targetCode === 'class_12_only' && $role !== 'siswa') throw new HttpException(403, 'Lowongan ini hanya untuk Siswa.');
-        if ($targetCode === 'alumni_only' && $role !== 'alumni') throw new HttpException(403, 'Lowongan ini hanya untuk Alumni.');
+        if ($targetCode === 'class_12_only' && $role !== 'siswa') {
+            throw new HttpException(403, 'Lowongan ini hanya untuk Siswa.');
+        }
+        if ($targetCode === 'alumni_only' && $role !== 'alumni') {
+            throw new HttpException(403, 'Lowongan ini hanya untuk Alumni.');
+        }
 
         if ($vacancy->majors->isNotEmpty()) {
             $allowedMajorIds = $vacancy->majors->pluck('id')->all();
@@ -230,7 +248,7 @@ class StudentJobVacancyService
 
         return DB::transaction(function () use ($vacancy, $student, $userId, $notes): JobApplication {
             $pending = StandardType::byCategory('job_application_status')->where('code', 'pending')->first();
-            return JobApplication::create([
+            $application = JobApplication::create([
                 'job_vacancy_id' => $vacancy->id,
                 'student_alumni_id' => $student->id,
                 'status_id' => $pending?->id,
@@ -239,6 +257,8 @@ class StudentJobVacancyService
                 'created_by' => $userId,
                 'updated_by' => $userId,
             ]);
+
+            return $application->load(['jobVacancy.company', 'status']);
         });
     }
 }

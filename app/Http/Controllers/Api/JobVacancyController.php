@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\GetJobVacancyRequest;
 use App\Http\Requests\StoreJobVacancyRequest;
 use App\Http\Requests\UpdateJobVacancyRequest;
 use App\Http\Resources\JobVacancyResource;
@@ -21,19 +22,9 @@ class JobVacancyController extends Controller
         protected ResponseService $response
     ) {}
 
-    public function index(Request $request): Responsable
+    public function index(GetJobVacancyRequest $request): Responsable
     {
-        $filters = $request->only([
-            'search',
-            'company_id',
-            'status_id',
-            'target_applicant_id',
-            'job_type_id',
-            'major_id',
-            'major_ids',
-            'majors',
-            'is_active',
-        ]);
+        $filters = $request->validated();
 
         $perPage = $request->integer('per_page', 15);
         $vacancies = $this->jobVacancyService->getAdminVacancies($filters, $perPage);
@@ -86,6 +77,7 @@ class JobVacancyController extends Controller
     {
         $updated = $this->jobVacancyService->toggleActive($jobVacancy, $request->user()?->id);
         $statusText = $updated->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
         return $this->response->message("Status lowongan kerja berhasil {$statusText}.")
             ->data(new JobVacancyResource($updated));
     }
@@ -93,6 +85,7 @@ class JobVacancyController extends Controller
     public function options(): Responsable
     {
         $options = $this->jobVacancyService->getFormOptions();
+
         return $this->response->message('Opsi formulir lowongan kerja berhasil diambil.')
             ->data(encrypt_recursive($options));
     }

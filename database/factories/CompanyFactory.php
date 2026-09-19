@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Models\Company;
 use App\Models\StandardType;
 use App\Models\StandardTypeCategory;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Company>
+ * @extends Factory<Company>
  */
 class CompanyFactory extends Factory
 {
@@ -21,7 +22,7 @@ class CompanyFactory extends Factory
             'industry_id' => function () {
                 $industry = StandardType::byCategory('company_industry')->inRandomOrder()->first();
 
-                if (!$industry) {
+                if (! $industry) {
                     $category = StandardTypeCategory::firstOrCreate(
                         ['code' => 'company_industry'],
                         ['name' => 'Company Industry']
@@ -35,11 +36,11 @@ class CompanyFactory extends Factory
 
                 return $industry->id;
             },
-            'name' => 'PT ' . fake('id_ID')->company(),
+            'name' => 'PT '.fake('id_ID')->company(),
             'address' => fake('id_ID')->address(),
             'email' => fake('id_ID')->unique()->companyEmail(),
             'phone' => fake('id_ID')->phoneNumber(),
-            'website' => 'https://www.' . fake('id_ID')->domainName(),
+            'website' => 'https://www.'.fake('id_ID')->domainName(),
             'pic_name' => fake('id_ID')->name(),
             'pic_contact' => fake('id_ID')->phoneNumber(),
             'logo_path' => null,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Hrd;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\GetHrdJobVacancyRequest;
 use App\Http\Requests\StoreHrdJobVacancyRequest;
 use App\Http\Requests\UpdateHrdJobVacancyRequest;
 use App\Http\Resources\JobVacancyResource;
@@ -21,7 +22,7 @@ class JobVacancyController extends Controller
         protected ResponseService $response
     ) {}
 
-    public function index(Request $request): Responsable
+    public function index(GetHrdJobVacancyRequest $request): Responsable
     {
         $company = $request->user()?->company;
         if (! $company) {
@@ -31,18 +32,7 @@ class JobVacancyController extends Controller
                 ->code(403);
         }
 
-        $filters = $request->only([
-            'search',
-            'status_id',
-            'target_applicant_id',
-            'job_type_id',
-            'major_id',
-            'major_ids',
-            'majors',
-            'is_active',
-            'effective_status',
-            'sort',
-        ]);
+        $filters = $request->validated();
 
         $perPage = $request->integer('per_page', 15);
         $vacancies = $this->jobVacancyService->getHrdVacancies($company->id, $filters, $perPage);

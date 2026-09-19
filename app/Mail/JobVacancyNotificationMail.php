@@ -44,13 +44,13 @@ class JobVacancyNotificationMail extends Mailable implements ShouldQueue
         $this->quota = isset($data['quota']) ? (int) $data['quota'] : null;
 
         $frontendUrl = rtrim((string) config('app.frontend_url'), '/');
-        $this->actionUrl = $frontendUrl . '/student/lowongan';
+        $this->actionUrl = $frontendUrl.'/student/lowongan';
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: $this->title . ' - ' . (string) config('app.name'),
+            subject: $this->title.' - '.(string) config('app.name'),
         );
     }
 

@@ -16,7 +16,7 @@ class ApplyJobVacancyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'notes' => 'nullable|string|max:1000'
+            'notes' => 'nullable|string|max:1000',
         ];
     }
 }

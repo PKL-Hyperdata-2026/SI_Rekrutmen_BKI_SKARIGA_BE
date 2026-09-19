@@ -16,7 +16,9 @@ class JobVacancyNotificationMailTest extends TestCase
     use RefreshDatabase;
 
     protected User $user1;
+
     protected User $user2;
+
     protected NotificationService $notificationService;
 
     protected function setUp(): void
@@ -53,7 +55,7 @@ class JobVacancyNotificationMailTest extends TestCase
             ]
         );
 
-        $mailable->assertHasSubject('Lowongan Baru: Mobile Developer - ' . config('app.name'));
+        $mailable->assertHasSubject('Lowongan Baru: Mobile Developer - '.config('app.name'));
         $mailable->assertSeeInHtml('Budi Santoso');
         $mailable->assertSeeInHtml('PT Maju Bersama');
         $mailable->assertSeeInHtml('Mobile Developer');

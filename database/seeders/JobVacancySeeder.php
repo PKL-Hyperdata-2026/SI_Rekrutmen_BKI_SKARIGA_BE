@@ -452,12 +452,12 @@ class JobVacancySeeder extends Seeder
 
             foreach ($vacancies as $item) {
                 $companyId = $companies->get($item['company']);
-                if (!$companyId) {
+                if (! $companyId) {
                     continue;
                 }
 
                 $shortCompany = str_replace('PT ', '', $item['company']);
-                $slug = Str::slug($item['position'] . '-' . Str::limit($shortCompany, 20, ''));
+                $slug = Str::slug($item['position'].'-'.Str::limit($shortCompany, 20, ''));
                 $targetId = $targets->get($item['target']);
                 $typeId = $types->get($item['type']);
 
@@ -468,7 +468,7 @@ class JobVacancySeeder extends Seeder
                         'job_type_id' => $typeId,
                         'status_id' => $statusPublished?->id,
                         'target_applicant_id' => $targetId,
-                        'title' => 'Lowongan ' . $item['position'],
+                        'title' => 'Lowongan '.$item['position'],
                         'slug' => $slug,
                         'position' => $item['position'],
                         'description' => $item['desc'],
@@ -492,7 +492,7 @@ class JobVacancySeeder extends Seeder
                     }
                 }
 
-                if (!empty($majorIds)) {
+                if (! empty($majorIds)) {
                     $vacancy->majors()->sync($majorIds);
                 }
             }

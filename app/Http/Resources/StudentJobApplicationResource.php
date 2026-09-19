@@ -19,7 +19,7 @@ class StudentJobApplicationResource extends JsonResource
         return [
             'id' => $this->id,
             'jobVacancyId' => $this->job_vacancy_id,
-            'vacancy' => $this->whenLoaded('jobVacancy', fn() => [
+            'vacancy' => $this->whenLoaded('jobVacancy', fn () => [
                 'id' => $this->jobVacancy->id,
                 'title' => $this->jobVacancy->title,
                 'position' => $this->jobVacancy->position,
@@ -27,13 +27,13 @@ class StudentJobApplicationResource extends JsonResource
                 'companyLogo' => $this->jobVacancy->company?->logo_path ? (
                     filter_var($this->jobVacancy->company->logo_path, FILTER_VALIDATE_URL)
                         ? $this->jobVacancy->company->logo_path
-                        : asset('storage/' . $this->jobVacancy->company->logo_path)
+                        : asset('storage/'.$this->jobVacancy->company->logo_path)
                 ) : null,
                 'workLocation' => $this->jobVacancy->work_location,
-                'deadline' => $this->jobVacancy->deadline?->format('Y-m-d')
+                'deadline' => $this->jobVacancy->deadline?->format('Y-m-d'),
             ]),
-            'status' => $this->whenLoaded('status', fn() => ['id' => $this->status->id, 'code' => $this->status->code, 'name' => $this->status->name]),
-            'currentStage' => $this->whenLoaded('currentStage', fn() => [
+            'status' => $this->whenLoaded('status', fn () => ['id' => $this->status->id, 'code' => $this->status->code, 'name' => $this->status->name]),
+            'currentStage' => $this->whenLoaded('currentStage', fn () => [
                 'id' => $this->currentStage->id,
                 'name' => $this->currentStage->name,
                 'order' => $this->currentStage->sequence_order,
@@ -43,20 +43,20 @@ class StudentJobApplicationResource extends JsonResource
             ]),
             'appliedAt' => $this->applied_at?->toIso8601String(),
             'notes' => $this->notes,
-            'placement' => $this->whenLoaded('jobPlacement', fn() => $this->jobPlacement ? [
+            'placement' => $this->whenLoaded('jobPlacement', fn () => $this->jobPlacement ? [
                 'id' => $this->jobPlacement->id,
                 'acceptedDate' => $this->jobPlacement->accepted_date?->format('Y-m-d'),
                 'startDate' => $this->jobPlacement->start_date?->format('Y-m-d'),
                 'notes' => $this->jobPlacement->notes,
             ] : null),
-            'selectionResult' => $this->whenLoaded('selectionResult', fn() => $this->selectionResult ? [
+            'selectionResult' => $this->whenLoaded('selectionResult', fn () => $this->selectionResult ? [
                 'id' => $this->selectionResult->id,
                 'decision' => $this->selectionResult->decision,
                 'letterPath' => $this->selectionResult->letter_path,
                 'letterUrl' => $this->selectionResult->letter_path ? (
                     filter_var($this->selectionResult->letter_path, FILTER_VALIDATE_URL)
                         ? $this->selectionResult->letter_path
-                        : asset('storage/' . $this->selectionResult->letter_path)
+                        : asset('storage/'.$this->selectionResult->letter_path)
                 ) : null,
             ] : null),
             'stageHistories' => ApplicationStageHistoryResource::collection($this->whenLoaded('stageHistories')),

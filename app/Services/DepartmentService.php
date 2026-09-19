@@ -84,6 +84,11 @@ class DepartmentService
         );
     }
 
+    public function show(Department $department): Department
+    {
+        return $department->load('majors');
+    }
+
     public function createDepartment(array $data, ?int $authUserId = null): Department
     {
         return DB::transaction(function () use ($data, $authUserId) {

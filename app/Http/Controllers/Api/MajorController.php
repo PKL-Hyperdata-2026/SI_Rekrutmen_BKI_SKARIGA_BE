@@ -55,12 +55,12 @@ class MajorController extends Controller
 
         return $this->response
             ->message('Opsi formulir jurusan berhasil diambil.')
-            ->data($options);
+            ->data(encrypt_recursive($options));
     }
 
     public function show(Major $major): Responsable
     {
-        $major->load('department');
+        $major = $this->majorService->show($major);
 
         return $this->response
             ->message('Detail jurusan berhasil diambil.')

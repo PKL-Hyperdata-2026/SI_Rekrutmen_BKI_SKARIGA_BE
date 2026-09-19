@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Department;
-use App\Models\JobVacancy;
 use App\Models\Major;
 use App\Models\StudentAlumni;
 use App\Models\User;

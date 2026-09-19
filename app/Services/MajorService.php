@@ -93,6 +93,11 @@ class MajorService
         );
     }
 
+    public function show(Major $major): Major
+    {
+        return $major->load('department');
+    }
+
     public function createMajor(array $data, ?int $authUserId = null): Major
     {
         return DB::transaction(function () use ($data, $authUserId) {

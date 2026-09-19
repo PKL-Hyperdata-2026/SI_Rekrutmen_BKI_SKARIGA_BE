@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Department;
-use App\Models\Major;
 use App\Models\User;
 use Database\Seeders\DepartmentSeeder;
 use Database\Seeders\MajorSeeder;

@@ -51,6 +51,7 @@ backend/app/
 │   │   │   ├── Admin/
 │   │   │   │   └── RecruitmentSelectionController.php # [ADMIN] View-only seleksi rekrutmen: summary + paginasi + filter
 │   │   │   ├── Hrd/
+│   │   │   │   ├── ApplicantReviewController.php      # HRD review pelamar & verifikasi berkas: list + filter + detail + review tunggal/massal
 │   │   │   │   ├── JobPlacementController.php         # HRD CRUD penempatan kerja & metrik evaluasi
 │   │   │   │   ├── JobVacancyController.php           # HRD CRUD lowongan kerja & statistik
 │   │   │   │   └── TestScheduleController.php         # HRD CRUD jadwal tes, list peserta, & reminder
@@ -84,6 +85,9 @@ backend/app/
 │   │   ├── GetAttendanceStageSummariesRequest.php
 │   │   ├── GetStudentJobApplicationRequest.php
 │   │   ├── GetStudentJobVacanciesRequest.php
+│   │   ├── HrdApplicantBulkReviewRequest.php
+│   │   ├── HrdApplicantReviewActionRequest.php
+│   │   ├── HrdApplicantReviewIndexRequest.php
 │   │   ├── LoginRequest.php
 │   │   ├── RecruitmentSelectionIndexRequest.php
 │   │   ├── ResetPasswordRequest.php
@@ -120,6 +124,7 @@ backend/app/
 │       ├── ApplicationStageHistoryResource.php
 │       ├── CompanyResource.php
 │       ├── DepartmentResource.php
+│       ├── HrdApplicantReviewResource.php
 │       ├── HrdTestParticipantResource.php
 │       ├── HrdTestScheduleResource.php
 │       ├── JobPlacementResource.php
@@ -165,6 +170,7 @@ backend/app/
 │   ├── AuthService.php                                # Authentication credential validation & token issuance
 │   ├── CompanyService.php                             # Corporate partner CRUD, filtering, logo upload
 │   ├── DepartmentService.php                          # Department master data CRUD & status toggle
+│   ├── HrdApplicantReviewService.php                  # HRD review pelamar scope company: paginate + summary + options + detail + review/bulk
 │   ├── JobPlacementService.php                        # Job placement CRUD, filtering, audit trail, options, metrics
 │   ├── JobVacancyService.php                          # Vacancy business rules, filters, company checks
 │   ├── MailService.php                                # Generic email notification dispatch
@@ -218,55 +224,35 @@ backend/app/
 - `POST /api/forgot-password` — Send password reset link email (throttled 6/min).
 - `POST /api/reset-password` — Reset password using `token`, `email`, `password` (`min:8`, `confirmed`).
 
-### Authenticated (`auth:sanctum`)
-- `GET /api/me` — Retrieve current authenticated user profile and roles.
-- `POST /api/logout` — Revoke current Sanctum token.
-- `GET /api/notification` — List user notifications.
-- `GET /api/notification/unread` — Count unread notifications.
-- `PATCH /api/notification/{id}/read` — Mark single notification as read.
-- `PATCH /api/notification/read-all` — Mark all notifications as read.
-
 ### Role: Admin (`role:admin`)
-- **Companies:**
-  - `GET /api/admin/companies` — List perusahaan mitra + pagination (`per_page`), search, filter (`industry_id`, `is_active`), sort.
-  - `GET /api/admin/companies/options` — Dropdown opsi: `industries` (kategori `company_industry`).
-  - `GET /api/admin/companies/{company}` — Detail data perusahaan.
-  - `POST /api/admin/companies` — Tambah perusahaan baru.
-  - `PUT|PATCH /api/admin/companies/{company}` — Update data perusahaan.
-  - `DELETE /api/admin/companies/{company}` — Soft delete perusahaan.
-  - `PATCH /api/admin/companies/{company}/toggle-active` — Toggle status aktif/non-aktif.
 - **Departments & Majors:**
-  - `GET /api/admin/departments` — List departemen vokasi + pagination, search.
-  - `GET /api/admin/departments/options` — Dropdown opsi departemen.
-  - `GET /api/admin/departments/{department}` — Detail departemen.
-  - `POST /api/admin/departments` — Tambah departemen baru.
+  - `GET /api/admin/departments` — List master departemen + pagination, search, status filter.
+  - `POST /api/admin/departments` — Buat departemen baru.
+  - `GET /api/admin/departments/{department}` — Detail data departemen.
   - `PUT|PATCH /api/admin/departments/{department}` — Update departemen.
   - `DELETE /api/admin/departments/{department}` — Soft delete departemen.
-  - `PATCH /api/admin/departments/{department}/toggle-active` — Toggle status departemen.
-  - `GET /api/admin/majors` — List jurusan + pagination, search, filter departemen.
-  - `GET /api/admin/majors/options` — Dropdown opsi jurusan (`departments`).
-  - `GET /api/admin/majors/{major}` — Detail jurusan.
-  - `POST /api/admin/majors` — Tambah jurusan baru.
-  - `PUT|PATCH /api/admin/majors/{major}` — Update data jurusan.
+  - `PATCH /api/admin/departments/{department}/toggle-active` — Toggle status aktif departemen.
+  - `GET /api/admin/majors` — List jurusan vokasi + pagination, search, department filter.
+  - `GET /api/admin/majors/options` — Dropdown opsi departemen untuk form jurusan.
+  - `POST /api/admin/majors` — Buat jurusan baru.
+  - `GET /api/admin/majors/{major}` — Detail data jurusan.
+  - `PUT|PATCH /api/admin/majors/{major}` — Update jurusan.
   - `DELETE /api/admin/majors/{major}` — Soft delete jurusan.
-  - `PATCH /api/admin/majors/{major}/toggle-active` — Toggle status jurusan.
-- **Job Vacancies (Admin):**
-  - `GET /api/admin/job-vacancies` — List lowongan kerja + pagination, search, filter.
-  - `GET /api/admin/job-vacancies/options` — Dropdown opsi form lowongan (perusahaan, status, target, tipe kerja).
-  - `GET /api/admin/job-vacancies/{jobVacancy}` — Detail lowongan kerja.
-  - `POST /api/admin/job-vacancies` — Buat lowongan kerja baru.
-  - `PUT|PATCH /api/admin/job-vacancies/{jobVacancy}` — Update lowongan kerja.
-  - `DELETE /api/admin/job-vacancies/{jobVacancy}` — Soft delete lowongan kerja.
-  - `PATCH /api/admin/job-vacancies/{jobVacancy}/toggle-active` — Toggle status aktif lowongan.
-- **Students & Alumni Management:**
-  - `GET /api/admin/students` — List data siswa aktif (role `siswa`) + pagination, search, filters, sort.
-  - `GET /api/admin/students/options` — Dropdown opsi form siswa.
-  - `GET /api/admin/students/{student}` — Detail data siswa.
-  - `POST /api/admin/students` — Tambah siswa baru + pembuatan akun user (role `siswa`).
-  - `PUT|PATCH /api/admin/students/{student}` — Update data siswa dan akun user terkait.
-  - `DELETE /api/admin/students/{student}` — Soft delete data siswa & non-aktifkan user.
-  - `POST /api/admin/students/{student}/portfolios` — Upload dokumen portofolio siswa.
-  - `DELETE /api/admin/students/{student}/portfolios/{portfolio}` — Hapus dokumen portofolio siswa.
+  - `PATCH /api/admin/majors/{major}/toggle-active` — Toggle status aktif jurusan.
+- **Companies:**
+  - `GET /api/admin/companies` — List perusahaan mitra + pagination, search, filter, sort.
+  - `GET /api/admin/companies/options` — Dropdown opsi industri perusahaan.
+  - `POST /api/admin/companies` — Daftarkan perusahaan baru.
+  - `GET /api/admin/companies/{company}` — Detail data perusahaan.
+  - `PUT|PATCH /api/admin/companies/{company}` — Update perusahaan mitra.
+  - `DELETE /api/admin/companies/{company}` — Soft delete perusahaan mitra.
+- **Students & Alumni:**
+  - `GET /api/admin/students` — List siswa aktif kelas 12 + pagination, search, filter, sort.
+  - `GET /api/admin/students/options` — Dropdown opsi form siswa (jurusan, kelas).
+  - `GET /api/admin/students/{student}` — Detail siswa + berkas portofolio.
+  - `POST /api/admin/students` — Buat siswa baru.
+  - `PUT|PATCH /api/admin/students/{student}` — Update data siswa.
+  - `DELETE /api/admin/students/{student}` — Soft delete data siswa.
   - `GET /api/admin/alumni` — List alumni + pagination, search, filter, sort.
   - `GET /api/admin/alumni/options` — Dropdown opsi form alumni.
   - `GET /api/admin/alumni/{alumni}` — Detail data alumni.
@@ -319,6 +305,12 @@ backend/app/
   - `PUT|PATCH /api/hrd/job-vacancies/{jobVacancy}` — Update lowongan kerja.
   - `DELETE /api/hrd/job-vacancies/{jobVacancy}` — Soft delete lowongan kerja.
   - `PATCH /api/hrd/job-vacancies/{jobVacancy}/toggle-active` — Buka/tutup status aktif lowongan.
+- **Applicant Reviews:**
+  - `GET /api/hrd/applicant-reviews` — [HRD] Review pelamar scope perusahaan + pagination (`per_page`), search (nama/NIS/email/phone/posisi), filter (`job_vacancy_id`, `review_status`: semua/perlu_review/lolos_berkas/ditolak), sort (`applied_at`, `name`, `position`). Response berisi `summary{total,perlu_review,lolos_berkas,ditolak}` + `applicants` paginated `HrdApplicantReviewResource` + `filters{vacancies,review_statuses}`.
+  - `GET /api/hrd/applicant-reviews/options` — [HRD] Opsi filter review: `vacancies` milik perusahaan + `review_statuses` tetap.
+  - `GET /api/hrd/applicant-reviews/{id}` — [HRD] Detail pelamar (kontak, jurusan/kelas/tahun lulus, lowongan, daftar berkas portofolio, hasil seleksi, riwayat tahap).
+  - `PATCH /api/hrd/applicant-reviews/{id}/review` — [HRD] Keputusan tunggal (`decision`: lolos/tidak_lolos, `notes` wajib saat tolak). Dalam `DB::transaction()` menulis `selection_results.admin_selection_status`, `application_stage_histories` tahap administrasi (`passed`/`failed`, `assessor_id` = HRD), dan `job_applications.status` (`in_progress`/`rejected`, `current_stage_id` = tahap administrasi). Menolak 422 bila lamaran sudah `accepted` atau masuk penempatan.
+  - `POST /api/hrd/applicant-reviews/bulk-review` — [HRD] Keputusan massal untuk tombol Loloskan Terpilih (`application_ids[]` 1-100, `decision`, `notes`). Dalam `DB::transaction()`, mengembalikan `processed/succeeded/failed/failures`.
 - **Test Schedules:**
   - `GET /api/hrd/test-schedules` — List agenda & jadwal tes + pagination, search, filter.
   - `GET /api/hrd/test-schedules/options` — Dropdown opsi lowongan aktif milik HRD.

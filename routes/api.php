@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AdminReportController;
 use App\Http\Controllers\Api\AdminTracerStudyController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DepartmentController;
+use App\Http\Controllers\Api\Hrd\ApplicantReviewController;
 use App\Http\Controllers\Api\Hrd\JobPlacementController;
 use App\Http\Controllers\Api\Hrd\JobVacancyController as HrdJobVacancyController;
 use App\Http\Controllers\Api\Hrd\TestScheduleController;
@@ -118,6 +119,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/test-schedules/{id}/participants/{participantId}/remind', [TestScheduleController::class, 'remindParticipant']);
         Route::apiResource('test-schedules', TestScheduleController::class)
             ->parameters(['test-schedules' => 'id']);
+
+        // Review Pelamar & Verifikasi Berkas (HRD Perusahaan)
+        Route::get('/applicant-reviews/options', [ApplicantReviewController::class, 'options']);
+        Route::post('/applicant-reviews/bulk-review', [ApplicantReviewController::class, 'bulkReview']);
+        Route::get('/applicant-reviews', [ApplicantReviewController::class, 'index']);
+        Route::get('/applicant-reviews/{id}', [ApplicantReviewController::class, 'show']);
+        Route::patch('/applicant-reviews/{id}/review', [ApplicantReviewController::class, 'review']);
     });
 
     // Self-Service Siswa & Alumni Portfolio

@@ -100,7 +100,7 @@ class RecruitmentSelectionSeeder extends Seeder
                     'sequence_order' => 1,
                     'description' => 'Verifikasi kelengkapan berkas: ijazah, transkrip, CV, portofolio, dan surat lamaran.',
                     'location' => 'Ruang BKK SMKN 1 Gresik',
-                    'days_offset' => -14,
+                    'days_offset' => -2,
                     'minimum_score' => 70.00,
                 ],
                 [
@@ -110,7 +110,7 @@ class RecruitmentSelectionSeeder extends Seeder
                     'sequence_order' => 2,
                     'description' => 'Tes potensi akademik, logika, dan psikotes untuk mengukur kesiapan kerja.',
                     'location' => 'Lab Komputer SKARIGA Lt.2',
-                    'days_offset' => -7,
+                    'days_offset' => 0,
                     'minimum_score' => 75.00,
                 ],
                 [
@@ -120,7 +120,7 @@ class RecruitmentSelectionSeeder extends Seeder
                     'sequence_order' => 3,
                     'description' => 'Wawancara mendalam dengan HRD dan user untuk menilai kompetensi & attitude.',
                     'location' => 'Ruang Interview Gedung BKK / Online via Zoom Meeting',
-                    'days_offset' => 0,
+                    'days_offset' => 3,
                     'minimum_score' => 75.00,
                 ],
             ];
@@ -150,38 +150,64 @@ class RecruitmentSelectionSeeder extends Seeder
                 }
             }
 
-            // --- 2. Job Applications + Histories + Attendances + Results ---
-            $perVacancy = 6; // 5 vacancies * 6 = 30 applicants (covers pagination, filters)
-            $studentsList = $students->values();
+            $perVacancy = 6;
             $globalIdx = 0;
 
-            // Pre-fetch HRD assessor for history
             $assessorId = User::where('role', 'hrd')->value('id') ?? $adminUserId;
+
+            $now = Carbon::now('Asia/Jakarta');
+            $currentDay = $now->day;
+            $maxDaysAgo = max(0, min($currentDay - 1, 10));
+
+            $alumniStudent = $students->first(fn ($s) => $s->user?->email === 'alumni@email.com');
+            $siswaStudent = $students->first(fn ($s) => $s->user?->email === 'faisalmarvello53@gmail.com');
 
             foreach ($targetVacancies as $vacancy) {
                 $stages = $stagesByVacancy[$vacancy->id];
-                // Guard: if vacancy had no stages (edge), skip
                 if (count($stages) < 3) {
                     continue;
                 }
 
-                for ($i = 0; $i < $perVacancy; $i++) {
-                    // Round-robin students to avoid duplicate (vacancy, student) if possible
-                    $student = $studentsList[($globalIdx % $studentsList->count())];
-                    // If student already applied to this vacancy, pick next
-                    $attempt = 0;
-                    while (
-                        JobApplication::where('job_vacancy_id', $vacancy->id)
-                            ->where('student_alumni_id', $student->id)->exists() && $attempt < $studentsList->count()
-                    ) {
-                        $globalIdx++;
-                        $student = $studentsList[($globalIdx % $studentsList->count())];
-                        $attempt++;
-                    }
+                $targetCode = $vacancy->targetApplicant?->code;
+                if ($targetCode === 'alumni_only') {
+                    $candidates = $students->filter(fn ($s) => $s->user?->role === 'alumni')->values();
+                } elseif ($targetCode === 'class_12_only') {
+                    $candidates = $students->filter(fn ($s) => $s->user?->role === 'siswa')->values();
+                } else {
+                    $candidates = $students->values();
+                }
 
-                    $scenario = $globalIdx % 5;
-                    // applied_at spread last 30 days
-                    $appliedAt = Carbon::now('Asia/Jakarta')->subDays(5 + ($globalIdx % 25))->setHour(10)->setMinute(random_int(0, 59));
+                if ($candidates->isEmpty()) {
+                    $candidates = $students->values();
+                }
+
+                $isBackendVacancy = str_contains(strtolower($vacancy->position ?? $vacancy->title), 'junior backend');
+                $isFrontendVacancy = str_contains(strtolower($vacancy->position ?? $vacancy->title), 'junior frontend');
+
+                if ($isBackendVacancy && $alumniStudent) {
+                    $candidates = $candidates->reject(fn ($s) => $s->id === $alumniStudent->id)->prepend($alumniStudent)->values();
+                } elseif ($isFrontendVacancy && $siswaStudent) {
+                    $candidates = $candidates->reject(fn ($s) => $s->id === $siswaStudent->id)->prepend($siswaStudent)->values();
+                } else {
+                    $candidates = $candidates->reject(fn ($s) => in_array($s->id, array_filter([$alumniStudent?->id, $siswaStudent?->id]), true))->values();
+                }
+
+                for ($i = 0; $i < $perVacancy; $i++) {
+                    $student = $candidates[$i % $candidates->count()];
+
+                    if ($isBackendVacancy && $alumniStudent && $student->id === $alumniStudent->id) {
+                        $scenario = 0;
+                        $daysAgo = max(0, min($currentDay - 1, 2));
+                        $appliedAt = $now->copy()->subDays($daysAgo)->setHour(10)->setMinute(15);
+                    } elseif ($isFrontendVacancy && $siswaStudent && $student->id === $siswaStudent->id) {
+                        $scenario = 1;
+                        $daysAgo = max(0, min($currentDay - 1, 2));
+                        $appliedAt = $now->copy()->subDays($daysAgo)->setHour(10)->setMinute(30);
+                    } else {
+                        $scenario = $globalIdx % 5;
+                        $daysAgo = $maxDaysAgo > 0 ? ($globalIdx % $maxDaysAgo) : 0;
+                        $appliedAt = $now->copy()->subDays($daysAgo)->setHour(9 + ($globalIdx % 6))->setMinute(random_int(0, 59));
+                    }
 
                     // Determine current_stage, status, and scores per scenario
                     $currentStage = null;

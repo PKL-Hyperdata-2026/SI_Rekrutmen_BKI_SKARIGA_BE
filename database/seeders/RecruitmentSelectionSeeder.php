@@ -330,7 +330,7 @@ class RecruitmentSelectionSeeder extends Seeder
                 }
             }
 
-            $this->command?->info('RecruitmentSelectionSeeder: Seeded '.SelectionStage::count().' stages, '.JobApplication::count().' applications with results & histories.');
+            // $this->command?->info('RecruitmentSelectionSeeder: Seeded '.SelectionStage::count().' stages, '.JobApplication::count().' applications with results & histories.');
         });
     }
 

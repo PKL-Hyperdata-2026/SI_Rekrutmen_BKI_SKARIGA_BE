@@ -7,6 +7,8 @@ namespace Tests\Feature;
 use App\Models\Company;
 use App\Models\JobVacancy;
 use App\Models\Major;
+use App\Models\StandardType;
+use App\Models\StandardTypeCategory;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,6 +22,8 @@ class JobVacancyTest extends TestCase
 
     protected Company $company;
 
+    protected StandardType $targetApplicant;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -30,6 +34,14 @@ class JobVacancyTest extends TestCase
             'name' => 'PT Test Indonesia',
             'is_active' => true,
         ]);
+        $category = StandardTypeCategory::firstOrCreate(
+            ['code' => 'target_applicant'],
+            ['name' => 'Target Pelamar']
+        );
+        $this->targetApplicant = StandardType::firstOrCreate(
+            ['category_id' => $category->id, 'code' => 'class_12_and_alumni'],
+            ['name' => 'Siswa Kelas 12 & Alumni', 'sort_order' => 3, 'is_active' => true]
+        );
     }
 
     public function test_can_create_job_vacancy_with_unique_slug_and_majors(): void
@@ -42,6 +54,7 @@ class JobVacancyTest extends TestCase
 
         $payload = [
             'company_id' => $this->company->id,
+            'target_applicant_id' => $this->targetApplicant->id,
             'title' => 'Junior Laravel Developer',
             'position' => 'Backend Developer',
             'description' => 'Job description details',
@@ -88,9 +101,10 @@ class JobVacancyTest extends TestCase
     {
         $payload = [
             'company_id' => $this->company->id,
+            'target_applicant_id' => $this->targetApplicant->id,
             'title' => 'VP of Engineering (Global)',
-            'min_salary' => 1500000000.00, // 1.5 Billion
-            'max_salary' => 3000000000.00, // 3 Billion
+            'min_salary' => 1500000000.00,
+            'max_salary' => 3000000000.00,
         ];
 
         $response = $this->actingAs($this->user)

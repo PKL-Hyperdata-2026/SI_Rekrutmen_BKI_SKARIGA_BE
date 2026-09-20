@@ -33,7 +33,14 @@ class JobVacancyService
 
     public function getAdminVacancies(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = JobVacancy::with(['company', 'jobType', 'status', 'targetApplicant', 'majors', 'createdBy', 'updatedBy']);
+        $this->syncExpiredVacancies();
+
+        $query = JobVacancy::with([
+            'company:id,name,email,phone,address,website,logo_path',
+            'status:id,code,name,metadata',
+            'targetApplicant:id,code,name,metadata',
+            'majors:id,code,name',
+        ]);
         if (! empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function (Builder $q) use ($search) {
@@ -53,11 +60,9 @@ class JobVacancyService
         if (! empty($filters['company_id'])) {
             $query->where('company_id', $filters['company_id']);
         }
-
         if (! empty($filters['status_id'])) {
             $query->where('status_id', $filters['status_id']);
         }
-
         if (! empty($filters['target_applicant_id']) && $filters['target_applicant_id'] !== 'all') {
             $targetApplicantId = $filters['target_applicant_id'];
             $query->where(function (Builder $q) use ($targetApplicantId) {
@@ -65,11 +70,9 @@ class JobVacancyService
                     ->orWhereNull('target_applicant_id');
             });
         }
-
         if (! empty($filters['job_type_id'])) {
             $query->where('job_type_id', $filters['job_type_id']);
         }
-
         if (! empty($filters['major_id']) && $filters['major_id'] !== 'all') {
             $majorId = $filters['major_id'];
             $query->where(function (Builder $q) use ($majorId) {
@@ -78,14 +81,12 @@ class JobVacancyService
                 })->orDoesntHave('majors');
             });
         }
-
         if (! empty($filters['major_ids']) && is_array($filters['major_ids'])) {
             $majorIds = $filters['major_ids'];
             $query->whereHas('majors', function (Builder $majorQuery) use ($majorIds) {
                 $majorQuery->whereIn('majors.id', $majorIds);
             });
         }
-
         if (isset($filters['is_active']) && $filters['is_active'] !== '') {
             $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
         }
@@ -102,15 +103,18 @@ class JobVacancyService
             $data['created_by'] = $userId;
             $data['updated_by'] = $userId;
 
-            // Default status to 'published' if not provided
-            if (empty($data['status_id'])) {
+            if (! empty($data['deadline']) && $data['deadline'] < now()->toDateString()) {
+                $closedStatus = StandardType::byCategory('vacancy_status')->where('code', 'closed')->first();
+                if ($closedStatus) {
+                    $data['status_id'] = $closedStatus->id;
+                }
+            } elseif (empty($data['status_id'])) {
                 $publishedStatus = StandardType::byCategory('vacancy_status')->where('code', 'published')->first();
                 if ($publishedStatus) {
                     $data['status_id'] = $publishedStatus->id;
                 }
             }
 
-            // Default job_type to first available job_type if not provided
             if (empty($data['job_type_id'])) {
                 $jobType = StandardType::byCategory('job_type')->first();
                 if ($jobType) {
@@ -118,7 +122,6 @@ class JobVacancyService
                 }
             }
 
-            // Fallback description if not provided
             if (empty($data['description'])) {
                 $data['description'] = $data['qualification'] ?? "Lowongan pekerjaan untuk posisi {$title}.";
             }
@@ -168,6 +171,13 @@ class JobVacancyService
 
             $sendNotification = ! empty($data['send_notification']);
             unset($data['send_notification']);
+
+            if (! empty($data['deadline']) && $data['deadline'] < now()->toDateString()) {
+                $closedStatus = StandardType::byCategory('vacancy_status')->where('code', 'closed')->first();
+                if ($closedStatus) {
+                    $data['status_id'] = $closedStatus->id;
+                }
+            }
 
             $vacancy->update($data);
             $vacancy = $vacancy->fresh(['company', 'jobType', 'status', 'targetApplicant', 'majors', 'createdBy', 'updatedBy']);
@@ -232,42 +242,19 @@ class JobVacancyService
 
     public function getFormOptions(): array
     {
-        $companies = Company::where('is_active', true)
-            ->select('id', 'name', 'email', 'phone', 'logo_path')
-            ->orderBy('name')
-            ->get();
-
-        $majors = Major::where('is_active', true)
-            ->select('id', 'code', 'name')
-            ->orderBy('name')
-            ->get();
-
-        $vacancyStatuses = StandardType::byCategory('vacancy_status')
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get(['id', 'code', 'name', 'metadata']);
-
-        $targetApplicants = StandardType::byCategory('target_applicant')
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get(['id', 'code', 'name', 'metadata']);
-
-        $jobTypes = StandardType::byCategory('job_type')
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get(['id', 'code', 'name', 'metadata']);
-
         return [
-            'companies' => $companies,
-            'majors' => $majors,
-            'vacancyStatuses' => $vacancyStatuses,
-            'targetApplicants' => $targetApplicants,
-            'jobTypes' => $jobTypes,
+            'companies' => Company::where('is_active', true)->select('id', 'name', 'email', 'phone', 'logo_path')->orderBy('name')->get(),
+            'majors' => Major::where('is_active', true)->select('id', 'code', 'name')->orderBy('name')->get(),
+            'vacancyStatuses' => StandardType::byCategory('vacancy_status')->where('is_active', true)->orderBy('sort_order')->get(['id', 'code', 'name', 'metadata']),
+            'targetApplicants' => StandardType::byCategory('target_applicant')->where('is_active', true)->orderBy('sort_order')->get(['id', 'code', 'name', 'metadata']),
+            'jobTypes' => StandardType::byCategory('job_type')->where('is_active', true)->orderBy('sort_order')->get(['id', 'code', 'name', 'metadata']),
         ];
     }
 
     public function getHrdVacancies(int $companyId, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
+        $this->syncExpiredVacancies();
+
         $rejectedStatusId = StandardType::byCategory('job_application_status')->where('code', 'rejected')->first()?->id;
         $today = now()->toDateString();
 
@@ -294,19 +281,15 @@ class JobVacancyService
         if (! empty($filters['status_id'])) {
             $query->where('status_id', $filters['status_id']);
         }
-
         if (! empty($filters['target_applicant_id']) && $filters['target_applicant_id'] !== 'all') {
             $query->where('target_applicant_id', $filters['target_applicant_id']);
         }
-
         if (! empty($filters['job_type_id'])) {
             $query->where('job_type_id', $filters['job_type_id']);
         }
-
         if (! empty($filters['major_id']) && $filters['major_id'] !== 'all') {
             $query->whereHas('majors', fn ($q) => $q->where('majors.id', $filters['major_id']));
         }
-
         if (isset($filters['is_active']) && $filters['is_active'] !== '') {
             $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
         }
@@ -317,13 +300,6 @@ class JobVacancyService
         return $query->paginate($perPage);
     }
 
-    /**
-     * Count subquery for active (non-rejected, non-trashed) applications.
-     * Mirrors the applicants_count withCount above so filters and sorts
-     * use the exact same definition the API resource exposes.
-     *
-     * @param  array<int|string>  $bindings
-     */
     private function activeApplicantsCountSql(?int $rejectedStatusId, array &$bindings): string
     {
         $table = (new JobApplication)->getTable();
@@ -336,11 +312,6 @@ class JobVacancyService
         return $sql.')';
     }
 
-    /**
-     * Effective status combines the raw is_active flag with deadline and
-     * quota fullness. Unknown values are ignored on purpose so old
-     * clients keep working.
-     */
     private function applyEffectiveStatusFilter(Builder $query, mixed $status, string $today, ?int $rejectedStatusId): void
     {
         if (! is_string($status) || $status === '' || $status === 'all') {
@@ -384,14 +355,9 @@ class JobVacancyService
         };
     }
 
-    /**
-     * Unknown sort values fall back to newest first so old clients
-     * keep working.
-     */
     private function applyVacancySort(Builder $query, mixed $sort, string $today, ?int $rejectedStatusId): void
     {
         if ($sort === 'deadline') {
-            // Upcoming deadlines first, expired ones at the bottom.
             $query->orderByRaw('CASE WHEN job_vacancies.deadline IS NULL OR job_vacancies.deadline >= ? THEN 0 ELSE 1 END', [$today])
                 ->orderBy('job_vacancies.deadline', 'asc')
                 ->orderBy('job_vacancies.id', 'desc');
@@ -400,8 +366,6 @@ class JobVacancyService
         }
 
         if ($sort === 'quota') {
-            // Fullest quota ratio first. CASE avoids NULLS/division
-            // dialect differences between PostgreSQL and SQLite.
             $bindings = [];
             $countSql = $this->activeApplicantsCountSql($rejectedStatusId, $bindings);
             $query->orderByRaw("CASE WHEN job_vacancies.quota > 0 THEN ({$countSql}) * 1.0 / job_vacancies.quota ELSE -1 END DESC", $bindings)
@@ -418,28 +382,6 @@ class JobVacancyService
         $companyModel = $company instanceof Company ? $company : Company::find($company);
         $companyId = $companyModel?->id ?? (int) $company;
 
-        $majors = Major::where('is_active', true)
-            ->select('id', 'code', 'name')
-            ->orderBy('name')
-            ->get();
-
-        $targetApplicants = StandardType::byCategory('target_applicant')
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get(['id', 'code', 'name', 'metadata']);
-
-        $jobTypes = StandardType::byCategory('job_type')
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get(['id', 'code', 'name', 'metadata']);
-
-        $vacancyStatuses = StandardType::byCategory('vacancy_status')
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get(['id', 'code', 'name', 'metadata']);
-
-        $statistics = $this->getHrdStatistics($companyId);
-
         return [
             'company' => $companyModel ? [
                 'id' => encrypt($companyModel->id),
@@ -447,11 +389,11 @@ class JobVacancyService
                 'email' => $companyModel->email,
                 'phone' => $companyModel->phone,
             ] : null,
-            'statistics' => $statistics,
-            'majors' => $majors,
-            'targetApplicants' => $targetApplicants,
-            'jobTypes' => $jobTypes,
-            'vacancyStatuses' => $vacancyStatuses,
+            'statistics' => $this->getHrdStatistics($companyId),
+            'majors' => Major::where('is_active', true)->select('id', 'code', 'name')->orderBy('name')->get(),
+            'targetApplicants' => StandardType::byCategory('target_applicant')->where('is_active', true)->orderBy('sort_order')->get(['id', 'code', 'name', 'metadata']),
+            'jobTypes' => StandardType::byCategory('job_type')->where('is_active', true)->orderBy('sort_order')->get(['id', 'code', 'name', 'metadata']),
+            'vacancyStatuses' => StandardType::byCategory('vacancy_status')->where('is_active', true)->orderBy('sort_order')->get(['id', 'code', 'name', 'metadata']),
         ];
     }
 
@@ -520,5 +462,21 @@ class JobVacancyService
                 ]
             );
         }
+    }
+
+    public function syncExpiredVacancies(): int
+    {
+        $closedStatus = StandardType::byCategory('vacancy_status')->where('code', 'closed')->first();
+        if (! $closedStatus) {
+            return 0;
+        }
+
+        return JobVacancy::whereNotNull('deadline')
+            ->where('deadline', '<', now()->toDateString())
+            ->where(function (Builder $query) use ($closedStatus) {
+                $query->whereNull('status_id')
+                    ->orWhere('status_id', '!=', $closedStatus->id);
+            })
+            ->update(['status_id' => $closedStatus->id]);
     }
 }

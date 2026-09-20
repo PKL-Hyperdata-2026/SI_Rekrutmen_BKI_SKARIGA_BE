@@ -31,34 +31,9 @@ class JobPlacementSeeder extends Seeder
             );
         }
 
-        $companies = [
-            'PT Astra Honda Motor',
-            'PT Telkom Indonesia',
-            'PT Hyperdata Solusindo',
-            'PT Freeport Indonesia',
-            'PT Kopdes Merput',
-            'Gojek Tokopedia (GoTo)',
-            'PT PLN (Persero)',
-            'Shopee Indonesia',
-            'PT Petrokimia Gresik',
-            'PT United Tractors Tbk',
-        ];
-
-        $companyIds = [];
-        foreach ($companies as $companyName) {
-            $company = Company::firstOrCreate(
-                ['name' => $companyName],
-                [
-                    'email' => strtolower((string) preg_replace('/[^a-zA-Z0-9]/', '', $companyName)) . '@example.com',
-                    'is_active' => true,
-                ]
-            );
-            $companyIds[] = $company->id;
-        }
-
         $otherCompanyIds = Company::where('id', '!=', $hrdCompany->id)->pluck('id')->all();
         if (empty($otherCompanyIds)) {
-            $otherCompanyIds = $companyIds;
+            $otherCompanyIds = [$hrdCompany->id];
         }
 
         $activeStatus = StandardType::byCategory('placement_status')->where('code', 'active')->first();

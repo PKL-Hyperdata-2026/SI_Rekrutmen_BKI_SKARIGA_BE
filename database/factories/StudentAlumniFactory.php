@@ -38,7 +38,7 @@ class StudentAlumniFactory extends Factory
             'nis' => fake()->unique()->numerify('########'),
             'graduation_year' => fake()->optional(0.7)->year(),
             'social_media' => ['linkedin' => 'https://linkedin.com/in/'.fake()->userName()],
-            'current_company_id' => Company::factory(),
+            'current_company_id' => null,
             'current_position' => fake()->jobTitle(),
             'starting_salary' => fake()->optional()->randomFloat(2, 3000000, 12000000),
             'waiting_time_months' => fake()->optional()->numberBetween(1, 12),

@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Models\Company;
+use App\Models\Major;
 use App\Models\StudentAlumni;
 use App\Models\User;
-use App\Models\Major;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -42,6 +43,8 @@ class StudentAlumniSeeder extends Seeder
             ['name' => 'Rekayasa Perangkat Lunak', 'is_active' => true]
         );
 
+        $companies = Company::where('is_active', true)->get();
+
         foreach ($names as $index => $name) {
             $isStudent = $index < 10;
 
@@ -55,6 +58,7 @@ class StudentAlumniSeeder extends Seeder
                 'user_id' => $user->id,
                 'nis' => '2000' . str_pad((string)($index + 1), 2, '0', STR_PAD_LEFT),
                 'graduation_year' => $isStudent ? null : 2024,
+                'current_company_id' => $isStudent ? null : $companies->random()?->id,
                 'current_position' => $isStudent ? null : 'IT Support',
                 'starting_salary' => $isStudent ? null : 4500000,
                 'waiting_time_months' => $isStudent ? null : 1,

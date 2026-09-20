@@ -24,9 +24,9 @@ class JobPlacementFactory extends Factory
     public function definition(): array
     {
         return [
-            'job_application_id' => null, // Opsional
+            'job_application_id' => null,
             'student_alumni_id' => StudentAlumni::factory(),
-            'company_id' => Company::factory(),
+            'company_id' => fn () => Company::inRandomOrder()->value('id') ?? Company::factory(),
             'placement_status_id' => function () {
                 $type = StandardType::byCategory('placement_status')->inRandomOrder()->first();
                 if (!$type) {

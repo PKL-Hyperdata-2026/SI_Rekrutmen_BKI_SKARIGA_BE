@@ -38,6 +38,16 @@ class JobVacancyResource extends JsonResource
             }),
             'statusId' => $this->status_id ? encrypt($this->status_id) : null,
             'status' => $this->whenLoaded('status', function (): ?array {
+                $isExpired = $this->deadline && $this->deadline->format('Y-m-d') < now()->toDateString();
+                if ($isExpired && $this->status?->code !== 'closed') {
+                    return [
+                        'id' => $this->status ? encrypt($this->status->id) : null,
+                        'code' => 'closed',
+                        'name' => 'Ditutup / Expired',
+                        'metadata' => ['badge_color' => 'red', 'icon' => 'x-circle'],
+                    ];
+                }
+
                 return $this->status ? [
                     'id' => encrypt($this->status->id),
                     'code' => $this->status->code,
@@ -99,14 +109,14 @@ class JobVacancyResource extends JsonResource
                 fn (): int => (int) ($this->applicants_count ?? $this->applications_count)
             ),
             'hasApplied' => $this->when(
-                $request->user()?->studentAlumni !== null,
+                $request->user() && in_array($request->user()->role, ['siswa', 'alumni'], true) && $request->user()->studentAlumni !== null,
                 function () use ($request): bool {
                     if (array_key_exists('hasApplied', $this->resource->getAttributes())) {
                         return (bool) $this->resource->hasApplied;
                     }
                     if ($this->relationLoaded('jobApplications')) {
-                        $studentId = $request->user()->studentAlumni->id;
-                        return $this->jobApplications->contains('student_alumni_id', $studentId);
+                        $studentId = $request->user()->studentAlumni?->id;
+                        return $studentId !== null && $this->jobApplications->contains('student_alumni_id', $studentId);
                     }
                     return false;
                 }

@@ -394,10 +394,8 @@ class RecruitmentSelectionSeeder extends Seeder
         // Helper to create attendance
         $makeAttendance = function (ApplicationStageHistory $history, ?int $attendanceStatusId, bool $isPresent): void {
             if ($attendanceStatusId === null && ! $isPresent) {
-                // Belum presensi: don't create attendance row at all (service treats this as 'belum')
                 return;
             }
-            // For present, fill attended_at
             $attendedAt = null;
             if ($isPresent) {
                 $attendedAt = $history->selectionStage->scheduled_at
@@ -408,6 +406,7 @@ class RecruitmentSelectionSeeder extends Seeder
                 'stage_history_id' => $history->id,
                 'attendance_status_id' => $attendanceStatusId,
                 'attended_at' => $attendedAt,
+                'validation_status' => $attendanceStatusId ? 'verified' : 'pending',
             ]);
         };
 
@@ -452,12 +451,11 @@ class RecruitmentSelectionSeeder extends Seeder
                 // Odd idx -> belum presensi (no attendance row), Even -> present but scheduled
                 if ($globalIdx % 2 === 0) {
                     $makeAttendance($h2, null, false); // belum
-                } else {
-                    // Create attendance with null status to also test 'belum' via whereNull attendance_status_id
                     RecruitmentAttendance::create([
                         'stage_history_id' => $h2->id,
                         'attendance_status_id' => null,
                         'attended_at' => null,
+                        'validation_status' => 'pending',
                     ]);
                 }
                 break;
@@ -551,12 +549,12 @@ class RecruitmentSelectionSeeder extends Seeder
                         'created_by' => $adminUserId,
                         'updated_by' => $adminUserId,
                     ]);
-                    // Alternate between absent and leave
                     $statusId = ($globalIdx % 4 === 0) ? $absentId : $leaveId;
                     RecruitmentAttendance::create([
                         'stage_history_id' => $h1->id,
                         'attendance_status_id' => $statusId,
                         'attended_at' => null,
+                        'validation_status' => 'verified',
                     ]);
                 } else {
                     // Belum presensi - scheduled without attendance

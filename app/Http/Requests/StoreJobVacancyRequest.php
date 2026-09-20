@@ -18,12 +18,13 @@ class StoreJobVacancyRequest extends FormRequest
         return [
             'company_id' => 'required|exists:companies,id',
             'position' => 'nullable|string|max:255',
-            'title' => 'required_without:position|nullable|string|max:255', //di design form gaada input title, jadi dibuat required_without
+            'title' => 'required_without:position|nullable|string|max:255',
+            // di design form gaada input title, jadi dibuat required_without
             'quota' => 'nullable|integer|min:1',
             'deadline' => 'nullable|date',
             'major_ids' => 'nullable|array',
             'major_ids.*' => 'exists:majors,id',
-            'target_applicant_id' => 'nullable|exists:standard_types,id',
+            'target_applicant_id' => 'required|exists:standard_types,id',
             'work_location' => 'nullable|string|max:255',
             'qualification' => 'nullable|string',
             'description' => 'nullable|string',
@@ -34,6 +35,14 @@ class StoreJobVacancyRequest extends FormRequest
             'is_featured' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
             'send_notification' => 'nullable|boolean',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'target_applicant_id.required' => 'Target pelamar wajib dipilih.',
+            'target_applicant_id.exists' => 'Target pelamar yang dipilih tidak valid.',
         ];
     }
 }

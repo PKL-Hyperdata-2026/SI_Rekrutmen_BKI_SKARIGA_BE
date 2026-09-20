@@ -11,6 +11,7 @@ use App\Models\JobVacancy;
 use App\Models\Major;
 use App\Models\StandardType;
 use App\Models\StudentAlumni;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,6 +20,10 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class StudentJobVacancyService
 {
+    public function __construct(
+        protected NotificationService $notificationService
+    ) {}
+
     public function getStudentVacancies(
         array $filters,
         int $perPage,
@@ -257,6 +262,26 @@ class StudentJobVacancyService
                 'created_by' => $userId,
                 'updated_by' => $userId,
             ]);
+
+            $hrdUserId = $vacancy->company?->user_id ?? $vacancy->created_by;
+            if ($hrdUserId) {
+                $studentUser = $student->user ?? User::find($userId);
+                $applicantName = $studentUser?->full_name ?? 'Pelamar Baru';
+                $vacancyTitle = $vacancy->title ?: ($vacancy->position ?? 'Lowongan');
+                $this->notificationService->send(
+                    $hrdUserId,
+                    'job_application',
+                    'Lamaran Baru: '.$vacancyTitle,
+                    "{$applicantName} telah mengirimkan lamaran pekerjaan untuk posisi {$vacancy->position}.",
+                    [
+                        'job_vacancy_id' => $vacancy->id,
+                        'job_application_id' => $application->id,
+                        'applicant_name' => $applicantName,
+                        'position' => $vacancy->position,
+                    ],
+                    true
+                );
+            }
 
             return $application->load(['jobVacancy.company', 'status']);
         });

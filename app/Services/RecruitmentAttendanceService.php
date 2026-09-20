@@ -16,6 +16,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RecruitmentAttendanceService
 {
+    public function __construct(
+        protected NotificationService $notificationService
+    ) {}
+
     public function getPendingQueue(array $filters = []): LengthAwarePaginator
     {
         $query = RecruitmentAttendance::query()
@@ -217,13 +221,51 @@ class RecruitmentAttendanceService
                 }
             }
 
-            return $attendance->fresh([
+            $validated = $attendance->fresh([
                 'stageHistory.jobApplication.studentAlumni.user',
                 'stageHistory.jobApplication.studentAlumni.major',
                 'stageHistory.jobApplication.jobVacancy.company',
                 'stageHistory.selectionStage',
                 'validator',
             ]);
+
+            $studentUser = $validated->stageHistory?->jobApplication?->studentAlumni?->user;
+            if ($studentUser) {
+                $stageName = $validated->stageHistory?->selectionStage?->name ?? 'Tahap Seleksi';
+                $vacancyTitle = $validated->stageHistory?->jobApplication?->jobVacancy?->title
+                    ?: ($validated->stageHistory?->jobApplication?->jobVacancy?->position ?? 'Lowongan');
+
+                if ($isVerified) {
+                    $this->notificationService->send(
+                        $studentUser->id,
+                        'attendance_validated',
+                        'Presensi Terverifikasi: '.$stageName,
+                        "Presensi kehadiran Anda untuk {$stageName} pada lowongan {$vacancyTitle} telah diverifikasi oleh panitia.",
+                        [
+                            'attendance_id' => $validated->id,
+                            'status' => 'verified',
+                            'stage_name' => $stageName,
+                        ],
+                        true
+                    );
+                } else {
+                    $notes = $data['notes'] ?? null;
+                    $this->notificationService->send(
+                        $studentUser->id,
+                        'attendance_rejected',
+                        'Presensi Ditolak: '.$stageName,
+                        "Presensi kehadiran Anda untuk {$stageName} pada lowongan {$vacancyTitle} ditolak.".($notes ? " Catatan: {$notes}" : ''),
+                        [
+                            'attendance_id' => $validated->id,
+                            'status' => 'rejected',
+                            'stage_name' => $stageName,
+                        ],
+                        true
+                    );
+                }
+            }
+
+            return $validated;
         });
     }
 
@@ -244,7 +286,11 @@ class RecruitmentAttendanceService
 
             $attendances = RecruitmentAttendance::query()
                 ->whereIn('id', $attendanceIds)
-                ->with('stageHistory')
+                ->with([
+                    'stageHistory.jobApplication.studentAlumni.user',
+                    'stageHistory.jobApplication.jobVacancy',
+                    'stageHistory.selectionStage',
+                ])
                 ->get();
 
             $absentStageStatus = null;
@@ -271,6 +317,42 @@ class RecruitmentAttendanceService
                         'notes' => $data['notes'] ?? 'Tidak hadir dalam presensi tahapan seleksi.',
                         'updated_by' => $adminId,
                     ]);
+                }
+
+                $studentUser = $attendance->stageHistory?->jobApplication?->studentAlumni?->user;
+                if ($studentUser) {
+                    $stageName = $attendance->stageHistory?->selectionStage?->name ?? 'Tahap Seleksi';
+                    $vacancyTitle = $attendance->stageHistory?->jobApplication?->jobVacancy?->title
+                        ?: ($attendance->stageHistory?->jobApplication?->jobVacancy?->position ?? 'Lowongan');
+
+                    if ($isVerified) {
+                        $this->notificationService->send(
+                            $studentUser->id,
+                            'attendance_validated',
+                            'Presensi Terverifikasi: '.$stageName,
+                            "Presensi kehadiran Anda untuk {$stageName} pada lowongan {$vacancyTitle} telah diverifikasi oleh panitia.",
+                            [
+                                'attendance_id' => $attendance->id,
+                                'status' => 'verified',
+                                'stage_name' => $stageName,
+                            ],
+                            true
+                        );
+                    } else {
+                        $notes = $data['notes'] ?? null;
+                        $this->notificationService->send(
+                            $studentUser->id,
+                            'attendance_rejected',
+                            'Presensi Ditolak: '.$stageName,
+                            "Presensi kehadiran Anda untuk {$stageName} pada lowongan {$vacancyTitle} ditolak.".($notes ? " Catatan: {$notes}" : ''),
+                            [
+                                'attendance_id' => $attendance->id,
+                                'status' => 'rejected',
+                                'stage_name' => $stageName,
+                            ],
+                            true
+                        );
+                    }
                 }
 
                 $count++;

@@ -12,7 +12,7 @@ return new class extends Migration
         Schema::create('job_applications', function (Blueprint $table) {
             $table->id();
 
-            //Foreign Keys (Relasi)
+            // Foreign Keys (Relasi)
             $table->foreignId('job_vacancy_id')->constrained('job_vacancies')->restrictOnDelete();
             $table->foreignId('student_alumni_id')->constrained('students_alumni')->restrictOnDelete();
             $table->foreignId('status_id')->nullable()->constrained('standard_types')->nullOnDelete(); // Status utama: pending, in_progres, accepted, rejected

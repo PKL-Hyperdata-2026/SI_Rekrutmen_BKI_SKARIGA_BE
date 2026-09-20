@@ -17,9 +17,9 @@ class JobPlacementSeeder extends Seeder
     public function run(): void
     {
         $hrdCompany = Company::where('name', 'PT Kejayaan Terraloka')->first()
-            ?? Company::whereHas('user', fn($q) => $q->where('role', 'hrd'))->first();
+            ?? Company::whereHas('user', fn ($q) => $q->where('role', 'hrd'))->first();
 
-        if (!$hrdCompany) {
+        if (! $hrdCompany) {
             $hrd = User::where('role', 'hrd')->first();
             $hrdCompany = Company::firstOrCreate(
                 ['name' => 'PT Kejayaan Terraloka'],
@@ -265,7 +265,7 @@ class JobPlacementSeeder extends Seeder
         }
 
         foreach ($students as $idx => $student) {
-            if (!$student->graduation_year) {
+            if (! $student->graduation_year) {
                 $student->update([
                     'graduation_year' => 2024 + ($idx % 3), // 2024, 2025, 2026
                 ]);

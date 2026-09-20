@@ -49,13 +49,13 @@ class NotificationService
                         Mail::to($user->email)->queue($mailable);
                     }
                 } catch (Throwable $mailEx) {
-                    Log::error("Failed to queue notification email for user ID: $userId | " . $mailEx->getMessage());
+                    Log::error("Failed to queue notification email for user ID: $userId | ".$mailEx->getMessage());
                 }
             }
 
             return true;
         } catch (Throwable $th) {
-            Log::error("Failed to send notification for user ID: $userId | " . $th->getMessage());
+            Log::error("Failed to send notification for user ID: $userId | ".$th->getMessage());
 
             return false;
         }
@@ -108,7 +108,7 @@ class NotificationService
             Notification::insert($records);
 
             $hasBroadcaster = config('broadcasting.default') !== 'null'
-                && (!empty(config('broadcasting.connections.reverb.key')) || !empty(config('broadcasting.connections.pusher.key')));
+                && (! empty(config('broadcasting.connections.reverb.key')) || ! empty(config('broadcasting.connections.pusher.key')));
 
             if ($hasBroadcaster) {
                 foreach ($broadcastPayloads as $payload) {
@@ -133,11 +133,11 @@ class NotificationService
                         }
                     }
                 } catch (Throwable $mailEx) {
-                    Log::error("Failed to queue notification emails: " . $mailEx->getMessage());
+                    Log::error('Failed to queue notification emails: '.$mailEx->getMessage());
                 }
             }
         } catch (Throwable $th) {
-            Log::error("Failed to sendMultiple notifications: " . $th->getMessage());
+            Log::error('Failed to sendMultiple notifications: '.$th->getMessage());
         }
     }
 

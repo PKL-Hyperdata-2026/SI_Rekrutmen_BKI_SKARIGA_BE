@@ -34,7 +34,7 @@ class StudentPortfolioStandardTypeSeeder extends Seeder
             StandardType::updateOrCreate(
                 [
                     'category_id' => $portfolioTypeCategory->id,
-                    'code' => $type['code']
+                    'code' => $type['code'],
                 ],
                 [
                     'name' => $type['name'],

@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('majors', function (Blueprint $table) {
             $table->id();
-            $table->string('code', 10)->unique(); //kode jurusan, contoh: RPL, TKJ, DKV
-            $table->string('name'); //contoh: Rekayasa Perangkat Lunak
+            $table->string('code', 10)->unique(); // kode jurusan, contoh: RPL, TKJ, DKV
+            $table->string('name'); // contoh: Rekayasa Perangkat Lunak
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->softDeletes();

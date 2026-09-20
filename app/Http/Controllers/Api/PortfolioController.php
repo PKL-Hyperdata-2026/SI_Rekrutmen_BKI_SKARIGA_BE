@@ -37,7 +37,7 @@ class PortfolioController extends Controller
 
         return $this->response
             ->message('Opsi formulir portofolio berhasil diambil.')
-            ->data($options);
+            ->data(encrypt_recursive($options));
     }
 
     public function updateProfile(UpdateStudentProfileRequest $request): Responsable

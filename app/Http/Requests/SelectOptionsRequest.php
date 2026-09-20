@@ -24,6 +24,14 @@ class SelectOptionsRequest extends FormRequest
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'for_select' => ['nullable'],
             'eligible' => ['nullable'],
+            'industry_id' => ['nullable', 'integer'],
+            'department_id' => ['nullable', 'integer'],
+            'major_id' => ['nullable', 'integer'],
+            'class_id' => ['nullable', 'integer'],
+            'employment_status_id' => ['nullable', 'integer'],
+            'is_active' => ['nullable', 'boolean'],
+            'sort_by' => ['nullable', 'string', 'max:50'],
+            'sort_dir' => ['nullable', 'string', 'in:asc,desc'],
         ];
     }
 

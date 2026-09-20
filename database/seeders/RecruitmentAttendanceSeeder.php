@@ -67,7 +67,7 @@ class RecruitmentAttendanceSeeder extends Seeder
                 [
                     'status_id' => $appStatus?->id,
                     'current_stage_id' => $stage->id,
-                    'applied_at' => now()->subDays(($i % 7) + 2),
+                    'applied_at' => now()->subDays(max(0, min(now()->day - 1, ($i % 5) + 1))),
                 ]
             );
 
@@ -81,7 +81,7 @@ class RecruitmentAttendanceSeeder extends Seeder
                 ]
             );
 
-            $attendedAt = now()->subDays($i % 7)->setTime(8 + ($i % 9), ($i * 13) % 60);
+            $attendedAt = now()->subDays(max(0, min(now()->day - 1, $i % 3)))->setTime(8 + ($i % 9), ($i * 13) % 60);
 
             $attendance = RecruitmentAttendance::firstOrNew([
                 'stage_history_id' => $history->id,
@@ -100,4 +100,3 @@ class RecruitmentAttendanceSeeder extends Seeder
         }
     }
 }
-

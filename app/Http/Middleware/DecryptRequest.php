@@ -7,6 +7,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class DecryptRequest
 {
@@ -26,7 +27,7 @@ class DecryptRequest
                         if (is_numeric($decrypted)) {
                             $route->setParameter($paramName, (string) $decrypted);
                         }
-                    } catch (\Throwable) {
+                    } catch (Throwable) {
                         if (app()->isProduction()) {
                             abort(422, "Parameter [{$paramName}] is not a valid encrypted identifier.");
                         }
@@ -70,7 +71,7 @@ class DecryptRequest
                         if (is_numeric($decrypted)) {
                             $data[$key] = (int) $decrypted;
                         }
-                    } catch (\Throwable) {
+                    } catch (Throwable) {
                         if (app()->isProduction() && ! is_numeric($value)) {
                             abort(422, "Field [{$key}] must be a valid encrypted identifier.");
                         }

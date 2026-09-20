@@ -25,7 +25,7 @@ class TestScheduleService
     /**
      * Get paginated list of test schedules for a company.
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function getHrdTestSchedules(int $companyId, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
@@ -98,7 +98,7 @@ class TestScheduleService
     /**
      * Create test schedule and allocate passed applicants.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function createTestSchedule(int $companyId, array $data, ?int $userId): SelectionStage
     {
@@ -110,7 +110,7 @@ class TestScheduleService
             throw new HttpException(403, 'Anda tidak memiliki akses ke lowongan kerja ini.');
         }
 
-        $scheduledAt = Carbon::parse($data['scheduled_date'] . ' ' . $data['scheduled_time']);
+        $scheduledAt = Carbon::parse($data['scheduled_date'].' '.$data['scheduled_time']);
 
         return DB::transaction(function () use ($data, $vacancy, $scheduledAt, $userId) {
             $latestSequence = (int) SelectionStage::where('job_vacancy_id', $vacancy->id)->max('sequence_order');
@@ -134,9 +134,9 @@ class TestScheduleService
                     $q->whereHas('selectionResult', function (Builder $sr) {
                         $sr->where('admin_selection_status', 'lolos');
                     })
-                    ->orWhereHas('status', function (Builder $s) {
-                        $s->whereIn('code', ['in_progress', 'accepted']);
-                    });
+                        ->orWhereHas('status', function (Builder $s) {
+                            $s->whereIn('code', ['in_progress', 'accepted']);
+                        });
                 })
                 ->with(['studentAlumni.user']);
 
@@ -174,11 +174,11 @@ class TestScheduleService
 
                 if ($sendNotification && $applicant->studentAlumni?->user_id) {
                     $recipientUserId = $applicant->studentAlumni->user_id;
-                    $formattedDate = $scheduledAt->translatedFormat('d M Y • H:i') . ' WIB';
+                    $formattedDate = $scheduledAt->translatedFormat('d M Y • H:i').' WIB';
                     $this->notificationService->send(
                         $recipientUserId,
                         'test_schedule',
-                        'Jadwal Tes Baru: ' . $stage->name,
+                        'Jadwal Tes Baru: '.$stage->name,
                         "Anda telah dijadwalkan untuk mengikuti agenda tes {$stage->name} untuk posisi {$vacancy->position} pada {$formattedDate} di {$stage->location}.",
                         [
                             'schedule_id' => $stage->id,
@@ -202,7 +202,7 @@ class TestScheduleService
     /**
      * Update test schedule.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function updateTestSchedule(SelectionStage $schedule, array $data, ?int $userId): SelectionStage
     {
@@ -225,10 +225,10 @@ class TestScheduleService
             }
 
             if (! empty($data['scheduled_date']) && ! empty($data['scheduled_time'])) {
-                $updateData['scheduled_at'] = Carbon::parse($data['scheduled_date'] . ' ' . $data['scheduled_time']);
+                $updateData['scheduled_at'] = Carbon::parse($data['scheduled_date'].' '.$data['scheduled_time']);
             } elseif (! empty($data['scheduled_date']) && $schedule->scheduled_at) {
                 $time = $schedule->scheduled_at->format('H:i');
-                $updateData['scheduled_at'] = Carbon::parse($data['scheduled_date'] . ' ' . $time);
+                $updateData['scheduled_at'] = Carbon::parse($data['scheduled_date'].' '.$time);
             }
 
             $schedule->update($updateData);
@@ -239,7 +239,7 @@ class TestScheduleService
                     ->get();
 
                 $vacancy = $schedule->jobVacancy;
-                $formattedDate = $schedule->scheduled_at?->translatedFormat('d M Y • H:i') . ' WIB';
+                $formattedDate = $schedule->scheduled_at?->translatedFormat('d M Y • H:i').' WIB';
 
                 foreach ($stageHistories as $history) {
                     $studentUser = $history->jobApplication?->studentAlumni?->user;
@@ -247,7 +247,7 @@ class TestScheduleService
                         $this->notificationService->send(
                             $studentUser->id,
                             'test_schedule_update',
-                            'Perubahan Jadwal Tes: ' . $schedule->name,
+                            'Perubahan Jadwal Tes: '.$schedule->name,
                             "Terdapat perubahan jadwal/lokasi untuk agenda tes {$schedule->name} posisi {$vacancy?->position}. Waktu baru: {$formattedDate} di {$schedule->location}.",
                             [
                                 'schedule_id' => $schedule->id,
@@ -274,6 +274,7 @@ class TestScheduleService
     {
         return DB::transaction(function () use ($schedule, $userId) {
             $schedule->update(['deleted_by' => $userId]);
+
             return (bool) $schedule->delete();
         });
     }
@@ -281,7 +282,7 @@ class TestScheduleService
     /**
      * Get paginated participants for a test schedule.
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function getScheduleParticipants(int $companyId, int $scheduleId, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
@@ -331,13 +332,13 @@ class TestScheduleService
             throw new HttpException(422, 'Data akun peserta tidak ditemukan.');
         }
 
-        $formattedDate = $schedule->scheduled_at?->translatedFormat('d M Y • H:i') . ' WIB';
+        $formattedDate = $schedule->scheduled_at?->translatedFormat('d M Y • H:i').' WIB';
         $vacancyPosition = $schedule->jobVacancy?->position ?? 'lowongan pekerjaan';
 
         return $this->notificationService->send(
             $studentUser->id,
             'test_reminder',
-            'Pengingat Jadwal Tes: ' . $schedule->name,
+            'Pengingat Jadwal Tes: '.$schedule->name,
             "Halo {$studentUser->full_name}, jangan lupa agenda tes {$schedule->name} untuk posisi {$vacancyPosition} akan diselenggarakan pada {$formattedDate} di {$schedule->location}. Mohon hadir tepat waktu.",
             [
                 'schedule_id' => $schedule->id,

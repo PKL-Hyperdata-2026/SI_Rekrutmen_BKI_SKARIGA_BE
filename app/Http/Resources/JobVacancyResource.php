@@ -116,8 +116,10 @@ class JobVacancyResource extends JsonResource
                     }
                     if ($this->relationLoaded('jobApplications')) {
                         $studentId = $request->user()->studentAlumni?->id;
+
                         return $studentId !== null && $this->jobApplications->contains('student_alumni_id', $studentId);
                     }
+
                     return false;
                 }
             ),

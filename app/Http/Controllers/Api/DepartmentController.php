@@ -54,12 +54,12 @@ class DepartmentController extends Controller
 
         return $this->response
             ->message('Opsi formulir departemen berhasil diambil.')
-            ->data($options);
+            ->data(encrypt_recursive($options));
     }
 
     public function show(Department $department): Responsable
     {
-        $department->load('majors');
+        $department = $this->departmentService->show($department);
 
         return $this->response
             ->message('Detail departemen berhasil diambil.')

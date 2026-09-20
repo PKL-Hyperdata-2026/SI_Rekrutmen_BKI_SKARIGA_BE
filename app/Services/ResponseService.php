@@ -16,11 +16,12 @@ class ResponseService implements Responsable
     protected mixed $data = null;
 
     protected int $statusCode = 200;
+
     protected array $additionalPayload = [];
 
     public static function make(): self
     {
-        return new static();
+        return new static;
     }
 
     public function success(bool $success): self
@@ -73,11 +74,11 @@ class ResponseService implements Responsable
             'success' => $this->success,
         ];
 
-        if (!empty($this->message)) {
+        if (! empty($this->message)) {
             $payload['message'] = $this->message;
         }
 
-        if (!is_null($this->data)) {
+        if (! is_null($this->data)) {
             $payload['data'] = $this->data;
         }
 

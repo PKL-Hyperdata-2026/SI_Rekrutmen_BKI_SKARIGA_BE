@@ -21,7 +21,7 @@ Route::prefix('preview')->group(function () {
             'userName' => 'Ahmad Fauzi',
             'bodyMessage' => 'PT Hyperdata Solusi Teknologi membuka lowongan baru untuk posisi Frontend Engineer. Kuota: 5 orang.',
             'quota' => 5,
-            'actionUrl' => (string) config('app.frontend_url') . '/student/lowongan',
+            'actionUrl' => (string) config('app.frontend_url').'/student/lowongan',
         ]);
     });
 });

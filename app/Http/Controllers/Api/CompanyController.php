@@ -54,7 +54,7 @@ class CompanyController extends Controller
 
         return $this->response
             ->message('Opsi formulir perusahaan berhasil diambil.')
-            ->data($options);
+            ->data(encrypt_recursive($options));
     }
 
     public function show(Company $company): Responsable

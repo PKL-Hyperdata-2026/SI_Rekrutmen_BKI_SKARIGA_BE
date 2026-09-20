@@ -36,8 +36,6 @@ class HrdTestParticipantResource extends JsonResource
                 'id' => $student ? encrypt($student->id) : null,
                 'name' => $user?->full_name ?? '-',
                 'nis' => $student?->nis,
-                'nisn' => $student?->nisn,
-                'nisNisnFormatted' => trim(($student?->nis ?? '') . ' - ' . ($student?->nisn ?? ''), ' - '),
                 'email' => $user?->email,
                 'phone' => $user?->phone,
             ],

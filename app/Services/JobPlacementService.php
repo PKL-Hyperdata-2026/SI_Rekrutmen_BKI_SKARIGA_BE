@@ -8,13 +8,17 @@ use App\Models\Company;
 use App\Models\JobPlacement;
 use App\Models\StandardType;
 use App\Models\StudentAlumni;
-use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class JobPlacementService
 {
+    public function __construct(
+        protected NotificationService $notificationService
+    ) {}
+
     /** @var array<int, string> */
     protected array $sortableColumns = [
         'id',
@@ -149,13 +153,32 @@ class JobPlacementService
 
             $placement = JobPlacement::create($data);
 
-            return $placement->load([
+            $loadedPlacement = $placement->load([
                 'studentAlumni.user',
                 'studentAlumni.major',
                 'company',
                 'placementStatus',
                 'jobApplication.jobVacancy',
             ]);
+
+            $studentUser = $loadedPlacement->studentAlumni?->user;
+            if ($studentUser) {
+                $companyName = $loadedPlacement->company?->name ?? 'Perusahaan';
+                $startDate = $loadedPlacement->start_date ? $loadedPlacement->start_date->format('d M Y') : '-';
+                $this->notificationService->send(
+                    $studentUser->id,
+                    'job_placement',
+                    'Penempatan Kerja: '.$companyName,
+                    "Selamat! Anda telah tercatat ditempatkan kerja di {$companyName} (Mulai: {$startDate}).",
+                    [
+                        'placement_id' => $loadedPlacement->id,
+                        'company_name' => $companyName,
+                    ],
+                    true
+                );
+            }
+
+            return $loadedPlacement;
         });
     }
 
@@ -173,10 +196,10 @@ class JobPlacementService
                 $period = (string) $data['period'];
 
                 if ($period === '6' && empty($evaluations['3']['status'])) {
-                    throw new \InvalidArgumentException('Evaluasi monitoring 3 bulan harus diisi terlebih dahulu sebelum 6 bulan.');
+                    throw new InvalidArgumentException('Evaluasi monitoring 3 bulan harus diisi terlebih dahulu sebelum 6 bulan.');
                 }
                 if ($period === '12' && (empty($evaluations['3']['status']) || empty($evaluations['6']['status']))) {
-                    throw new \InvalidArgumentException('Evaluasi monitoring 3 bulan dan 6 bulan harus diisi terlebih dahulu sebelum 12 bulan.');
+                    throw new InvalidArgumentException('Evaluasi monitoring 3 bulan dan 6 bulan harus diisi terlebih dahulu sebelum 12 bulan.');
                 }
 
                 $evaluations[$period] = [
@@ -222,17 +245,37 @@ class JobPlacementService
                 }
             }
 
+            $evaluationPeriod = $data['period'] ?? null;
             unset($data['period'], $data['work_status']);
 
             $jobPlacement->update($data);
 
-            return $jobPlacement->fresh([
+            $freshPlacement = $jobPlacement->fresh([
                 'studentAlumni.user',
                 'studentAlumni.major',
                 'company',
                 'placementStatus',
                 'jobApplication.jobVacancy',
             ]);
+
+            $studentUser = $freshPlacement->studentAlumni?->user;
+            if ($studentUser) {
+                $companyName = $freshPlacement->company?->name ?? 'Perusahaan';
+                $periodText = ! empty($evaluationPeriod) ? " (Evaluasi {$evaluationPeriod} Bulan)" : '';
+                $this->notificationService->send(
+                    $studentUser->id,
+                    'job_placement_update',
+                    'Pembaruan Penempatan Kerja: '.$companyName,
+                    "Status monitoring penempatan kerja Anda di {$companyName}{$periodText} telah diperbarui.",
+                    [
+                        'placement_id' => $freshPlacement->id,
+                        'company_name' => $companyName,
+                    ],
+                    true
+                );
+            }
+
+            return $freshPlacement;
         });
     }
 

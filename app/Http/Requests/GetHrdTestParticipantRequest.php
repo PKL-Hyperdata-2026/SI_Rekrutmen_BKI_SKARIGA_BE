@@ -6,7 +6,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ApplyJobVacancyRequest extends FormRequest
+class GetHrdTestParticipantRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -16,7 +16,9 @@ class ApplyJobVacancyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'notes' => 'nullable|string|max:1000',
+            'search' => ['nullable', 'string', 'max:100'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1'],
         ];
     }
 }

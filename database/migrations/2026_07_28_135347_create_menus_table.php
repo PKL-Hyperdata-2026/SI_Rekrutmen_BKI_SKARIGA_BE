@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('menu_name');
             $table->string('menu_icon')->nullable();
-            $table->string('menu_link')->nullable(); //buat routes nya
+            $table->string('menu_link')->nullable(); // buat routes nya
             $table->integer('section');
             $table->boolean('is_active')->default(true);
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();

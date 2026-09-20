@@ -8,6 +8,7 @@ use App\Models\Company;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class UserService
 {
@@ -73,18 +74,18 @@ class UserService
         if ($data['role'] === 'superadmin') {
             $superadminExists = User::where('role', 'superadmin')->exists();
             if ($superadminExists) {
-                throw new \InvalidArgumentException('Hanya boleh terdapat satu akun Superadmin dalam sistem.');
+                throw new InvalidArgumentException('Hanya boleh terdapat satu akun Superadmin dalam sistem.');
             }
         }
 
         return DB::transaction(function () use ($data, $authUserId) {
             $userData = [
-                'full_name'  => $data['full_name'],
-                'email'      => $data['email'],
-                'phone'      => $data['phone'] ?? null,
-                'password'   => $data['password'],
-                'role'       => $data['role'],
-                'is_active'  => $data['is_active'] ?? true,
+                'full_name' => $data['full_name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'] ?? null,
+                'password' => $data['password'],
+                'role' => $data['role'],
+                'is_active' => $data['is_active'] ?? true,
                 'created_by' => $authUserId,
                 'updated_by' => $authUserId,
             ];
@@ -93,7 +94,7 @@ class UserService
 
             if ($data['role'] === 'hrd' && ! empty($data['company_id'])) {
                 Company::where('id', $data['company_id'])->update([
-                    'user_id'    => $user->id,
+                    'user_id' => $user->id,
                     'updated_by' => $authUserId,
                 ]);
             }
@@ -112,7 +113,7 @@ class UserService
         if (isset($data['role']) && $data['role'] === 'superadmin' && $user->role !== 'superadmin') {
             $superadminExists = User::where('role', 'superadmin')->where('id', '!=', $user->id)->exists();
             if ($superadminExists) {
-                throw new \InvalidArgumentException('Hanya boleh terdapat satu akun Superadmin dalam sistem.');
+                throw new InvalidArgumentException('Hanya boleh terdapat satu akun Superadmin dalam sistem.');
             }
         }
 
@@ -144,19 +145,19 @@ class UserService
 
             if (isset($data['role']) && $data['role'] === 'hrd' && array_key_exists('company_id', $data)) {
                 Company::where('user_id', $user->id)->update([
-                    'user_id'    => null,
+                    'user_id' => null,
                     'updated_by' => $authUserId,
                 ]);
 
                 if (! empty($data['company_id'])) {
                     Company::where('id', $data['company_id'])->update([
-                        'user_id'    => $user->id,
+                        'user_id' => $user->id,
                         'updated_by' => $authUserId,
                     ]);
                 }
             } elseif (isset($data['role']) && $data['role'] !== 'hrd') {
                 Company::where('user_id', $user->id)->update([
-                    'user_id'    => null,
+                    'user_id' => null,
                     'updated_by' => $authUserId,
                 ]);
             }
@@ -168,7 +169,7 @@ class UserService
     public function toggleActive(User $user, ?int $authUserId = null): User
     {
         $user->update([
-            'is_active'  => ! $user->is_active,
+            'is_active' => ! $user->is_active,
             'updated_by' => $authUserId,
         ]);
 
@@ -178,7 +179,7 @@ class UserService
     public function resetPassword(User $user, string $newPassword, ?int $authUserId = null): User
     {
         $user->update([
-            'password'   => $newPassword,
+            'password' => $newPassword,
             'updated_by' => $authUserId,
         ]);
 
@@ -189,11 +190,12 @@ class UserService
     {
         return DB::transaction(function () use ($user, $authUserId) {
             Company::where('user_id', $user->id)->update([
-                'user_id'    => null,
+                'user_id' => null,
                 'updated_by' => $authUserId,
             ]);
 
             $user->update(['deleted_by' => $authUserId]);
+
             return (bool) $user->delete();
         });
     }

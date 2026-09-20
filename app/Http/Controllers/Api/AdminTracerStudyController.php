@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\GetAdminTracerStudyRequest;
 use App\Http\Requests\StoreAdminTracerStudyRequest;
 use App\Http\Requests\UpdateAdminTracerStudyRequest;
 use App\Http\Resources\TracerStudyResource;
@@ -24,16 +25,9 @@ class AdminTracerStudyController extends Controller
     /**
      * List tracer study untuk Admin (search, filter, sort, pagination 10 per page).
      */
-    public function index(Request $request): Responsable
+    public function index(GetAdminTracerStudyRequest $request): Responsable
     {
-        $filters = $request->only([
-            'search',
-            'career_status',
-            'major_id',
-            'graduation_year',
-            'sort_by',
-            'sort_dir',
-        ]);
+        $filters = $request->validated();
 
         $perPage = $request->integer('per_page', 10);
         $paginator = $this->tracerStudyService->indexAdmin($filters, $perPage);
@@ -64,7 +58,7 @@ class AdminTracerStudyController extends Controller
 
         return $this->response
             ->message('Opsi formulir tracer study berhasil diambil.')
-            ->data($options);
+            ->data(encrypt_recursive($options));
     }
 
     /**
@@ -72,17 +66,11 @@ class AdminTracerStudyController extends Controller
      */
     public function show(TracerStudy $tracerStudy): Responsable
     {
-        $tracerStudy->load([
-            'studentAlumni.user',
-            'studentAlumni.major',
-            'studentAlumni.class',
-            'studentAlumni.jobPlacements.company',
-            'studentAlumni.jobPlacements.placementStatus',
-        ]);
+        $data = $this->tracerStudyService->show($tracerStudy);
 
         return $this->response
             ->message('Detail tracer study berhasil diambil.')
-            ->data(new TracerStudyResource($tracerStudy));
+            ->data(new TracerStudyResource($data));
     }
 
     /**

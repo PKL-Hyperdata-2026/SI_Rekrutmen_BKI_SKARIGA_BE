@@ -8,6 +8,7 @@ use App\Models\Company;
 use App\Models\Major;
 use App\Models\StandardType;
 use App\Models\StudentAlumni;
+use App\Models\StudentPortfolio;
 use App\Models\User;
 use Database\Seeders\ClassSeeder;
 use Database\Seeders\MajorSeeder;
@@ -244,7 +245,7 @@ class AdminAlumniTest extends TestCase
 
         $portfolioCategory = StandardType::byCategory('portfolio_type')->firstOrFail();
 
-        \App\Models\StudentPortfolio::create([
+        StudentPortfolio::create([
             'student_alumni_id' => $alumni->id,
             'category_id' => $portfolioCategory->id,
             'title' => 'Sertifikat Magang Fullstack',

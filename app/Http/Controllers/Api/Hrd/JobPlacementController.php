@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Hrd;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\GetHrdJobPlacementRequest;
 use App\Http\Requests\SelectOptionsRequest;
 use App\Http\Requests\StoreJobPlacementRequest;
 use App\Http\Requests\UpdateJobPlacementRequest;
@@ -23,7 +24,7 @@ class JobPlacementController extends Controller
         protected ResponseService $response
     ) {}
 
-    public function index(Request $request): Responsable
+    public function index(GetHrdJobPlacementRequest $request): Responsable
     {
         $companyId = $this->jobPlacementService->getCompanyIdByUserId($request->user()?->id);
         if (! $companyId) {
@@ -33,15 +34,7 @@ class JobPlacementController extends Controller
                 ->code(403);
         }
 
-        $filters = $request->only([
-            'search',
-            'student_alumni_id',
-            'placement_status_id',
-            'job_application_id',
-            'year',
-            'sort_by',
-            'sort_dir',
-        ]);
+        $filters = $request->validated();
         $filters['company_id'] = $companyId;
 
         $perPage = $request->integer('per_page', 15);

@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\Crypt;
 
-if (!function_exists('encrypt')) {
+if (! function_exists('encrypt')) {
     /**
      * Encrypt string using AES-256-CBC with HMAC-SHA256 authentication.
      */
@@ -23,7 +25,7 @@ if (!function_exists('encrypt')) {
     }
 }
 
-if (!function_exists('decrypt')) {
+if (! function_exists('decrypt')) {
     /**
      * Decrypt payload using AES-256-CBC with HMAC verification.
      * Returns null if payload is invalid or tampered.
@@ -46,7 +48,7 @@ if (!function_exists('decrypt')) {
     }
 }
 
-if (!function_exists('aes_encrypt')) {
+if (! function_exists('aes_encrypt')) {
     function aes_encrypt(string $value, ?string $key = null): string
     {
         if ($key === null) {
@@ -61,7 +63,7 @@ if (!function_exists('aes_encrypt')) {
     }
 }
 
-if (!function_exists('aes_decrypt')) {
+if (! function_exists('aes_decrypt')) {
     function aes_decrypt(string $payload, ?string $key = null): ?string
     {
         try {
@@ -74,13 +76,13 @@ if (!function_exists('aes_decrypt')) {
                 : (strlen($key) === 32 ? $key : hash('sha256', $key, true));
 
             return (new Encrypter($binaryKey, 'AES-256-CBC'))->decryptString($payload);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return null;
         }
     }
 }
 
-if (!function_exists('encrypt_recursive')) {
+if (! function_exists('encrypt_recursive')) {
     /**
      * Recursively encrypt all ID fields in an array or collection (e.g. for dropdown options).
      */
@@ -114,14 +116,14 @@ if (!function_exists('encrypt_recursive')) {
     }
 }
 
-if (!function_exists('encrypt_ids_recursive')) {
+if (! function_exists('encrypt_ids_recursive')) {
     function encrypt_ids_recursive(mixed $data): mixed
     {
         return encrypt_recursive($data);
     }
 }
 
-if (!function_exists('_is_encryptable_id_key')) {
+if (! function_exists('_is_encryptable_id_key')) {
     function _is_encryptable_id_key(string $key): bool
     {
         return $key === 'id'
@@ -129,4 +131,3 @@ if (!function_exists('_is_encryptable_id_key')) {
             || (bool) preg_match('/(_id|Id|_ids|Ids)$/', $key);
     }
 }
-

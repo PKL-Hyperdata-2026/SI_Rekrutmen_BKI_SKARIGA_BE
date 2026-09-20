@@ -1,6 +1,8 @@
 <?php
 
-uses(Tests\TestCase::class);
+use Tests\TestCase;
+
+uses(TestCase::class);
 
 test('aes_encrypt and aes_decrypt work with default key', function () {
     $plainText = 'Skariga-Secret-Data-12345';
@@ -54,4 +56,3 @@ test('encrypt_recursive encrypts nested array IDs', function () {
         ->and($encryptedOptions['companies'][0]['name'])->toBe('PT A')
         ->and($encryptedOptions['roles'][0]['value'])->toBe('admin');
 });
-

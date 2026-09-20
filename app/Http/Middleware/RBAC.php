@@ -24,7 +24,7 @@ class RBAC
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return $this->response
                 ->message('Anda tidak memiliki hak untuk mengakses ini!')
                 ->code(403)
@@ -34,11 +34,11 @@ class RBAC
 
         $allowed = in_array($user->role, $roles);
 
-        if (!$allowed && $user->role === 'superadmin' && in_array('admin', $roles)) {
+        if (! $allowed && $user->role === 'superadmin' && in_array('admin', $roles)) {
             $allowed = true;
         }
 
-        if (!$allowed) {
+        if (! $allowed) {
             return $this->response
                 ->message('Anda tidak memiliki hak untuk mengakses ini!')
                 ->code(403)

@@ -16,6 +16,7 @@ class GenericMail extends Mailable implements ShouldQueue
     use Queueable, SerializesModels;
 
     public string $title;
+
     public string $body;
 
     public function __construct(string $title, string $body)

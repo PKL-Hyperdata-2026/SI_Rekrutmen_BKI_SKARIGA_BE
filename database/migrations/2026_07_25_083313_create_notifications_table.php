@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('type'); // masuk ke stdtype
             $table->string('title', 50);
             $table->string('message', 250);
-            $table->json('data')->nullable(); //extradata
+            $table->json('data')->nullable(); // extradata
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
             $table->index(['user_id', 'read_at']);

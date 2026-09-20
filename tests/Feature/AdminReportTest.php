@@ -191,4 +191,3 @@ class AdminReportTest extends TestCase
         $responseEndOnly->assertOk();
     }
 }
-

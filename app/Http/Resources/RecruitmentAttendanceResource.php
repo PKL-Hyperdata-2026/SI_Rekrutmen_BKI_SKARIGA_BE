@@ -45,6 +45,7 @@ class RecruitmentAttendanceResource extends JsonResource
                 'status' => $this->validation_status,
                 'validatedAt' => $this->validated_at?->toIso8601String(),
                 'validatedByName' => $this->validator?->full_name,
+                'validatedByRole' => $this->validator?->role,
                 'notes' => $this->notes,
                 'systemAction' => $this->system_action,
             ],

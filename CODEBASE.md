@@ -54,6 +54,7 @@ backend/app/
 │   │   │   │   ├── ApplicantReviewController.php      # HRD review pelamar & verifikasi berkas: list + filter + detail + review tunggal/massal
 │   │   │   │   ├── JobPlacementController.php         # HRD CRUD penempatan kerja & metrik evaluasi
 │   │   │   │   ├── JobVacancyController.php           # HRD CRUD lowongan kerja & statistik
+│   │   │   │   ├── SelectionResultController.php      # HRD input hasil seleksi & evaluasi tes: list + filter + submit hasil + bulk submit
 │   │   │   │   └── TestScheduleController.php         # HRD CRUD jadwal tes, list peserta, & reminder
 │   │   │   ├── AdminReportController.php              # Admin rekapitulasi laporan (rekrutmen, absensi, keterserapan, tracer)
 │   │   │   ├── AdminTracerStudyController.php         # Admin CRUD tracer study, metrics, options, & sync alumni

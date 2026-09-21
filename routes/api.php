@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\Hrd\ApplicantReviewController;
 use App\Http\Controllers\Api\Hrd\JobPlacementController;
 use App\Http\Controllers\Api\Hrd\JobVacancyController as HrdJobVacancyController;
+use App\Http\Controllers\Api\Hrd\SelectionResultController;
 use App\Http\Controllers\Api\Hrd\TestScheduleController;
 use App\Http\Controllers\Api\JobVacancyController;
 use App\Http\Controllers\Api\MajorController;
@@ -126,6 +127,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/applicant-reviews', [ApplicantReviewController::class, 'index']);
         Route::get('/applicant-reviews/{id}', [ApplicantReviewController::class, 'show']);
         Route::patch('/applicant-reviews/{id}/review', [ApplicantReviewController::class, 'review']);
+
+        // Input & Evaluasi Hasil Seleksi (HRD Perusahaan)
+        Route::get('/selection-results/options', [SelectionResultController::class, 'options']);
+        Route::get('/selection-results', [SelectionResultController::class, 'index']);
+        Route::post('/selection-results/publish', [SelectionResultController::class, 'publish']);
+        Route::post('/selection-results/draft', [SelectionResultController::class, 'draft']);
+        Route::post('/selection-results/{id}', [SelectionResultController::class, 'store']);
+        Route::patch('/selection-results/{id}/decision', [SelectionResultController::class, 'updateDecision']);
     });
 
     // Self-Service Siswa & Alumni Portfolio

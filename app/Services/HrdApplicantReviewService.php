@@ -32,10 +32,7 @@ class HrdApplicantReviewService
             'studentAlumni.portfolios.category',
             'jobVacancy',
             'status',
-            'currentStage',
             'selectionResult',
-            'stageHistories.selectionStage',
-            'stageHistories.status',
         ]);
 
         $sortBy = (string) ($filters['sort_by'] ?? 'applied_at');
@@ -279,6 +276,9 @@ class HrdApplicantReviewService
 
     private function applyDecision(JobApplication $application, string $decision, ?string $notes, ?int $hrdUserId): void
     {
+        static $stageStatuses = [];
+        static $applicationStatuses = [];
+
         $isLolos = $decision === 'lolos';
         $stage = $this->resolveAdminStage($application, $hrdUserId);
 
@@ -286,44 +286,37 @@ class HrdApplicantReviewService
         if (! $result->exists) {
             $result->created_by = $hrdUserId;
         }
-        $result->admin_selection_status = $isLolos ? 'lolos' : 'tidak_lolos';
-        $result->notes = $notes;
-        $result->updated_by = $hrdUserId;
-        $result->save();
+        $result->fill([
+            'admin_selection_status' => $isLolos ? 'lolos' : 'tidak_lolos',
+            'notes' => $notes,
+            'updated_by' => $hrdUserId,
+        ])->save();
 
-        $stageStatus = StandardType::byCategory('application_stage_status')
-            ->where('code', $isLolos ? 'passed' : 'failed')
-            ->first();
+        $stageStatusCode = $isLolos ? 'passed' : 'failed';
+        $stageStatusId = $stageStatuses[$stageStatusCode] ??= StandardType::byCategory('application_stage_status')
+            ->where('code', $stageStatusCode)
+            ->value('id');
 
-        $history = ApplicationStageHistory::where('job_application_id', $application->id)
-            ->where('selection_stage_id', $stage->id)
-            ->first();
-
-        if ($history) {
-            $history->update([
-                'status_id' => $stageStatus?->id,
-                'assessor_id' => $hrdUserId,
-                'notes' => $notes,
-                'updated_by' => $hrdUserId,
-            ]);
-        } else {
-            ApplicationStageHistory::create([
+        ApplicationStageHistory::updateOrCreate(
+            [
                 'job_application_id' => $application->id,
                 'selection_stage_id' => $stage->id,
-                'status_id' => $stageStatus?->id,
+            ],
+            [
+                'status_id' => $stageStatusId,
                 'assessor_id' => $hrdUserId,
                 'notes' => $notes,
-                'created_by' => $hrdUserId,
                 'updated_by' => $hrdUserId,
-            ]);
-        }
+            ]
+        );
 
-        $applicationStatus = StandardType::byCategory('job_application_status')
-            ->where('code', $isLolos ? 'in_progress' : 'rejected')
-            ->first();
+        $appStatusCode = $isLolos ? 'in_progress' : 'rejected';
+        $applicationStatusId = $applicationStatuses[$appStatusCode] ??= StandardType::byCategory('job_application_status')
+            ->where('code', $appStatusCode)
+            ->value('id');
 
         $application->update([
-            'status_id' => $applicationStatus?->id,
+            'status_id' => $applicationStatusId,
             'current_stage_id' => $stage->id,
             'updated_by' => $hrdUserId,
         ]);

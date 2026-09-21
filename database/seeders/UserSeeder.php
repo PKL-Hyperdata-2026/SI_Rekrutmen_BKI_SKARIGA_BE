@@ -33,7 +33,7 @@ class UserSeeder extends Seeder
 
         User::create([
             'full_name' => 'Siswa',
-            'email' => 'faisalmarvello53@gmail.com',
+            'email' => 'siswa@email.com',
             'phone' => '081234567890',
             'password' => 'siswa123',
             'role' => 'siswa',
@@ -64,6 +64,15 @@ class UserSeeder extends Seeder
             'phone' => '081234567890',
             'password' => 'hrd123',
             'role' => 'hrd',
+            'is_active' => true,
+        ]);
+
+        User::create([
+            'full_name' => 'Marvello Faisal',
+            'email' => 'faisalmarvello53@gmail.com',
+            'phone' => '081234567890',
+            'password' => 'siswa123',
+            'role' => 'siswa',
             'is_active' => true,
         ]);
     }

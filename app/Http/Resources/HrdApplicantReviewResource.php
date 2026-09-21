@@ -23,31 +23,22 @@ class HrdApplicantReviewResource extends JsonResource
         $vacancy = $this->jobVacancy;
         $result = $this->selectionResult;
 
-        $reviewStatus = 'perlu_review';
-        $reviewLabel = 'Perlu Review';
+        [$reviewStatus, $reviewLabel] = match ($result?->admin_selection_status) {
+            'lolos' => ['lolos_berkas', 'Lolos Berkas'],
+            'tidak_lolos' => ['ditolak', 'Ditolak'],
+            default => ['perlu_review', 'Perlu Review'],
+        };
 
-        if ($result && $result->admin_selection_status === 'lolos') {
-            $reviewStatus = 'lolos_berkas';
-            $reviewLabel = 'Lolos Berkas';
-        } elseif ($result && $result->admin_selection_status === 'tidak_lolos') {
-            $reviewStatus = 'ditolak';
-            $reviewLabel = 'Ditolak';
-        }
-
-        $documents = [];
-
-        if ($student && $student->relationLoaded('portfolios')) {
-            foreach ($student->portfolios as $doc) {
-                $documents[] = [
-                    'id' => encrypt($doc->id),
-                    'title' => $doc->title,
-                    'originalFilename' => $doc->original_filename ?? $doc->title,
-                    'categoryName' => $doc->relationLoaded('category') ? $doc->category?->name : null,
-                    'fileUrl' => $doc->file_path ? '/storage/'.ltrim((string) $doc->file_path, '/') : null,
-                    'uploadedAt' => $doc->created_at?->toIso8601String(),
-                ];
-            }
-        }
+        $documents = ($student && $student->relationLoaded('portfolios'))
+            ? $student->portfolios->map(fn ($doc): array => [
+                'id' => encrypt($doc->id),
+                'title' => $doc->title,
+                'originalFilename' => $doc->original_filename ?? $doc->title,
+                'categoryName' => $doc->relationLoaded('category') ? $doc->category?->name : null,
+                'fileUrl' => $doc->file_path ? '/storage/'.ltrim((string) $doc->file_path, '/') : null,
+                'uploadedAt' => $doc->created_at?->toIso8601String(),
+            ])->values()->all()
+            : [];
 
         return [
             'id' => encrypt($this->id),

@@ -23,14 +23,14 @@ class DepartmentSeeder extends Seeder
                 'id' => 2,
                 'code' => 'MESIN',
                 'name' => 'Teknik Mesin',
-                'description' => 'Departemen bidang keahlian otomotif, sepeda motor, kendaraan ringan, dan body otomotif.',
+                'description' => 'Departemen bidang keahlian bisnis digital & pemasaran, pengelasan, dan manufaktur pemesinan.',
                 'is_active' => true,
             ],
             [
                 'id' => 3,
                 'code' => 'OTOMOTIF',
                 'name' => 'Teknik Otomotif & Bisnis',
-                'description' => 'Departemen bidang keahlian bisnis digital, pemasaran, pengelasan, dan manufaktur pemesinan.',
+                'description' => 'Departemen bidang keahlian otomotif sepeda motor, kendaraan ringan, dan body otomotif.',
                 'is_active' => true,
             ],
             [

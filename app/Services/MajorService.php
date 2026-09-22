@@ -19,19 +19,24 @@ class MajorService
             return $this->selectOptions($filters, $perPage);
         }
 
-        $query = Major::query()->with('department');
+        $query = Major::query()->with(['department' => function ($q) {
+            $q->select(['id', 'code', 'name']);
+        }]);
 
         if (! empty($filters['search'])) {
-            $search = $filters['search'];
-            $query->where(function (Builder $q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%")
-                    ->orWhereHas('department', function (Builder $deptQuery) use ($search) {
-                        $deptQuery->where('name', 'like', "%{$search}%")
-                            ->orWhere('code', 'like', "%{$search}%");
-                    });
-            });
+            $search = trim((string) $filters['search']);
+            if ($search !== '') {
+                $escaped = addcslashes($search, '%_\\');
+                $query->where(function (Builder $q) use ($escaped) {
+                    $q->where('name', 'like', "%{$escaped}%")
+                        ->orWhere('code', 'like', "%{$escaped}%")
+                        ->orWhere('description', 'like', "%{$escaped}%")
+                        ->orWhereHas('department', function (Builder $deptQuery) use ($escaped) {
+                            $deptQuery->where('name', 'like', "%{$escaped}%")
+                                ->orWhere('code', 'like', "%{$escaped}%");
+                        });
+                });
+            }
         }
 
         if (! empty($filters['department_id'])) {

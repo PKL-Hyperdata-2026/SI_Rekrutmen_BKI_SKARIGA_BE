@@ -9,6 +9,7 @@ use App\Models\Company;
 use App\Models\JobApplication;
 use App\Models\JobVacancy;
 use App\Models\Major;
+use App\Models\RecruitmentAttendance;
 use App\Models\SelectionResult;
 use App\Models\SelectionStage;
 use App\Models\StandardType;
@@ -19,6 +20,7 @@ use Database\Seeders\JobApplicationStandardTypeSeeder;
 use Database\Seeders\JobVacancyStandardTypeSeeder;
 use Database\Seeders\MajorSeeder;
 use Database\Seeders\RecruitmentAttendanceStandardTypeSeeder;
+use Database\Seeders\SelectionStageStandardTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -52,6 +54,8 @@ class HrdTestScheduleTest extends TestCase
 
     protected StandardType $statusRejected;
 
+    protected ?StandardType $stageTypePsikotes;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -62,11 +66,13 @@ class HrdTestScheduleTest extends TestCase
             JobApplicationStandardTypeSeeder::class,
             ApplicationStageHistoryStandardTypeSeeder::class,
             RecruitmentAttendanceStandardTypeSeeder::class,
+            SelectionStageStandardTypeSeeder::class,
         ]);
 
         $this->statusPending = StandardType::byCategory('job_application_status')->where('code', 'pending')->firstOrFail();
         $this->statusInProgress = StandardType::byCategory('job_application_status')->where('code', 'in_progress')->firstOrFail();
         $this->statusRejected = StandardType::byCategory('job_application_status')->where('code', 'rejected')->firstOrFail();
+        $this->stageTypePsikotes = StandardType::byCategory('stage_type')->where('code', 'psychological_test')->first();
 
         // HRD A & Company A
         $this->hrdUserA = User::factory()->create([
@@ -102,7 +108,6 @@ class HrdTestScheduleTest extends TestCase
             'user_id' => $userStudentA->id,
             'major_id' => $major->id,
             'nis' => '25083',
-            'nisn' => '08813036213',
             'gender' => 'L',
         ]);
 
@@ -111,7 +116,6 @@ class HrdTestScheduleTest extends TestCase
             'user_id' => $userStudentB->id,
             'major_id' => $major->id,
             'nis' => '25084',
-            'nisn' => '08813036214',
             'gender' => 'L',
         ]);
 
@@ -120,7 +124,6 @@ class HrdTestScheduleTest extends TestCase
             'user_id' => $userStudentC->id,
             'major_id' => $major->id,
             'nis' => '25085',
-            'nisn' => '08813036215',
             'gender' => 'L',
         ]);
 
@@ -144,8 +147,20 @@ class HrdTestScheduleTest extends TestCase
         ]);
     }
 
-    public function test_hrd_can_fetch_form_options(): void
+    public function test_hrd_can_fetch_form_options_including_stage_types_and_eligible_count(): void
     {
+        // 1 passed applicant
+        $app = JobApplication::create([
+            'job_vacancy_id' => $this->vacancyA->id,
+            'student_alumni_id' => $this->studentA->id,
+            'status_id' => $this->statusInProgress->id,
+            'applied_at' => now(),
+        ]);
+        SelectionResult::create([
+            'job_application_id' => $app->id,
+            'admin_selection_status' => 'lolos',
+        ]);
+
         $response = $this->actingAs($this->hrdUserA)
             ->getJson('/api/hrd/test-schedules/options');
 
@@ -156,11 +171,19 @@ class HrdTestScheduleTest extends TestCase
                 'message',
                 'data' => [
                     'vacancies',
+                    'stage_types',
                 ],
             ]);
+
+        $vacancies = $response->json('data.vacancies');
+        $this->assertNotEmpty($vacancies);
+        $this->assertSame(1, $vacancies[0]['eligible_applicants_count']);
+
+        $stageTypes = $response->json('data.stage_types');
+        $this->assertNotEmpty($stageTypes);
     }
 
-    public function test_hrd_can_create_test_schedule_and_automatically_allocates_only_passed_applicants(): void
+    public function test_hrd_can_create_test_schedule_with_stage_type_and_auto_allocates_passed_applicants(): void
     {
         // Applicant 1: Passed review (Lolos Berkas) via selectionResult
         $appPassed1 = JobApplication::create([
@@ -197,6 +220,7 @@ class HrdTestScheduleTest extends TestCase
         $payload = [
             'name' => 'Psikotes & Akademik - Batch 1',
             'job_vacancy_id' => $this->vacancyA->id,
+            'stage_type_id' => $this->stageTypePsikotes?->id,
             'minimum_score' => 400.00,
             'scheduled_date' => now()->addDays(5)->format('Y-m-d'),
             'scheduled_time' => '08:00',
@@ -214,7 +238,11 @@ class HrdTestScheduleTest extends TestCase
             ->assertJsonPath('data.totalParticipants', 2)
             ->assertJsonPath('data.minimumScore', 400)
             ->assertJsonPath('data.location', 'Aula SKARIGA lt2')
-            ->assertJsonPath('data.sessionStatus', 'Siap Dilaksanakan');
+            ->assertJsonPath('data.sessionStatus', 'Siap Dilaksanakan')
+            ->assertJsonPath('data.sessionStatusCode', 'ready')
+            ->assertJsonPath('data.stageType.code', 'psychological_test');
+
+        $this->assertNotNull($response->json('data.scheduledAtFormatted'));
 
         $stageId = decrypt($response->json('data.id'));
 
@@ -237,6 +265,24 @@ class HrdTestScheduleTest extends TestCase
             'id' => $appPassed1->id,
             'current_stage_id' => $stageId,
         ]);
+    }
+
+    public function test_hrd_rejects_invalid_time_format(): void
+    {
+        $payload = [
+            'name' => 'Psikotes Batch Invalid',
+            'job_vacancy_id' => $this->vacancyA->id,
+            'minimum_score' => 70,
+            'scheduled_date' => now()->addDays(2)->format('Y-m-d'),
+            'scheduled_time' => 'invalid-time',
+            'location' => 'Room A',
+        ];
+
+        $response = $this->actingAs($this->hrdUserA)
+            ->postJson('/api/hrd/test-schedules', $payload);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['scheduled_time']);
     }
 
     public function test_hrd_can_create_test_schedule_with_specific_selected_applicant_ids(): void
@@ -305,6 +351,7 @@ class HrdTestScheduleTest extends TestCase
     {
         $stageA = SelectionStage::create([
             'job_vacancy_id' => $this->vacancyA->id,
+            'stage_type_id' => $this->stageTypePsikotes?->id,
             'name' => 'Psikotes Batch 1',
             'scheduled_at' => now()->addDays(3),
             'location' => 'Lab Komputer',
@@ -329,6 +376,8 @@ class HrdTestScheduleTest extends TestCase
         $items = $response->json('data.data');
         $this->assertCount(1, $items);
         $this->assertEquals('Psikotes Batch 1', $items[0]['name']);
+        $this->assertEquals('psychological_test', $items[0]['stageType']['code']);
+        $this->assertEquals('ready', $items[0]['sessionStatusCode']);
 
         // View detail
         $detailResponse = $this->actingAs($this->hrdUserA)
@@ -359,6 +408,7 @@ class HrdTestScheduleTest extends TestCase
             'name' => 'Updated Test Name',
             'location' => 'New Room 202',
             'minimum_score' => 80.00,
+            'stage_type_id' => $this->stageTypePsikotes?->id,
         ];
 
         $response = $this->actingAs($this->hrdUserA)
@@ -367,7 +417,8 @@ class HrdTestScheduleTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonPath('data.name', 'Updated Test Name')
             ->assertJsonPath('data.location', 'New Room 202')
-            ->assertJsonPath('data.minimumScore', 80);
+            ->assertJsonPath('data.minimumScore', 80)
+            ->assertJsonPath('data.stageType.code', 'psychological_test');
 
         // Delete
         $deleteResponse = $this->actingAs($this->hrdUserA)
@@ -377,7 +428,7 @@ class HrdTestScheduleTest extends TestCase
         $this->assertSoftDeleted('selection_stages', ['id' => $stage->id]);
     }
 
-    public function test_hrd_can_view_participants_and_send_reminder(): void
+    public function test_hrd_can_view_participants_and_send_individual_and_bulk_reminders(): void
     {
         $stage = SelectionStage::create([
             'job_vacancy_id' => $this->vacancyA->id,
@@ -386,15 +437,27 @@ class HrdTestScheduleTest extends TestCase
             'location' => 'Lab 1',
         ]);
 
-        $app = JobApplication::create([
+        $appA = JobApplication::create([
             'job_vacancy_id' => $this->vacancyA->id,
             'student_alumni_id' => $this->studentA->id,
             'status_id' => $this->statusInProgress->id,
             'applied_at' => now(),
         ]);
 
-        $history = ApplicationStageHistory::create([
-            'job_application_id' => $app->id,
+        $appB = JobApplication::create([
+            'job_vacancy_id' => $this->vacancyA->id,
+            'student_alumni_id' => $this->studentB->id,
+            'status_id' => $this->statusInProgress->id,
+            'applied_at' => now(),
+        ]);
+
+        $historyA = ApplicationStageHistory::create([
+            'job_application_id' => $appA->id,
+            'selection_stage_id' => $stage->id,
+        ]);
+
+        $historyB = ApplicationStageHistory::create([
+            'job_application_id' => $appB->id,
             'selection_stage_id' => $stage->id,
         ]);
 
@@ -403,22 +466,241 @@ class HrdTestScheduleTest extends TestCase
             ->getJson("/api/hrd/test-schedules/{$stage->id}/participants");
 
         $response->assertStatus(200)
-            ->assertJsonPath('success', true);
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'schedule',
+                    'participants',
+                ],
+            ]);
 
-        $participants = $response->json('data.data');
-        $this->assertCount(1, $participants);
-        $this->assertEquals('Marvello Cikiwaw', $participants[0]['student']['name']);
-        $this->assertEquals('Belum Presensi', $participants[0]['attendanceStatus']);
+        $participants = $response->json('data.participants.data');
+        $this->assertCount(2, $participants);
+        $this->assertEquals('Marvello Cikiwaw', $participants[1]['student']['name']);
+        $this->assertEquals('25083', $participants[1]['student']['nis']);
+        $this->assertEquals('Belum Presensi', $participants[1]['attendanceStatus']);
+        $this->assertEquals('not_attended', $participants[1]['attendanceStatusCode']);
 
-        // Send reminder
+        // Schedule summary card assertions
+        $this->assertEquals('Psikotes Akuntansi', $response->json('data.schedule.name'));
+        $this->assertEquals('Junior Mechanic Operator', $response->json('data.schedule.jobVacancy.position'));
+
+        // Send individual reminder
         $remindResponse = $this->actingAs($this->hrdUserA)
-            ->postJson("/api/hrd/test-schedules/{$stage->id}/participants/{$history->id}/remind");
+            ->postJson("/api/hrd/test-schedules/{$stage->id}/participants/{$historyA->id}/remind");
 
         $remindResponse->assertStatus(200)
             ->assertJsonPath('message', 'Pengingat jadwal tes berhasil dikirim ke peserta.');
 
-        // Notification created in DB
         $this->assertDatabaseHas('notifications', [
+            'user_id' => $this->studentA->user_id,
+            'type' => 'test_reminder',
+        ]);
+
+        // Send bulk reminder to all
+        $bulkRemindResponse = $this->actingAs($this->hrdUserA)
+            ->postJson("/api/hrd/test-schedules/{$stage->id}/remind-all");
+
+        $bulkRemindResponse->assertStatus(200)
+            ->assertJsonPath('data.reminded_count', 2);
+    }
+
+    public function test_hrd_cannot_access_or_remind_participants_of_another_company_schedule(): void
+    {
+        $stageA = SelectionStage::create([
+            'job_vacancy_id' => $this->vacancyA->id,
+            'name' => 'Psikotes PT Astra',
+            'scheduled_at' => now()->addDays(2),
+            'location' => 'Lab Astra',
+        ]);
+
+        $appA = JobApplication::create([
+            'job_vacancy_id' => $this->vacancyA->id,
+            'student_alumni_id' => $this->studentA->id,
+            'status_id' => $this->statusInProgress->id,
+            'applied_at' => now(),
+        ]);
+
+        $historyA = ApplicationStageHistory::create([
+            'job_application_id' => $appA->id,
+            'selection_stage_id' => $stageA->id,
+        ]);
+
+        // HRD B (Telkom) tries to view participants of Astra's schedule -> 404
+        $this->actingAs($this->hrdUserB)
+            ->getJson("/api/hrd/test-schedules/{$stageA->id}/participants")
+            ->assertStatus(404);
+
+        // HRD B tries to remind participant of Astra's schedule -> 404
+        $this->actingAs($this->hrdUserB)
+            ->postJson("/api/hrd/test-schedules/{$stageA->id}/participants/{$historyA->id}/remind")
+            ->assertStatus(404);
+
+        // HRD B tries to bulk remind Astra's participants -> 404
+        $this->actingAs($this->hrdUserB)
+            ->postJson("/api/hrd/test-schedules/{$stageA->id}/remind-all")
+            ->assertStatus(404);
+    }
+
+    public function test_filtering_and_searching_participants_by_attendance_status_and_keyword(): void
+    {
+        $stage = SelectionStage::create([
+            'job_vacancy_id' => $this->vacancyA->id,
+            'name' => 'Tes Kejuruan',
+            'scheduled_at' => now()->addDays(2),
+            'location' => 'Workshop Otomotif',
+        ]);
+
+        $appA = JobApplication::create([
+            'job_vacancy_id' => $this->vacancyA->id,
+            'student_alumni_id' => $this->studentA->id,
+            'status_id' => $this->statusInProgress->id,
+            'applied_at' => now(),
+        ]);
+
+        $appB = JobApplication::create([
+            'job_vacancy_id' => $this->vacancyA->id,
+            'student_alumni_id' => $this->studentB->id,
+            'status_id' => $this->statusInProgress->id,
+            'applied_at' => now(),
+        ]);
+
+        $historyA = ApplicationStageHistory::create([
+            'job_application_id' => $appA->id,
+            'selection_stage_id' => $stage->id,
+        ]);
+
+        $historyB = ApplicationStageHistory::create([
+            'job_application_id' => $appB->id,
+            'selection_stage_id' => $stage->id,
+        ]);
+
+        // Student A has attended
+        RecruitmentAttendance::create([
+            'stage_history_id' => $historyA->id,
+            'attended_at' => now(),
+        ]);
+
+        // Student B has NOT attended
+        RecruitmentAttendance::create([
+            'stage_history_id' => $historyB->id,
+            'attended_at' => null,
+        ]);
+
+        // Filter by attendance_status = attended -> only student A
+        $attendedResponse = $this->actingAs($this->hrdUserA)
+            ->getJson("/api/hrd/test-schedules/{$stage->id}/participants?attendance_status=attended");
+
+        $attendedResponse->assertStatus(200);
+        $this->assertCount(1, $attendedResponse->json('data.participants.data'));
+        $this->assertEquals('Marvello Cikiwaw', $attendedResponse->json('data.participants.data.0.student.name'));
+
+        // Filter by attendance_status = present (English synonym) -> only student A
+        $presentResponse = $this->actingAs($this->hrdUserA)
+            ->getJson("/api/hrd/test-schedules/{$stage->id}/participants?attendance_status=present");
+
+        $presentResponse->assertStatus(200);
+        $this->assertCount(1, $presentResponse->json('data.participants.data'));
+        $this->assertEquals('Marvello Cikiwaw', $presentResponse->json('data.participants.data.0.student.name'));
+
+        // Filter by attendance_status = not_attended -> only student B
+        $notAttendedResponse = $this->actingAs($this->hrdUserA)
+            ->getJson("/api/hrd/test-schedules/{$stage->id}/participants?attendance_status=not_attended");
+
+        $notAttendedResponse->assertStatus(200);
+        $this->assertCount(1, $notAttendedResponse->json('data.participants.data'));
+        $this->assertEquals('Windah Basuradar', $notAttendedResponse->json('data.participants.data.0.student.name'));
+
+        // Filter by attendance_status = absent (English synonym) -> only student B
+        $absentResponse = $this->actingAs($this->hrdUserA)
+            ->getJson("/api/hrd/test-schedules/{$stage->id}/participants?attendance_status=absent");
+
+        $absentResponse->assertStatus(200);
+        $this->assertCount(1, $absentResponse->json('data.participants.data'));
+        $this->assertEquals('Windah Basuradar', $absentResponse->json('data.participants.data.0.student.name'));
+
+        // Rejection of Indonesian values (hadir / belum_presensi) with 422
+        $indonesianResponse1 = $this->actingAs($this->hrdUserA)
+            ->getJson("/api/hrd/test-schedules/{$stage->id}/participants?attendance_status=hadir");
+        $indonesianResponse1->assertStatus(422)
+            ->assertJsonValidationErrors(['attendance_status']);
+
+        $indonesianResponse2 = $this->actingAs($this->hrdUserA)
+            ->getJson("/api/hrd/test-schedules/{$stage->id}/participants?attendance_status=belum_presensi");
+        $indonesianResponse2->assertStatus(422)
+            ->assertJsonValidationErrors(['attendance_status']);
+
+        // Search by keyword NIS 25083
+        $searchResponse = $this->actingAs($this->hrdUserA)
+            ->getJson("/api/hrd/test-schedules/{$stage->id}/participants?search=25083");
+
+        $searchResponse->assertStatus(200);
+        $this->assertCount(1, $searchResponse->json('data.participants.data'));
+        $this->assertEquals('25083', $searchResponse->json('data.participants.data.0.student.nis'));
+    }
+
+    public function test_bulk_remind_only_targets_unattended_participants_and_skips_attended_ones(): void
+    {
+        $stage = SelectionStage::create([
+            'job_vacancy_id' => $this->vacancyA->id,
+            'name' => 'Wawancara User',
+            'scheduled_at' => now()->addDays(1),
+            'location' => 'Meeting Room 1',
+        ]);
+
+        $appA = JobApplication::create([
+            'job_vacancy_id' => $this->vacancyA->id,
+            'student_alumni_id' => $this->studentA->id,
+            'status_id' => $this->statusInProgress->id,
+            'applied_at' => now(),
+        ]);
+
+        $appB = JobApplication::create([
+            'job_vacancy_id' => $this->vacancyA->id,
+            'student_alumni_id' => $this->studentB->id,
+            'status_id' => $this->statusInProgress->id,
+            'applied_at' => now(),
+        ]);
+
+        $historyA = ApplicationStageHistory::create([
+            'job_application_id' => $appA->id,
+            'selection_stage_id' => $stage->id,
+        ]);
+
+        $historyB = ApplicationStageHistory::create([
+            'job_application_id' => $appB->id,
+            'selection_stage_id' => $stage->id,
+        ]);
+
+        // Student A has attended
+        RecruitmentAttendance::create([
+            'stage_history_id' => $historyA->id,
+            'attended_at' => now(),
+        ]);
+
+        // Student B has NOT attended
+        RecruitmentAttendance::create([
+            'stage_history_id' => $historyB->id,
+            'attended_at' => null,
+        ]);
+
+        // Send bulk reminder -> should remind only student B (count = 1)
+        $bulkResponse = $this->actingAs($this->hrdUserA)
+            ->postJson("/api/hrd/test-schedules/{$stage->id}/remind-all");
+
+        $bulkResponse->assertStatus(200)
+            ->assertJsonPath('data.reminded_count', 1);
+
+        // Student B received notification
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $this->studentB->user_id,
+            'type' => 'test_reminder',
+        ]);
+
+        // Student A did NOT receive notification from bulk remind
+        $this->assertDatabaseMissing('notifications', [
             'user_id' => $this->studentA->user_id,
             'type' => 'test_reminder',
         ]);

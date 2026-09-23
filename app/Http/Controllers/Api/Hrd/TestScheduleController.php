@@ -130,13 +130,18 @@ class TestScheduleController extends Controller
                 ->code(403);
         }
 
+        $schedule = $this->testScheduleService->getHrdTestScheduleDetail($company->id, $id);
+
         $filters = $request->validated();
         $perPage = $request->integer('per_page', 15);
         $participants = $this->testScheduleService->getScheduleParticipants($company->id, $id, $filters, $perPage);
 
         return $this->response
             ->message('Daftar peserta jadwal tes berhasil diambil.')
-            ->data(HrdTestParticipantResource::collection($participants)->response()->getData(true));
+            ->data([
+                'schedule' => new HrdTestScheduleResource($schedule),
+                'participants' => HrdTestParticipantResource::collection($participants)->response()->getData(true),
+            ]);
     }
 
     public function remindParticipant(Request $request, int $id, int $participantId): Responsable
@@ -157,6 +162,27 @@ class TestScheduleController extends Controller
         );
 
         return $this->response->message('Pengingat jadwal tes berhasil dikirim ke peserta.');
+    }
+
+    public function remindAllParticipants(Request $request, int $id): Responsable
+    {
+        $company = $request->user()?->company;
+        if (! $company) {
+            return $this->response
+                ->success(false)
+                ->message('Akun HRD belum terhubung dengan data perusahaan.')
+                ->code(403);
+        }
+
+        $count = $this->testScheduleService->remindAllParticipants(
+            $company->id,
+            $id,
+            $request->user()?->id
+        );
+
+        return $this->response
+            ->message("Pengingat jadwal tes berhasil dikirim ke {$count} peserta.")
+            ->data(['reminded_count' => $count]);
     }
 
     public function options(Request $request): Responsable

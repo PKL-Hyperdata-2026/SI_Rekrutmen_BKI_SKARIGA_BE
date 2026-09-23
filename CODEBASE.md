@@ -1,6 +1,6 @@
 # Backend Codebase Reference (Laravel 13 API)
 
-Deep, factual reference for AI agents and developers. **Last verified: 2026-09-19.**
+Deep, factual reference for AI agents and developers. **Last verified: 2026-09-23.**
 If you modify code that alters any architecture, models, routes, or services documented here, update this file in the same change.
 Operational instructions & boundaries: [`AGENTS.md`](./AGENTS.md).
 
@@ -199,7 +199,7 @@ backend/app/
 - **`users`**: Base authentication table (`id`, `full_name`, `email`, `phone`, `password`, `role`, `is_active`). Roles: `superadmin`, `admin`, `hrd`, `siswa`, `alumni`.
 - **`departments`**: Vocational departments (`id`, `code`, `name`, `description`, `is_active`). HasMany `majors`.
 - **`majors`**: Vocational majors (`id`, `department_id`, `code`, `name`, `description`, `is_active`). BelongsTo `departments`, HasMany `student_alumni`.
-- **`student_alumni`**: Extended profile linked to `users.id`. Contains NIS, NISN, graduation year, major ID (`majors.id`), class ID, address, CV file path.
+- **`student_alumni`**: Extended profile linked to `users.id`. Contains NIS, graduation year, major ID (`majors.id`), class ID, address, CV file path.
 - **`job_vacancies`**: Job openings posted by companies or BKI. Contains title, description, requirements, start/end dates, quota, status (`draft`, `published`, `closed`).
 - **`job_applications`**: Junction between `job_vacancies.id` and `student_alumni.id`. Tracks status (`pending`, `in_review`, `accepted`, `rejected`). HasOne `selection_results`.
 - **`selection_results`**: HRD selection score per `job_applications.id` (`job_application_id` FK cascadeOnDelete). Columns: `admin_selection_status` enum(`lolos`,`tidak_lolos`), `psychotest_score`, `interview_score`, `mcu_score`, `final_score`, `decision` enum(`diterima`,`tidak_diterima`,`cadangan`,`pending`), `status` enum(`draft`,`published`), `letter_path`, `notes`.
@@ -313,14 +313,15 @@ backend/app/
   - `PATCH /api/hrd/applicant-reviews/{id}/review` — [HRD] Keputusan tunggal (`decision`: lolos/tidak_lolos, `notes` wajib saat tolak). Dalam `DB::transaction()` menulis `selection_results.admin_selection_status`, `application_stage_histories` tahap administrasi (`passed`/`failed`, `assessor_id` = HRD), dan `job_applications.status` (`in_progress`/`rejected`, `current_stage_id` = tahap administrasi). Menolak 422 bila lamaran sudah `accepted` atau masuk penempatan.
   - `POST /api/hrd/applicant-reviews/bulk-review` — [HRD] Keputusan massal untuk tombol Loloskan Terpilih (`application_ids[]` 1-100, `decision`, `notes`). Dalam `DB::transaction()`, mengembalikan `processed/succeeded/failed/failures`.
 - **Test Schedules:**
-  - `GET /api/hrd/test-schedules` — List agenda & jadwal tes + pagination, search, filter.
-  - `GET /api/hrd/test-schedules/options` — Dropdown opsi lowongan aktif milik HRD.
-  - `POST /api/hrd/test-schedules` — Buat agenda tes baru + auto alokasi peserta lolos berkas + init presensi.
+  - `GET /api/hrd/test-schedules` — List agenda & jadwal tes + pagination, search, filter (lowongan, tipe tahap `stage_type_id`, status sesi). Response menyertakan `stageType` (badge warna/nama/kode), `sessionStatusCode` (`ready` vs `completed`), `scheduledAtFormatted`, `hasScores`.
+  - `GET /api/hrd/test-schedules/options` — Dropdown opsi lowongan aktif milik HRD (termasuk counter `eligible_applicants_count`) + master kategori tahapan seleksi (`stage_types`).
+  - `POST /api/hrd/test-schedules` — Buat agenda tes baru (mendukung `stage_type_id`, `send_notification`, validasi jam format HH:mm) + auto alokasi peserta lolos berkas + init presensi.
   - `GET /api/hrd/test-schedules/{id}` — Detail agenda tes.
-  - `PUT|PATCH /api/hrd/test-schedules/{id}` — Update data agenda tes.
+  - `PUT|PATCH /api/hrd/test-schedules/{id}` — Update data agenda tes + notifikasi perubahan ke peserta.
   - `DELETE /api/hrd/test-schedules/{id}` — Soft delete agenda tes.
-  - `GET /api/hrd/test-schedules/{id}/participants` — List daftar peserta tes & status presensi.
-  - `POST /api/hrd/test-schedules/{id}/participants/{participantId}/remind` — Kirim reminder tes ke peserta.
+  - `GET /api/hrd/test-schedules/{id}/participants` — List daftar peserta tes (`student.nis`, `attendanceStatusCode`, `attendanceStatus`) + ringkasan header agenda tes (`schedule`).
+  - `POST /api/hrd/test-schedules/{id}/participants/{participantId}/remind` — Kirim reminder tes ke peserta perorangan.
+  - `POST /api/hrd/test-schedules/{id}/remind-all` — Kirim reminder massal ke semua peserta agenda yang belum presensi.
 - **Job Placements:**
   - `GET /api/hrd/job-placements` — List penempatan kerja perusahaan HRD + pagination, search, filter.
   - `GET /api/hrd/job-placements/options` — Dropdown opsi penempatan kerja.
@@ -338,15 +339,6 @@ backend/app/
   - `PUT /api/siswa/portfolio/profile` | `PUT /api/alumni/portfolio/profile` — Update profil pengguna.
   - `POST /api/siswa/portfolio/upload` | `POST /api/alumni/portfolio/upload` — Upload dokumen portofolio (CV, sertifikat).
   - `DELETE /api/siswa/portfolio/{portfolio}` | `DELETE /api/alumni/portfolio/{portfolio}` — Hapus dokumen portofolio.
-- **Job Vacancy Discovery & Apply:**
-  - `GET /api/job-vacancies` — List lowongan kerja tersedia untuk siswa/alumni.
-  - `GET /api/job-vacancies/options` — Dropdown opsi filter lowongan kerja.
-  - `GET /api/job-vacancies/{jobVacancy}` — Detail data lowongan kerja.
-  - `POST /api/job-vacancies/{jobVacancy}/apply` — Kirim lamaran pekerjaan.
-- **My Applications:**
-  - `GET /api/my-applications` — List riwayat lamaran yang dikirim pengguna yang login.
-  - `GET /api/my-applications/{id}` — Detail lamaran dan riwayat progres tahapan seleksi.
-- **Tracer Study (Khusus Alumni, `/api/alumni/*`):**
   - `GET /api/alumni/tracer-study` — Ambil data isian survey tracer study alumni.
   - `POST /api/alumni/tracer-study` — Simpan atau update survey tracer study alumni.
 

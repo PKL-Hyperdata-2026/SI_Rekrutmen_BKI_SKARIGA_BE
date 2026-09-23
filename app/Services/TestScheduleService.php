@@ -29,8 +29,11 @@ class TestScheduleService
      */
     public function getHrdTestSchedules(int $companyId, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = SelectionStage::with(['jobVacancy'])
+        $query = SelectionStage::with(['jobVacancy', 'stageType'])
             ->withCount('stageHistories as total_participants')
+            ->withExists(['stageHistories as has_scores' => function (Builder $q) {
+                $q->whereNotNull('score');
+            }])
             ->whereHas('jobVacancy', function (Builder $q) use ($companyId) {
                 $q->where('company_id', $companyId);
             });
@@ -40,8 +43,10 @@ class TestScheduleService
             $query->where(function (Builder $q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('location', 'like', "%{$search}%")
+                    ->orWhereHas('stageType', function (Builder $st) use ($search) {
+                        $st->where('name', 'like', "%{$search}%");
+                    })
                     ->orWhereHas('jobVacancy', function (Builder $jv) use ($search) {
-                        jv:
                         $jv->where('title', 'like', "%{$search}%")
                             ->orWhere('position', 'like', "%{$search}%");
                     });
@@ -52,11 +57,15 @@ class TestScheduleService
             $query->where('job_vacancy_id', $filters['job_vacancy_id']);
         }
 
+        if (! empty($filters['stage_type_id'])) {
+            $query->where('stage_type_id', $filters['stage_type_id']);
+        }
+
         if (! empty($filters['session_status'])) {
             $now = now();
-            if ($filters['session_status'] === 'selesai') {
+            if ($filters['session_status'] === 'selesai' || $filters['session_status'] === 'completed') {
                 $query->where('scheduled_at', '<', $now);
-            } elseif ($filters['session_status'] === 'siap' || $filters['session_status'] === 'siap_dilaksanakan') {
+            } elseif ($filters['session_status'] === 'siap' || $filters['session_status'] === 'siap_dilaksanakan' || $filters['session_status'] === 'ready') {
                 $query->where(function (Builder $q) use ($now) {
                     $q->whereNull('scheduled_at')->orWhere('scheduled_at', '>=', $now);
                 });
@@ -80,8 +89,11 @@ class TestScheduleService
      */
     public function getHrdTestScheduleDetail(int $companyId, int $scheduleId): SelectionStage
     {
-        $schedule = SelectionStage::with(['jobVacancy'])
+        $schedule = SelectionStage::with(['jobVacancy', 'stageType'])
             ->withCount('stageHistories as total_participants')
+            ->withExists(['stageHistories as has_scores' => function (Builder $q) {
+                $q->whereNotNull('score');
+            }])
             ->where('id', $scheduleId)
             ->whereHas('jobVacancy', function (Builder $q) use ($companyId) {
                 $q->where('company_id', $companyId);
@@ -117,7 +129,7 @@ class TestScheduleService
 
             $stage = SelectionStage::create([
                 'job_vacancy_id' => $vacancy->id,
-                'stage_type_id' => null,
+                'stage_type_id' => $data['stage_type_id'] ?? null,
                 'name' => $data['name'],
                 'sequence_order' => $latestSequence + 1,
                 'description' => $data['description'] ?? null,
@@ -192,7 +204,7 @@ class TestScheduleService
                 }
             }
 
-            $stage->load(['jobVacancy']);
+            $stage->load(['jobVacancy', 'stageType']);
             $stage->total_participants = $eligibleApplicants->count();
 
             return $stage;
@@ -213,6 +225,9 @@ class TestScheduleService
 
             if (isset($data['name'])) {
                 $updateData['name'] = $data['name'];
+            }
+            if (array_key_exists('stage_type_id', $data)) {
+                $updateData['stage_type_id'] = $data['stage_type_id'];
             }
             if (isset($data['description'])) {
                 $updateData['description'] = $data['description'];
@@ -260,7 +275,7 @@ class TestScheduleService
                 }
             }
 
-            $schedule->load(['jobVacancy']);
+            $schedule->load(['jobVacancy', 'stageType']);
             $schedule->loadCount('stageHistories as total_participants');
 
             return $schedule;
@@ -299,13 +314,28 @@ class TestScheduleService
             $search = (string) $filters['search'];
             $query->whereHas('jobApplication.studentAlumni', function (Builder $sa) use ($search) {
                 $sa->where('nis', 'like', "%{$search}%")
-                    ->orWhere('nisn', 'like', "%{$search}%")
                     ->orWhereHas('user', function (Builder $u) use ($search) {
                         $u->where('full_name', 'like', "%{$search}%")
                             ->orWhere('email', 'like', "%{$search}%")
                             ->orWhere('phone', 'like', "%{$search}%");
                     });
             });
+        }
+
+        if (! empty($filters['attendance_status'])) {
+            $status = (string) $filters['attendance_status'];
+            if ($status === 'attended' || $status === 'present') {
+                $query->whereHas('attendance', function (Builder $a) {
+                    $a->whereNotNull('attended_at');
+                });
+            } elseif ($status === 'not_attended' || $status === 'absent') {
+                $query->where(function (Builder $q) {
+                    $q->whereDoesntHave('attendance')
+                        ->orWhereHas('attendance', function (Builder $a) {
+                            $a->whereNull('attended_at');
+                        });
+                });
+            }
         }
 
         return $query->latest('id')->paginate($perPage);
@@ -351,7 +381,56 @@ class TestScheduleService
     }
 
     /**
-     * Get form options for HRD test schedules (company's active vacancies).
+     * Send reminder to all test participants who haven't attended yet.
+     */
+    public function remindAllParticipants(int $companyId, int $scheduleId, ?int $userId): int
+    {
+        $schedule = $this->getHrdTestScheduleDetail($companyId, $scheduleId);
+
+        $histories = ApplicationStageHistory::where('selection_stage_id', $scheduleId)
+            ->where(function (Builder $q) {
+                $q->whereDoesntHave('attendance')
+                    ->orWhereHas('attendance', function (Builder $att) {
+                        $att->whereNull('attended_at');
+                    });
+            })
+            ->with(['jobApplication.studentAlumni.user'])
+            ->get();
+
+        $formattedDate = $schedule->scheduled_at?->translatedFormat('d M Y • H:i').' WIB';
+        $vacancyPosition = $schedule->jobVacancy?->position ?? 'lowongan pekerjaan';
+
+        $sentCount = 0;
+        foreach ($histories as $history) {
+            $studentUser = $history->jobApplication?->studentAlumni?->user;
+            if (! $studentUser) {
+                continue;
+            }
+
+            $sent = $this->notificationService->send(
+                $studentUser->id,
+                'test_reminder',
+                'Pengingat Jadwal Tes: '.$schedule->name,
+                "Halo {$studentUser->full_name}, jangan lupa agenda tes {$schedule->name} untuk posisi {$vacancyPosition} akan diselenggarakan pada {$formattedDate} di {$schedule->location}. Mohon hadir tepat waktu.",
+                [
+                    'schedule_id' => $schedule->id,
+                    'stage_history_id' => $history->id,
+                    'scheduled_at' => $schedule->scheduled_at?->toIso8601String(),
+                    'location' => $schedule->location,
+                ],
+                true
+            );
+
+            if ($sent) {
+                $sentCount++;
+            }
+        }
+
+        return $sentCount;
+    }
+
+    /**
+     * Get form options for HRD test schedules (company's active vacancies + stage types).
      *
      * @return array<string, mixed>
      */
@@ -359,12 +438,45 @@ class TestScheduleService
     {
         $vacancies = JobVacancy::where('company_id', $companyId)
             ->where('is_active', true)
-            ->select('id', 'title', 'position', 'quota')
+            ->withCount([
+                'applications as eligible_applicants_count' => function (Builder $q) {
+                    $q->where(function (Builder $sub) {
+                        $sub->whereHas('selectionResult', function (Builder $sr) {
+                            $sr->where('admin_selection_status', 'lolos');
+                        })->orWhereHas('status', function (Builder $s) {
+                            $s->whereIn('code', ['in_progress', 'accepted']);
+                        });
+                    });
+                },
+            ])
             ->orderBy('title')
-            ->get();
+            ->get()
+            ->map(function (JobVacancy $v) {
+                return [
+                    'id' => encrypt($v->id),
+                    'title' => $v->title,
+                    'position' => $v->position,
+                    'quota' => $v->quota,
+                    'eligible_applicants_count' => (int) ($v->eligible_applicants_count ?? 0),
+                ];
+            });
+
+        $stageTypes = StandardType::byCategory('stage_type')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'code', 'name', 'metadata'])
+            ->map(function (StandardType $st) {
+                return [
+                    'id' => encrypt($st->id),
+                    'code' => $st->code,
+                    'name' => $st->name,
+                    'metadata' => $st->metadata,
+                ];
+            });
 
         return [
-            'vacancies' => encrypt_recursive($vacancies),
+            'vacancies' => $vacancies->values()->all(),
+            'stage_types' => $stageTypes->values()->all(),
         ];
     }
 }

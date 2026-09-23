@@ -117,6 +117,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Kelola Agenda & Jadwal Tes
         Route::get('/test-schedules/options', [TestScheduleController::class, 'options']);
         Route::get('/test-schedules/{id}/participants', [TestScheduleController::class, 'participants']);
+        Route::post('/test-schedules/{id}/remind-all', [TestScheduleController::class, 'remindAllParticipants']);
         Route::post('/test-schedules/{id}/participants/{participantId}/remind', [TestScheduleController::class, 'remindParticipant']);
         Route::apiResource('test-schedules', TestScheduleController::class)
             ->parameters(['test-schedules' => 'id']);

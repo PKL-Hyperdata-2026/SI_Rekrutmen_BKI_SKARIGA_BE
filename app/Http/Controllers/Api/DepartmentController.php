@@ -26,13 +26,7 @@ class DepartmentController extends Controller
 
     public function index(SelectOptionsRequest $request): Responsable
     {
-        $filters = $request->only([
-            'search',
-            'is_active',
-            'sort_by',
-            'sort_dir',
-            'for_select',
-        ]);
+        $filters = $request->validated();
 
         $perPage = $request->integer('per_page', 15);
         $departments = $this->departmentService->getDepartments($filters, $perPage);

@@ -60,6 +60,7 @@ class MajorTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonCount(15, 'data.data')
+            ->assertJsonPath('data.meta.active_count', 15)
             ->assertJsonStructure([
                 'success',
                 'data' => [
@@ -80,6 +81,32 @@ class MajorTest extends TestCase
                     ],
                 ],
             ]);
+    }
+
+    public function test_admin_can_get_accurate_active_count_across_pagination(): void
+    {
+        Major::create([
+            'department_id' => $this->tikDept->id,
+            'code' => 'INACT',
+            'name' => 'Jurusan Nonaktif',
+            'is_active' => false,
+        ]);
+
+        $page1 = $this->actingAs($this->adminUser, 'sanctum')
+            ->getJson('/api/admin/majors?per_page=10&page=1');
+
+        $page1->assertOk()
+            ->assertJsonCount(10, 'data.data')
+            ->assertJsonPath('data.meta.total', 16)
+            ->assertJsonPath('data.meta.active_count', 15);
+
+        $page2 = $this->actingAs($this->adminUser, 'sanctum')
+            ->getJson('/api/admin/majors?per_page=10&page=2');
+
+        $page2->assertOk()
+            ->assertJsonCount(6, 'data.data')
+            ->assertJsonPath('data.meta.total', 16)
+            ->assertJsonPath('data.meta.active_count', 15);
     }
 
     public function test_admin_can_filter_majors_by_department(): void

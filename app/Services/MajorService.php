@@ -60,6 +60,40 @@ class MajorService
         return $query->paginate($perPage);
     }
 
+    public function getActiveCount(array $filters = []): int
+    {
+        if (array_key_exists('is_active', $filters) && $filters['is_active'] !== '' && $filters['is_active'] !== null) {
+            $isActive = filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($isActive === false) {
+                return 0;
+            }
+        }
+
+        $query = Major::query()->where('is_active', true);
+
+        if (! empty($filters['search'])) {
+            $search = trim((string) $filters['search']);
+            if ($search !== '') {
+                $escaped = addcslashes($search, '%_\\');
+                $query->where(function (Builder $q) use ($escaped) {
+                    $q->where('name', 'like', "%{$escaped}%")
+                        ->orWhere('code', 'like', "%{$escaped}%")
+                        ->orWhere('description', 'like', "%{$escaped}%")
+                        ->orWhereHas('department', function (Builder $deptQuery) use ($escaped) {
+                            $deptQuery->where('name', 'like', "%{$escaped}%")
+                                ->orWhere('code', 'like', "%{$escaped}%");
+                        });
+                });
+            }
+        }
+
+        if (! empty($filters['department_id'])) {
+            $query->where('department_id', (int) $filters['department_id']);
+        }
+
+        return $query->count();
+    }
+
     public function getFormOptions(): array
     {
         return [
@@ -69,12 +103,6 @@ class MajorService
         ];
     }
 
-    /**
-     * Paginated lightweight options for async selects.
-     *
-     * @param  array<string, mixed>  $filters
-     * @return LengthAwarePaginator<int, array{value: mixed, label: string, extra: array<string, mixed>}>
-     */
     protected function selectOptions(array $filters, int $perPage): LengthAwarePaginator
     {
         $query = Major::query()
@@ -82,11 +110,14 @@ class MajorService
             ->select('id', 'code', 'name');
 
         if (! empty($filters['search'])) {
-            $search = $filters['search'];
-            $query->where(function (Builder $q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%");
-            });
+            $search = trim((string) $filters['search']);
+            if ($search !== '') {
+                $escaped = addcslashes($search, '%_\\');
+                $query->where(function (Builder $q) use ($escaped) {
+                    $q->where('name', 'like', "%{$escaped}%")
+                        ->orWhere('code', 'like', "%{$escaped}%");
+                });
+            }
         }
 
         return $query->orderBy('name')->paginate($perPage)->through(

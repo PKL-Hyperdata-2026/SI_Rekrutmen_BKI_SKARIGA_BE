@@ -21,12 +21,15 @@ class DepartmentService
         $query = Department::query()->withCount('majors');
 
         if (! empty($filters['search'])) {
-            $search = $filters['search'];
-            $query->where(function (Builder $q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
-            });
+            $search = trim((string) $filters['search']);
+            if ($search !== '') {
+                $escaped = addcslashes($search, '%_\\');
+                $query->where(function (Builder $q) use ($escaped) {
+                    $q->where('name', 'like', "%{$escaped}%")
+                        ->orWhere('code', 'like', "%{$escaped}%")
+                        ->orWhere('description', 'like', "%{$escaped}%");
+                });
+            }
         }
 
         if (isset($filters['is_active']) && $filters['is_active'] !== '' && $filters['is_active'] !== null) {
@@ -55,12 +58,6 @@ class DepartmentService
         ];
     }
 
-    /**
-     * Paginated lightweight options for async selects.
-     *
-     * @param  array<string, mixed>  $filters
-     * @return LengthAwarePaginator<int, array{value: mixed, label: string, extra: array<string, mixed>}>
-     */
     protected function selectOptions(array $filters, int $perPage): LengthAwarePaginator
     {
         $query = Department::query()
@@ -68,11 +65,14 @@ class DepartmentService
             ->select('id', 'code', 'name');
 
         if (! empty($filters['search'])) {
-            $search = $filters['search'];
-            $query->where(function (Builder $q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%");
-            });
+            $search = trim((string) $filters['search']);
+            if ($search !== '') {
+                $escaped = addcslashes($search, '%_\\');
+                $query->where(function (Builder $q) use ($escaped) {
+                    $q->where('name', 'like', "%{$escaped}%")
+                        ->orWhere('code', 'like', "%{$escaped}%");
+                });
+            }
         }
 
         return $query->orderBy('name')->paginate($perPage)->through(

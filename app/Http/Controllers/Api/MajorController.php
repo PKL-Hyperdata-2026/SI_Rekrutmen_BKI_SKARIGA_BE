@@ -26,14 +26,7 @@ class MajorController extends Controller
 
     public function index(SelectOptionsRequest $request): Responsable
     {
-        $filters = $request->only([
-            'search',
-            'department_id',
-            'is_active',
-            'sort_by',
-            'sort_dir',
-            'for_select',
-        ]);
+        $filters = $request->validated();
 
         $perPage = $request->integer('per_page', 15);
         $majors = $this->majorService->getMajors($filters, $perPage);
@@ -44,9 +37,14 @@ class MajorController extends Controller
                 ->data(SelectOptionResource::collection($majors)->response()->getData(true));
         }
 
+        $majorsData = MajorResource::collection($majors)->response()->getData(true);
+        $activeCount = $this->majorService->getActiveCount($filters);
+        $majorsData['meta']['active_count'] = $activeCount;
+        $majorsData['active_count'] = $activeCount;
+
         return $this->response
             ->message('Daftar jurusan berhasil diambil.')
-            ->data(MajorResource::collection($majors)->response()->getData(true));
+            ->data($majorsData);
     }
 
     public function options(): Responsable

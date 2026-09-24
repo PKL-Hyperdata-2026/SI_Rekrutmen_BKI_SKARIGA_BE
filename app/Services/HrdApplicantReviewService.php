@@ -11,6 +11,7 @@ use App\Models\JobVacancy;
 use App\Models\SelectionResult;
 use App\Models\SelectionStage;
 use App\Models\StandardType;
+use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,10 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class HrdApplicantReviewService
 {
+    public function __construct(
+        protected NotificationService $notificationService
+    ) {}
+
     /**
      * @param  array<string, mixed>  $filters
      */
@@ -320,5 +325,31 @@ class HrdApplicantReviewService
             'current_stage_id' => $stage->id,
             'updated_by' => $hrdUserId,
         ]);
+
+        if (! $isLolos) {
+            $studentUser = $application->studentAlumni?->user;
+            if ($studentUser) {
+                $vacancy = $application->jobVacancy;
+                $position = $vacancy?->position ?? 'Lowongan Kerja';
+                $companyName = $vacancy?->company?->name ?? 'Perusahaan Mitra';
+                $title = "Hasil Seleksi Administrasi: {$position}";
+                $message = "Terima kasih atas partisipasi Anda pada seleksi {$position} di {$companyName}. Saat ini berkas Anda belum lolos ke tahap berikutnya. Tetap semangat!";
+
+                $this->notificationService->send(
+                    $studentUser->id,
+                    'admin_review_failed',
+                    $title,
+                    $message,
+                    [
+                        'application_id' => $application->id,
+                        'job_vacancy_id' => $application->job_vacancy_id,
+                        'position' => $position,
+                        'company_name' => $companyName,
+                        'notes' => $notes,
+                    ],
+                    false
+                );
+            }
+        }
     }
 }

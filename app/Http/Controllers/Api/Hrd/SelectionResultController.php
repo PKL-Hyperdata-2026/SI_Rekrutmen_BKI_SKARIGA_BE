@@ -6,6 +6,9 @@ namespace App\Http\Controllers\Api\Hrd;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\HrdSelectionResultIndexRequest;
+use App\Http\Requests\PublishHrdSelectionResultRequest;
+use App\Http\Requests\StoreHrdSelectionResultRequest;
+use App\Http\Requests\UpdateHrdSelectionDecisionRequest;
 use App\Http\Resources\HrdSelectionResultResource;
 use App\Services\HrdSelectionResultService;
 use App\Services\ResponseService;
@@ -63,7 +66,7 @@ class SelectionResultController extends Controller
             ->data(encrypt_recursive($options));
     }
 
-    public function store(Request $request, int $applicationId): Responsable
+    public function store(StoreHrdSelectionResultRequest $request, int $applicationId): Responsable
     {
         $company = $request->user()?->company;
 
@@ -74,22 +77,12 @@ class SelectionResultController extends Controller
                 ->code(403);
         }
 
-        $request->validate([
-            'psychotest_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'interview_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'mcu_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'final_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'decision' => ['nullable', 'string', 'in:diterima,tidak_diterima,cadangan,pending'],
-            'notes' => ['nullable', 'string', 'max:1000'],
-            'letter_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
-        ]);
-
         $letterFile = $request->file('letter_file');
 
         $result = $this->selectionResultService->saveEvaluation(
             $company->id,
             $applicationId,
-            $request->all(),
+            $request->validated(),
             $letterFile,
             (int) $request->user()?->id
         );
@@ -99,7 +92,7 @@ class SelectionResultController extends Controller
             ->data(new HrdSelectionResultResource($result));
     }
 
-    public function updateDecision(Request $request, int $applicationId): Responsable
+    public function updateDecision(UpdateHrdSelectionDecisionRequest $request, int $applicationId): Responsable
     {
         $company = $request->user()?->company;
 
@@ -110,14 +103,10 @@ class SelectionResultController extends Controller
                 ->code(403);
         }
 
-        $request->validate([
-            'decision' => ['required', 'string', 'in:diterima,tidak_diterima,cadangan,pending'],
-        ]);
-
         $result = $this->selectionResultService->updateDecision(
             $company->id,
             $applicationId,
-            (string) $request->input('decision'),
+            (string) $request->validated('decision'),
             (int) $request->user()?->id
         );
 
@@ -126,7 +115,7 @@ class SelectionResultController extends Controller
             ->data(new HrdSelectionResultResource($result));
     }
 
-    public function publish(Request $request): Responsable
+    public function publish(PublishHrdSelectionResultRequest $request): Responsable
     {
         $company = $request->user()?->company;
 
@@ -137,13 +126,9 @@ class SelectionResultController extends Controller
                 ->code(403);
         }
 
-        $request->validate([
-            'job_vacancy_id' => ['required', 'integer', 'exists:job_vacancies,id'],
-        ]);
-
         $count = $this->selectionResultService->publishResults(
             $company->id,
-            (int) $request->input('job_vacancy_id'),
+            (int) $request->validated('job_vacancy_id'),
             (int) $request->user()?->id
         );
 
@@ -152,7 +137,7 @@ class SelectionResultController extends Controller
             ->data(['published_count' => $count]);
     }
 
-    public function draft(Request $request): Responsable
+    public function draft(PublishHrdSelectionResultRequest $request): Responsable
     {
         $company = $request->user()?->company;
 
@@ -163,13 +148,9 @@ class SelectionResultController extends Controller
                 ->code(403);
         }
 
-        $request->validate([
-            'job_vacancy_id' => ['required', 'integer', 'exists:job_vacancies,id'],
-        ]);
-
         $count = $this->selectionResultService->saveDraft(
             $company->id,
-            (int) $request->input('job_vacancy_id'),
+            (int) $request->validated('job_vacancy_id'),
             (int) $request->user()?->id
         );
 

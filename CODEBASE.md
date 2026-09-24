@@ -90,6 +90,7 @@ backend/app/
 │   │   ├── HrdApplicantReviewActionRequest.php
 │   │   ├── HrdApplicantReviewIndexRequest.php
 │   │   ├── LoginRequest.php
+│   │   ├── PublishHrdSelectionResultRequest.php
 │   │   ├── RecruitmentSelectionIndexRequest.php
 │   │   ├── ResetPasswordRequest.php
 │   │   ├── ResetUserPasswordRequest.php
@@ -100,6 +101,7 @@ backend/app/
 │   │   ├── StoreCompanyRequest.php
 │   │   ├── StoreDepartmentRequest.php
 │   │   ├── StoreHrdJobVacancyRequest.php
+│   │   ├── StoreHrdSelectionResultRequest.php
 │   │   ├── StoreHrdTestScheduleRequest.php
 │   │   ├── StoreJobPlacementRequest.php
 │   │   ├── StoreJobVacancyRequest.php
@@ -113,6 +115,7 @@ backend/app/
 │   │   ├── UpdateCompanyRequest.php
 │   │   ├── UpdateDepartmentRequest.php
 │   │   ├── UpdateHrdJobVacancyRequest.php
+│   │   ├── UpdateHrdSelectionDecisionRequest.php
 │   │   ├── UpdateHrdTestScheduleRequest.php
 │   │   ├── UpdateJobPlacementRequest.php
 │   │   ├── UpdateJobVacancyRequest.php

@@ -45,7 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/{id}/read', [NotificationController::class, 'markAsRead']);
     });
 
-    Route::middleware('role:admin')->prefix('admin')->group(function () {
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/companies/options', [CompanyController::class, 'options']); // Ambil opsi dropdown form perusahaan (Industri)
         Route::patch('/companies/{company}/toggle-active', [CompanyController::class, 'toggleActive']); // Toggle saklar status aktif/non-aktif perusahaan
         Route::apiResource('companies', CompanyController::class); // CRUD lengkap perusahaan (Index, Store, Show, Update, Delete)
@@ -93,14 +93,14 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-    Route::middleware('role:superadmin')->prefix('admin')->group(function () {
+    Route::middleware('role:superadmin')->prefix('admin')->name('superadmin.')->group(function () {
         Route::get('/users/options', [UserController::class, 'options']);
         Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive']);
         Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword']);
         Route::apiResource('users', UserController::class);
     });
 
-    Route::middleware('role:hrd')->prefix('hrd')->group(function () {
+    Route::middleware('role:hrd')->prefix('hrd')->name('hrd.')->group(function () {
         Route::get('/job-placements/metrics', [JobPlacementController::class, 'metrics']);
         Route::get('/job-placements/options', [JobPlacementController::class, 'options']);
         Route::get('/students-alumni', [JobPlacementController::class, 'studentsAlumni']);

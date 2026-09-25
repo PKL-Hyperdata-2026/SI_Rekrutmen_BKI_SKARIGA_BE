@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Hrd;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\HrdSelectionResultDraftRequest;
 use App\Http\Requests\HrdSelectionResultIndexRequest;
+use App\Http\Requests\HrdSelectionResultPublishRequest;
+use App\Http\Requests\HrdSelectionResultUpdateDecisionRequest;
+use App\Http\Requests\HrdSubmitSelectionResultRequest;
 use App\Http\Resources\HrdSelectionResultResource;
 use App\Services\HrdSelectionResultService;
 use App\Services\ResponseService;
@@ -63,7 +67,7 @@ class SelectionResultController extends Controller
             ->data(encrypt_recursive($options));
     }
 
-    public function store(Request $request, int $applicationId): Responsable
+    public function store(HrdSubmitSelectionResultRequest $request, int $applicationId): Responsable
     {
         $company = $request->user()?->company;
 
@@ -73,16 +77,6 @@ class SelectionResultController extends Controller
                 ->message('Akun HRD belum terhubung dengan data perusahaan.')
                 ->code(403);
         }
-
-        $request->validate([
-            'psychotest_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'interview_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'mcu_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'final_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'decision' => ['nullable', 'string', 'in:diterima,tidak_diterima,cadangan,pending'],
-            'notes' => ['nullable', 'string', 'max:1000'],
-            'letter_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
-        ]);
 
         $letterFile = $request->file('letter_file');
 
@@ -99,7 +93,7 @@ class SelectionResultController extends Controller
             ->data(new HrdSelectionResultResource($result));
     }
 
-    public function updateDecision(Request $request, int $applicationId): Responsable
+    public function updateDecision(HrdSelectionResultUpdateDecisionRequest $request, int $applicationId): Responsable
     {
         $company = $request->user()?->company;
 
@@ -109,10 +103,6 @@ class SelectionResultController extends Controller
                 ->message('Akun HRD belum terhubung dengan data perusahaan.')
                 ->code(403);
         }
-
-        $request->validate([
-            'decision' => ['required', 'string', 'in:diterima,tidak_diterima,cadangan,pending'],
-        ]);
 
         $result = $this->selectionResultService->updateDecision(
             $company->id,
@@ -126,7 +116,7 @@ class SelectionResultController extends Controller
             ->data(new HrdSelectionResultResource($result));
     }
 
-    public function publish(Request $request): Responsable
+    public function publish(HrdSelectionResultPublishRequest $request): Responsable
     {
         $company = $request->user()?->company;
 
@@ -136,10 +126,6 @@ class SelectionResultController extends Controller
                 ->message('Akun HRD belum terhubung dengan data perusahaan.')
                 ->code(403);
         }
-
-        $request->validate([
-            'job_vacancy_id' => ['required', 'integer', 'exists:job_vacancies,id'],
-        ]);
 
         $count = $this->selectionResultService->publishResults(
             $company->id,
@@ -152,7 +138,7 @@ class SelectionResultController extends Controller
             ->data(['published_count' => $count]);
     }
 
-    public function draft(Request $request): Responsable
+    public function draft(HrdSelectionResultDraftRequest $request): Responsable
     {
         $company = $request->user()?->company;
 
@@ -162,10 +148,6 @@ class SelectionResultController extends Controller
                 ->message('Akun HRD belum terhubung dengan data perusahaan.')
                 ->code(403);
         }
-
-        $request->validate([
-            'job_vacancy_id' => ['required', 'integer', 'exists:job_vacancies,id'],
-        ]);
 
         $count = $this->selectionResultService->saveDraft(
             $company->id,

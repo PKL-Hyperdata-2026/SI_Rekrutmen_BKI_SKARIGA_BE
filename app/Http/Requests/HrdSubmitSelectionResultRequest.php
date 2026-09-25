@@ -23,12 +23,13 @@ class HrdSubmitSelectionResultRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'stage_history_id' => ['nullable', 'integer', 'exists:application_stage_histories,id'],
-            'application_id' => ['nullable', 'integer', 'exists:job_applications,id'],
-            'selection_stage_id' => ['nullable', 'integer', 'exists:selection_stages,id'],
-            'decision' => ['required', 'string', 'in:passed,failed,accepted,absent'],
-            'score' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'psychotest_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'interview_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'mcu_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'final_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'decision' => ['nullable', 'string', 'in:diterima,tidak_diterima,cadangan,pending'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'letter_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
         ];
     }
 
@@ -38,18 +39,23 @@ class HrdSubmitSelectionResultRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'stage_history_id.integer' => 'ID tahapan seleksi tidak valid.',
-            'stage_history_id.exists' => 'Data tahapan seleksi tidak ditemukan.',
-            'application_id.integer' => 'ID lamaran tidak valid.',
-            'application_id.exists' => 'Data lamaran tidak ditemukan.',
-            'selection_stage_id.integer' => 'ID sesi tes tidak valid.',
-            'selection_stage_id.exists' => 'Sesi tes tidak ditemukan.',
-            'decision.required' => 'Keputusan evaluasi wajib dipilih.',
-            'decision.in' => 'Keputusan harus salah satu dari: passed, failed, accepted, absent.',
-            'score.numeric' => 'Nilai tes harus berupa angka.',
-            'score.min' => 'Nilai tes minimal 0.',
-            'score.max' => 'Nilai tes maksimal 100.',
+            'psychotest_score.numeric' => 'Nilai psikotes harus berupa angka.',
+            'psychotest_score.min' => 'Nilai psikotes minimal 0.',
+            'psychotest_score.max' => 'Nilai psikotes maksimal 100.',
+            'interview_score.numeric' => 'Nilai wawancara harus berupa angka.',
+            'interview_score.min' => 'Nilai wawancara minimal 0.',
+            'interview_score.max' => 'Nilai wawancara maksimal 100.',
+            'mcu_score.numeric' => 'Nilai MCU harus berupa angka.',
+            'mcu_score.min' => 'Nilai MCU minimal 0.',
+            'mcu_score.max' => 'Nilai MCU maksimal 100.',
+            'final_score.numeric' => 'Nilai akhir harus berupa angka.',
+            'final_score.min' => 'Nilai akhir minimal 0.',
+            'final_score.max' => 'Nilai akhir maksimal 100.',
+            'decision.in' => 'Keputusan harus salah satu dari: diterima, tidak_diterima, cadangan, pending.',
             'notes.max' => 'Catatan maksimal 1000 karakter.',
+            'letter_file.file' => 'Berkas surat penempatan tidak valid.',
+            'letter_file.mimes' => 'Berkas surat penempatan harus berformat pdf, jpg, jpeg, atau png.',
+            'letter_file.max' => 'Ukuran berkas surat penempatan maksimal 10 MB.',
         ];
     }
 

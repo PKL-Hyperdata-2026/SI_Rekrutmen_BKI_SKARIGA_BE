@@ -79,16 +79,30 @@ backend/app/
 │   │   ├── DecryptRequest.php                         # Otomatis mendekripsi ID terenkripsi pada request
 │   │   └── RBAC.php                                   # Role-Based Access Control middleware (aliased as 'role')
 │   ├── Requests/
+│   │   ├── AdminReportFilterRequest.php
 │   │   ├── ApplyJobVacancyRequest.php
 │   │   ├── BulkValidateAttendanceRequest.php
 │   │   ├── ForgotPasswordRequest.php
+│   │   ├── GetAdminTracerStudyRequest.php
 │   │   ├── GetAttendanceQueueRequest.php
 │   │   ├── GetAttendanceStageSummariesRequest.php
+│   │   ├── GetHrdJobPlacementRequest.php
+│   │   ├── GetHrdJobVacancyRequest.php
+│   │   ├── GetHrdTestParticipantRequest.php
+│   │   ├── GetHrdTestScheduleRequest.php
+│   │   ├── GetJobVacancyRequest.php
+│   │   ├── GetStudentAlumniRequest.php
 │   │   ├── GetStudentJobApplicationRequest.php
 │   │   ├── GetStudentJobVacanciesRequest.php
+│   │   ├── GetUserListRequest.php
 │   │   ├── HrdApplicantBulkReviewRequest.php
 │   │   ├── HrdApplicantReviewActionRequest.php
 │   │   ├── HrdApplicantReviewIndexRequest.php
+│   │   ├── HrdSelectionResultDraftRequest.php
+│   │   ├── HrdSelectionResultIndexRequest.php
+│   │   ├── HrdSelectionResultPublishRequest.php
+│   │   ├── HrdSelectionResultUpdateDecisionRequest.php
+│   │   ├── HrdSubmitSelectionResultRequest.php
 │   │   ├── LoginRequest.php
 │   │   ├── RecruitmentSelectionIndexRequest.php
 │   │   ├── ResetPasswordRequest.php

@@ -7,9 +7,9 @@ namespace App\Http\Controllers\Api\Hrd;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\HrdSelectionResultDraftRequest;
 use App\Http\Requests\HrdSelectionResultIndexRequest;
-use App\Http\Requests\HrdSelectionResultPublishRequest;
-use App\Http\Requests\HrdSelectionResultUpdateDecisionRequest;
-use App\Http\Requests\HrdSubmitSelectionResultRequest;
+use App\Http\Requests\PublishHrdSelectionResultRequest;
+use App\Http\Requests\StoreHrdSelectionResultRequest;
+use App\Http\Requests\UpdateHrdSelectionDecisionRequest;
 use App\Http\Resources\HrdSelectionResultResource;
 use App\Services\HrdSelectionResultService;
 use App\Services\ResponseService;
@@ -67,7 +67,7 @@ class SelectionResultController extends Controller
             ->data(encrypt_recursive($options));
     }
 
-    public function store(HrdSubmitSelectionResultRequest $request, int $applicationId): Responsable
+    public function store(StoreHrdSelectionResultRequest $request, int $applicationId): Responsable
     {
         $company = $request->user()?->company;
 
@@ -83,7 +83,7 @@ class SelectionResultController extends Controller
         $result = $this->selectionResultService->saveEvaluation(
             $company->id,
             $applicationId,
-            $request->all(),
+            $request->validated(),
             $letterFile,
             (int) $request->user()?->id
         );
@@ -93,7 +93,7 @@ class SelectionResultController extends Controller
             ->data(new HrdSelectionResultResource($result));
     }
 
-    public function updateDecision(HrdSelectionResultUpdateDecisionRequest $request, int $applicationId): Responsable
+    public function updateDecision(UpdateHrdSelectionDecisionRequest $request, int $applicationId): Responsable
     {
         $company = $request->user()?->company;
 
@@ -107,7 +107,7 @@ class SelectionResultController extends Controller
         $result = $this->selectionResultService->updateDecision(
             $company->id,
             $applicationId,
-            (string) $request->input('decision'),
+            (string) $request->validated('decision'),
             (int) $request->user()?->id
         );
 
@@ -116,7 +116,7 @@ class SelectionResultController extends Controller
             ->data(new HrdSelectionResultResource($result));
     }
 
-    public function publish(HrdSelectionResultPublishRequest $request): Responsable
+    public function publish(PublishHrdSelectionResultRequest $request): Responsable
     {
         $company = $request->user()?->company;
 
@@ -129,7 +129,7 @@ class SelectionResultController extends Controller
 
         $count = $this->selectionResultService->publishResults(
             $company->id,
-            (int) $request->input('job_vacancy_id'),
+            (int) $request->validated('job_vacancy_id'),
             (int) $request->user()?->id
         );
 
@@ -138,7 +138,7 @@ class SelectionResultController extends Controller
             ->data(['published_count' => $count]);
     }
 
-    public function draft(HrdSelectionResultDraftRequest $request): Responsable
+    public function draft(PublishHrdSelectionResultRequest $request): Responsable
     {
         $company = $request->user()?->company;
 
@@ -151,7 +151,7 @@ class SelectionResultController extends Controller
 
         $count = $this->selectionResultService->saveDraft(
             $company->id,
-            (int) $request->input('job_vacancy_id'),
+            (int) $request->validated('job_vacancy_id'),
             (int) $request->user()?->id
         );
 

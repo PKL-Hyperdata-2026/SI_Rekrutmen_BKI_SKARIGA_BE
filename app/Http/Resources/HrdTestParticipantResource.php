@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\ApplicationStageHistory;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin ApplicationStageHistory
+ */
 class HrdTestParticipantResource extends JsonResource
 {
     /**
@@ -21,11 +25,12 @@ class HrdTestParticipantResource extends JsonResource
         $user = $student?->user;
         $attendance = $this->attendance;
 
-        $attendanceStatusName = 'Belum Presensi';
-        if ($attendance && $attendance->attendanceStatus) {
-            $attendanceStatusName = $attendance->attendanceStatus->name;
-        } elseif ($attendance && $attendance->attended_at) {
+        $attendanceStatusName = $attendance?->attendanceStatus?->name ?? 'Belum Presensi';
+        $attendanceStatusCode = 'not_attended';
+
+        if ($attendance?->attended_at !== null) {
             $attendanceStatusName = 'Hadir';
+            $attendanceStatusCode = 'attended';
         }
 
         return [
@@ -40,6 +45,7 @@ class HrdTestParticipantResource extends JsonResource
                 'phone' => $user?->phone,
             ],
             'attendanceStatus' => $attendanceStatusName,
+            'attendanceStatusCode' => $attendanceStatusCode,
             'attendedAt' => $attendance?->attended_at?->toIso8601String(),
             'score' => $this->score !== null ? (float) $this->score : null,
             'notes' => $this->notes,

@@ -20,10 +20,7 @@ class AdminDashboardController extends Controller
 
     public function index(AdminDashboardFilterRequest $request): Responsable
     {
-        $validated = $request->validated();
-        $academicYear = $validated['academic_year'] ?? null;
-
-        $data = $this->dashboardService->getDashboardData($academicYear);
+        $data = $this->dashboardService->getDashboardData();
 
         return $this->response
             ->message('Data dashboard admin berhasil diambil.')

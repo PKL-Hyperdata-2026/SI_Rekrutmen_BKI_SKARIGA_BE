@@ -20,12 +20,11 @@ class AdminDashboardService
         protected AdminReportService $reportService
     ) {}
 
-    public function getDashboardData(?string $academicYear = null): array
+    public function getDashboardData(): array
     {
         return [
             'metrics' => $this->getMetrics(),
-            'academic_year_options' => $this->getAcademicYearOptions(),
-            'recruitment_chart' => $this->getRecruitmentChart($academicYear),
+            'recruitment_chart' => $this->getRecruitmentChart(),
             'department_distribution' => $this->getDepartmentDistribution(),
         ];
     }
@@ -74,30 +73,7 @@ class AdminDashboardService
         ];
     }
 
-    public function getAcademicYearOptions(): array
-    {
-        $currentYear = Carbon::now()->year;
-        $currentMonth = Carbon::now()->month;
-
-        $baseYear = $currentMonth >= 7 ? $currentYear : $currentYear - 1;
-
-        $options = [];
-        for ($i = 0; $i < 3; $i++) {
-            $start = $baseYear - $i;
-            $end = $start + 1;
-            $label = "T.A {$start}/{$end}";
-            $value = "{$start}/{$end}";
-
-            $options[] = [
-                'value' => $value,
-                'label' => $label,
-            ];
-        }
-
-        return $options;
-    }
-
-    public function getRecruitmentChart(?string $academicYear = null): array
+    public function getRecruitmentChart(): array
     {
         $months = [];
         $now = Carbon::now();

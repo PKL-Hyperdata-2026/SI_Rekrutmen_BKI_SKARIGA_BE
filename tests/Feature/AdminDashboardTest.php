@@ -97,7 +97,6 @@ class AdminDashboardTest extends TestCase
                         'placedWorkers',
                         'absorptionRate',
                     ],
-                    'academicYearOptions',
                     'recruitmentChart' => [
                         '*' => [
                             'month',

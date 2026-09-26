@@ -25,7 +25,6 @@ class AdminDashboardResource extends JsonResource
                 'placedWorkers' => $metrics['placed_workers'] ?? 0,
                 'absorptionRate' => $metrics['absorption_rate'] ?? 0.0,
             ],
-            'academicYearOptions' => $this->resource['academic_year_options'] ?? [],
             'recruitmentChart' => $this->resource['recruitment_chart'] ?? [],
             'departmentDistribution' => $this->resource['department_distribution'] ?? [],
         ];

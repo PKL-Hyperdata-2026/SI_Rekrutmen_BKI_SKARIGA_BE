@@ -18,8 +18,6 @@ class AdminDashboardFilterRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'academic_year' => ['nullable', 'string', 'max:20'],
-        ];
+        return [];
     }
 }

@@ -110,10 +110,107 @@ class AdminDashboardTest extends TestCase
                             'code',
                             'count',
                             'percentage',
-                            'color',
                         ],
                     ],
                 ],
             ]);
+    }
+
+    public function test_admin_dashboard_calculates_accurate_metrics_and_chart_values(): void
+    {
+        $major = \App\Models\Major::first();
+        $company = \App\Models\Company::factory()->create(['is_active' => true]);
+
+        // 1. Siswa Aktif (2 orang)
+        $userSiswa1 = User::factory()->create(['role' => 'siswa', 'is_active' => true]);
+        \App\Models\StudentAlumni::factory()->create([
+            'user_id' => $userSiswa1->id,
+            'major_id' => $major?->id,
+            'graduation_year' => null,
+        ]);
+        $userSiswa2 = User::factory()->create(['role' => 'siswa', 'is_active' => true]);
+        $student2 = \App\Models\StudentAlumni::factory()->create([
+            'user_id' => $userSiswa2->id,
+            'major_id' => $major?->id,
+            'graduation_year' => null,
+        ]);
+
+        // 2. Alumni (2 orang: 1 bekerja, 1 belum)
+        $userAlumni1 = User::factory()->create(['role' => 'alumni', 'is_active' => true]);
+        $alumni1 = \App\Models\StudentAlumni::factory()->create([
+            'user_id' => $userAlumni1->id,
+            'major_id' => $major?->id,
+            'graduation_year' => 2025,
+        ]);
+        $userAlumni2 = User::factory()->create(['role' => 'alumni', 'is_active' => true]);
+        \App\Models\StudentAlumni::factory()->create([
+            'user_id' => $userAlumni2->id,
+            'major_id' => $major?->id,
+            'graduation_year' => 2025,
+        ]);
+
+        // 1 Tracer Study terisi status 'bekerja'
+        \App\Models\TracerStudy::create([
+            'student_alumni_id' => $alumni1->id,
+            'career_status' => 'bekerja',
+            'company_name' => 'PT Mitra Sejahtera',
+        ]);
+
+        // 3. Lowongan aktif (1 open)
+        $activeVacancy = \App\Models\JobVacancy::create([
+            'company_id' => $company->id,
+            'title' => 'Teknisi Jaringan',
+            'description' => 'Lowongan teknisi',
+            'requirements' => 'SMK TKJ',
+            'status' => 'published',
+            'start_date' => now()->subDay()->toDateString(),
+            'end_date' => now()->addDays(14)->toDateString(),
+            'quota' => 5,
+            'is_active' => true,
+        ]);
+
+        // 4. Lamaran bulan ini
+        $application = \App\Models\JobApplication::create([
+            'job_vacancy_id' => $activeVacancy->id,
+            'student_alumni_id' => $student2->id,
+            'applied_at' => now(),
+        ]);
+
+        // 5. Hasil seleksi diterima dan published
+        \App\Models\SelectionResult::create([
+            'job_application_id' => $application->id,
+            'decision' => 'diterima',
+            'status' => 'published',
+            'admin_selection_status' => 'lolos',
+        ]);
+
+        // 6. Hasil seleksi kedua berstatus draft (tidak boleh dihitung diterima)
+        $application2 = \App\Models\JobApplication::create([
+            'job_vacancy_id' => $activeVacancy->id,
+            'student_alumni_id' => $student2->id,
+            'applied_at' => now(),
+        ]);
+        \App\Models\SelectionResult::create([
+            'job_application_id' => $application2->id,
+            'decision' => 'diterima',
+            'status' => 'draft',
+            'admin_selection_status' => 'lolos',
+        ]);
+
+        $response = $this->actingAs($this->adminUser, 'sanctum')
+            ->getJson('/api/admin/dashboard');
+
+        $response->assertOk()
+            ->assertJsonPath('data.metrics.activeStudents', 2)
+            ->assertJsonPath('data.metrics.totalAlumni', 2)
+            ->assertJsonPath('data.metrics.activeVacancies', 1)
+            ->assertJsonPath('data.metrics.applicantsThisMonth', 2)
+            ->assertJsonPath('data.metrics.absorptionRate', 50);
+
+        // Titik terakhir chart (bulan ini / indeks ke-5) harus mencatat 2 melamar dan 1 diterima
+        $chartData = $response->json('data.recruitmentChart');
+        $currentMonthPoint = end($chartData);
+        $this->assertEquals(2, $currentMonthPoint['melamar']);
+        $this->assertEquals(1, $currentMonthPoint['diterima']);
     }
 }

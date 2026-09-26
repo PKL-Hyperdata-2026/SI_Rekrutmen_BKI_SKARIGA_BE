@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\AdminDashboardFilterRequest;
 use App\Http\Resources\AdminDashboardResource;
 use App\Services\AdminDashboardService;
 use App\Services\ResponseService;
 use Illuminate\Contracts\Support\Responsable;
+use Illuminate\Http\Request;
 
 class AdminDashboardController extends Controller
 {
@@ -18,7 +18,7 @@ class AdminDashboardController extends Controller
         protected ResponseService $response
     ) {}
 
-    public function index(AdminDashboardFilterRequest $request): Responsable
+    public function index(Request $request): Responsable
     {
         $data = $this->dashboardService->getDashboardData();
 

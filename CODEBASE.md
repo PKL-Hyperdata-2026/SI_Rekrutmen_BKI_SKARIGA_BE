@@ -56,6 +56,7 @@ backend/app/
 │   │   │   │   ├── JobVacancyController.php           # HRD CRUD lowongan kerja & statistik
 │   │   │   │   ├── SelectionResultController.php      # HRD input hasil seleksi & evaluasi tes: list + filter + submit hasil + bulk submit
 │   │   │   │   └── TestScheduleController.php         # HRD CRUD jadwal tes, list peserta, & reminder
+│   │   │   ├── AdminDashboardController.php           # Admin ringkasan statistik KPI, tren rekrutmen, & serapan per departemen
 │   │   │   ├── AdminReportController.php              # Admin rekapitulasi laporan (rekrutmen, absensi, keterserapan, tracer)
 │   │   │   ├── AdminTracerStudyController.php         # Admin CRUD tracer study, metrics, options, & sync alumni
 │   │   │   ├── CompanyController.php                  # Admin CRUD perusahaan mitra & options
@@ -79,6 +80,7 @@ backend/app/
 │   │   ├── DecryptRequest.php                         # Otomatis mendekripsi ID terenkripsi pada request
 │   │   └── RBAC.php                                   # Role-Based Access Control middleware (aliased as 'role')
 │   ├── Requests/
+│   │   ├── AdminDashboardFilterRequest.php
 │   │   ├── AdminReportFilterRequest.php
 │   │   ├── ApplyJobVacancyRequest.php
 │   │   ├── BulkValidateAttendanceRequest.php
@@ -139,6 +141,7 @@ backend/app/
 │   │   ├── UpdateUserRequest.php
 │   │   └── ValidateAttendanceRequest.php
 │   └── Resources/
+│       ├── AdminDashboardResource.php
 │       ├── ApplicationStageHistoryResource.php
 │       ├── CompanyResource.php
 │       ├── DepartmentResource.php
@@ -184,6 +187,7 @@ backend/app/
 │   ├── TracerStudy.php                                # Graduate employment tracking survey data
 │   └── User.php                                       # Application users with role association
 ├── Services/
+│   ├── AdminDashboardService.php                      # Ringkasan KPI dasbor admin, tren rekrutmen 6 bulan, & pie keterserapan
 │   ├── AdminReportService.php                         # Agregasi data laporan admin, metrik, filter tanggal, dan statistik
 │   ├── AuthService.php                                # Authentication credential validation & token issuance
 │   ├── CompanyService.php                             # Corporate partner CRUD, filtering, logo upload
@@ -243,6 +247,8 @@ backend/app/
 - `POST /api/reset-password` — Reset password using `token`, `email`, `password` (`min:8`, `confirmed`).
 
 ### Role: Admin (`role:admin`)
+- **Dashboard:**
+  - `GET /api/admin/dashboard` — Ambil ringkasan statistik KPI dasbor, grafik tren rekrutmen, dan distribusi penyerapan kerja per departemen.
 - **Departments & Majors:**
   - `GET /api/admin/departments` — List master departemen + pagination, search, status filter.
   - `POST /api/admin/departments` — Buat departemen baru.

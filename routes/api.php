@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\Admin\RecruitmentSelectionController;
+use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminReportController;
 use App\Http\Controllers\Api\AdminTracerStudyController;
 use App\Http\Controllers\Api\CompanyController;
@@ -46,6 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
         Route::get('/companies/options', [CompanyController::class, 'options']); // Ambil opsi dropdown form perusahaan (Industri)
         Route::patch('/companies/{company}/toggle-active', [CompanyController::class, 'toggleActive']); // Toggle saklar status aktif/non-aktif perusahaan
         Route::apiResource('companies', CompanyController::class); // CRUD lengkap perusahaan (Index, Store, Show, Update, Delete)

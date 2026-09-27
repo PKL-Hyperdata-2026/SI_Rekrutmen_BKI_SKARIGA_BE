@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'final_score',
     'decision',
     'status',
+    'published_at',
     'notes',
     'letter_path',
     'created_by',
@@ -41,6 +42,7 @@ class SelectionResult extends Model
             'interview_score' => 'decimal:2',
             'mcu_score' => 'decimal:2',
             'final_score' => 'decimal:2',
+            'published_at' => 'datetime',
         ];
     }
 

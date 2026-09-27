@@ -13,6 +13,10 @@ class CompanySeeder extends Seeder
 {
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            return;
+        }
+
         $admin = User::where('role', 'admin')->first();
         $hrd = User::where('role', 'hrd')->where('email', 'hrd@email.com')->first();
 

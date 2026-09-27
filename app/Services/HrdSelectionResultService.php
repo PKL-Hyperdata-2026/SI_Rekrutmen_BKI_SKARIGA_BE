@@ -149,6 +149,10 @@ class HrdSelectionResultService
             $notes = isset($data['notes']) ? (string) $data['notes'] : null;
 
             $result = SelectionResult::firstOrNew(['job_application_id' => $application->id]);
+            if ($result->exists && $result->published_at !== null) {
+                throw new HttpException(422, 'Keputusan seleksi yang sudah dipublikasikan tidak dapat diubah.');
+            }
+
             if (! $result->exists) {
                 $result->created_by = $hrdUserId;
             }
@@ -193,6 +197,10 @@ class HrdSelectionResultService
             }
 
             $result = SelectionResult::firstOrNew(['job_application_id' => $application->id]);
+            if ($result->exists && $result->published_at !== null) {
+                throw new HttpException(422, 'Keputusan seleksi yang sudah dipublikasikan tidak dapat diubah.');
+            }
+
             if (! $result->exists) {
                 $result->created_by = $hrdUserId;
                 $result->admin_selection_status = 'lolos';
@@ -235,8 +243,13 @@ class HrdSelectionResultService
                     continue;
                 }
 
+                if ($res->published_at !== null) {
+                    continue;
+                }
+
                 $res->update([
                     'status' => 'published',
+                    'published_at' => $res->published_at ?? now(),
                     'updated_by' => $hrdUserId,
                 ]);
 
@@ -284,6 +297,7 @@ class HrdSelectionResultService
             return SelectionResult::whereHas('jobApplication', fn (Builder $q) => $q->where('job_vacancy_id', $vacancyId))
                 ->update([
                     'status' => 'draft',
+                    'published_at' => null,
                     'updated_by' => $hrdUserId,
                 ]);
         });

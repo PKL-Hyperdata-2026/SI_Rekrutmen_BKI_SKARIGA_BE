@@ -11,6 +11,7 @@ use App\Services\ResponseService;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class NotificationController extends Controller
 {
@@ -39,10 +40,18 @@ class NotificationController extends Controller
             ->with('total_unread', $unreadNotifications->count());
     }
 
-    public function markAsRead(string $id): Responsable
+    public function markAsRead(string $notification): Responsable
     {
         $user = Auth::user();
-        $notification = $this->notificationService->markAsRead($user, $id);
+
+        if (! Str::isUuid($notification)) {
+            return $this->response
+                ->success(false)
+                ->message('Notifikasi tidak ditemukan.')
+                ->code(404);
+        }
+
+        $notification = $this->notificationService->markAsRead($user, $notification);
 
         return $this->response
             ->success(true)

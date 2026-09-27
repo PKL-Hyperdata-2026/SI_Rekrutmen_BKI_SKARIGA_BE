@@ -36,35 +36,11 @@ class StudentJobVacancyService
             $relations['jobApplications'] = fn (HasMany $q) => $q->where('student_alumni_id', $studentAlumniId);
         }
 
-        $query = JobVacancy::with($relations)
-            ->where('is_active', true)
-            ->whereHas('status', function (Builder $q): void {
-                $q->where('code', 'published');
-            })
-            ->where(function (Builder $q): void {
-                $q->whereNull('deadline')->orWhere('deadline', '>=', now()->toDateString());
-            });
-
-        if ($role === 'siswa') {
-            $query->where(function (Builder $q): void {
-                $q->whereHas('targetApplicant', fn (Builder $t) => $t->whereIn('code', ['class_12_only', 'class_12_and_alumni']))
-                    ->orWhereNull('target_applicant_id');
-            });
-        } elseif ($role === 'alumni') {
-            $query->where(function (Builder $q): void {
-                $q->whereHas('targetApplicant', fn (Builder $t) => $t->whereIn('code', ['alumni_only', 'class_12_and_alumni']))
-                    ->orWhereNull('target_applicant_id');
-            });
-        }
-
-        if ($studentMajorId !== null) {
-            $query->where(function (Builder $q) use ($studentMajorId): void {
-                $q->doesntHave('majors')
-                    ->orWhereHas('majors', fn (Builder $m) => $m->where('majors.id', $studentMajorId));
-            });
-        } else {
-            $query->doesntHave('majors');
-        }
+        $query = $this->applyStudentVisibility(
+            JobVacancy::with($relations),
+            $role,
+            $studentMajorId
+        );
 
         if (! empty($filters['search'])) {
             $search = $filters['search'];
@@ -109,16 +85,54 @@ class StudentJobVacancyService
         return $query->orderBy($orderBy, $direction)->paginate($perPage);
     }
 
-    public function getStudentVacancyDetail(string $idOrSlug, ?int $studentAlumniId = null): JobVacancy
+    public function getStudentVacancyDetail(string $idOrSlug, string $role, ?int $studentAlumniId = null, ?int $studentMajorId = null): JobVacancy
     {
         $relations = ['company', 'jobType', 'status', 'targetApplicant', 'majors', 'createdBy'];
         if ($studentAlumniId !== null) {
             $relations['jobApplications'] = fn (HasMany $q) => $q->where('student_alumni_id', $studentAlumniId);
         }
 
-        return JobVacancy::with($relations)
+        return $this->applyStudentVisibility(
+            JobVacancy::with($relations),
+            $role,
+            $studentMajorId
+        )
             ->where(fn (Builder $q) => $q->where('id', $idOrSlug)->orWhere('slug', $idOrSlug))
             ->firstOrFail();
+    }
+
+    private function applyStudentVisibility(Builder $query, string $role, ?int $studentMajorId): Builder
+    {
+        $query->where('is_active', true)
+            ->whereHas('status', function (Builder $q): void {
+                $q->where('code', 'published');
+            })
+            ->where(function (Builder $q): void {
+                $q->whereNull('deadline')->orWhere('deadline', '>=', now()->toDateString());
+            });
+
+        if ($role === 'siswa') {
+            $query->where(function (Builder $q): void {
+                $q->whereHas('targetApplicant', fn (Builder $t) => $t->whereIn('code', ['class_12_only', 'class_12_and_alumni']))
+                    ->orWhereNull('target_applicant_id');
+            });
+        } elseif ($role === 'alumni') {
+            $query->where(function (Builder $q): void {
+                $q->whereHas('targetApplicant', fn (Builder $t) => $t->whereIn('code', ['alumni_only', 'class_12_and_alumni']))
+                    ->orWhereNull('target_applicant_id');
+            });
+        }
+
+        if ($studentMajorId !== null) {
+            $query->where(function (Builder $q) use ($studentMajorId): void {
+                $q->doesntHave('majors')
+                    ->orWhereHas('majors', fn (Builder $m) => $m->where('majors.id', $studentMajorId));
+            });
+        } else {
+            $query->doesntHave('majors');
+        }
+
+        return $query;
     }
 
     public function getFormOptionsForStudent(string $role, ?int $studentMajorId = null): array
@@ -222,10 +236,10 @@ class StudentJobVacancyService
         if (! $vacancy->is_active) {
             throw new HttpException(422, 'Lowongan tidak aktif.');
         }
-        if ($vacancy->status && $vacancy->status->code !== 'published') {
+        if ($vacancy->status?->code !== 'published') {
             throw new HttpException(422, 'Lowongan belum dibuka.');
         }
-        if ($vacancy->deadline && $vacancy->deadline->isPast()) {
+        if ($vacancy->deadline && $vacancy->deadline->toDateString() < now()->toDateString()) {
             throw new HttpException(422, 'Lowongan sudah melewati batas pendaftaran.');
         }
 

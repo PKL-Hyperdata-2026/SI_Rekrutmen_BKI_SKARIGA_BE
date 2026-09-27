@@ -288,6 +288,10 @@ class HrdApplicantReviewService
         $stage = $this->resolveAdminStage($application, $hrdUserId);
 
         $result = SelectionResult::firstOrNew(['job_application_id' => $application->id]);
+        if ($result->exists && $result->published_at !== null) {
+            throw new HttpException(422, 'Keputusan seleksi yang sudah dipublikasikan tidak dapat diubah.');
+        }
+
         if (! $result->exists) {
             $result->created_by = $hrdUserId;
         }

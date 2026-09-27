@@ -286,6 +286,7 @@ class RecruitmentAttendanceService
 
             $attendances = RecruitmentAttendance::query()
                 ->whereIn('id', $attendanceIds)
+                ->where('validation_status', 'pending')
                 ->with([
                     'stageHistory.jobApplication.studentAlumni.user',
                     'stageHistory.jobApplication.jobVacancy',

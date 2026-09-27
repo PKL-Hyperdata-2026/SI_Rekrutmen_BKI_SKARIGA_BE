@@ -17,6 +17,10 @@ class JobVacancySeeder extends Seeder
 {
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            return;
+        }
+
         DB::transaction(function (): void {
             $admin = User::where('role', 'admin')->first();
             $creatorId = $admin?->id ?? 1;

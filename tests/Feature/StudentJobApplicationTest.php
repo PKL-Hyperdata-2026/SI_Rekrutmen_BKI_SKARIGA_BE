@@ -366,6 +366,7 @@ class StudentJobApplicationTest extends TestCase
             'admin_selection_status' => 'lolos',
             'decision' => 'diterima',
             'status' => 'published',
+            'published_at' => now(),
             'notes' => 'Lulus semua tahapan',
         ]);
 

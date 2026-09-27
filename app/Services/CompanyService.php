@@ -125,6 +125,10 @@ class CompanyService
         $company->updated_by = $actorId;
         $company->save();
 
+        if (! $company->is_active && $company->user) {
+            $company->user->tokens()->delete();
+        }
+
         return $company->fresh(['industry', 'createdBy', 'updatedBy']);
     }
 

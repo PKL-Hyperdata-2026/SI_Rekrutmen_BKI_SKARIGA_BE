@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\EnsureAccountIsActive;
 use Illuminate\Support\Facades\Broadcast;
 
-Broadcast::routes(['prefix' => 'api', 'middleware' => ['auth:sanctum']]);
-Broadcast::routes(['middleware' => ['auth:sanctum']]);
+Broadcast::routes(['prefix' => 'api', 'middleware' => ['auth:sanctum', EnsureAccountIsActive::class]]);
+Broadcast::routes(['middleware' => ['auth:sanctum', EnsureAccountIsActive::class]]);
 
 Broadcast::channel('user.{id}', function ($user, $id) {
     if (is_numeric($id) && (int) $user->id === (int) $id) {

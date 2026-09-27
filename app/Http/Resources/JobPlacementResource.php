@@ -33,7 +33,7 @@ class JobPlacementResource extends JsonResource
 
                 return [
                     'id' => encrypt($this->jobApplication->id),
-                    'jobVacancyId' => $this->job_application->job_vacancy_id ? encrypt($this->job_application->job_vacancy_id) : null,
+                    'jobVacancyId' => $this->jobApplication->job_vacancy_id ? encrypt($this->jobApplication->job_vacancy_id) : null,
                     'jobVacancy' => $this->jobApplication->relationLoaded('jobVacancy') && $this->jobApplication->jobVacancy ? [
                         'id' => encrypt($this->jobApplication->jobVacancy->id),
                         'title' => $this->jobApplication->jobVacancy->title,

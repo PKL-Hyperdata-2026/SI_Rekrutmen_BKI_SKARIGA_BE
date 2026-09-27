@@ -140,10 +140,23 @@ class JobPlacementService
             }
 
             if (! empty($data['position']) && ! empty($data['student_alumni_id'])) {
-                StudentAlumni::where('id', $data['student_alumni_id'])->update([
-                    'current_position' => $data['position'],
-                    'current_company_id' => $data['company_id'] ?? null,
-                ]);
+                StudentAlumni::where('id', $data['student_alumni_id'])
+                    ->when(
+                        ! empty($data['job_application_id']),
+                        fn (Builder $q) => $q->whereExists(
+                            fn ($sub) => $sub->select(DB::raw(1))
+                                ->from('job_applications')
+                                ->join('job_vacancies', 'job_vacancies.id', '=', 'job_applications.job_vacancy_id')
+                                ->whereColumn('job_applications.student_alumni_id', 'students_alumni.id')
+                                ->where('job_applications.id', $data['job_application_id'])
+                                ->where('job_vacancies.company_id', $data['company_id'] ?? null)
+                        )
+                    )
+                    ->update([
+                        'current_position' => $data['position'],
+                        'current_company_id' => $data['company_id'] ?? null,
+                    ]);
+
                 if (empty($data['notes'])) {
                     $data['notes'] = $data['position'];
                 }

@@ -118,6 +118,14 @@ class UserService
         }
 
         return DB::transaction(function () use ($user, $data, $authUserId) {
+            $revokeTokens = (isset($data['is_active']) && ! (bool) $data['is_active'])
+                || (isset($data['role']) && $data['role'] !== $user->role)
+                || ! empty($data['password']);
+
+            if ($revokeTokens) {
+                $user->tokens()->delete();
+            }
+
             $userUpdates = [
                 'updated_by' => $authUserId,
             ];
@@ -168,6 +176,8 @@ class UserService
 
     public function toggleActive(User $user, ?int $authUserId = null): User
     {
+        $user->tokens()->delete();
+
         $user->update([
             'is_active' => ! $user->is_active,
             'updated_by' => $authUserId,
@@ -178,12 +188,16 @@ class UserService
 
     public function resetPassword(User $user, string $newPassword, ?int $authUserId = null): User
     {
-        $user->update([
-            'password' => $newPassword,
-            'updated_by' => $authUserId,
-        ]);
+        return DB::transaction(function () use ($user, $newPassword, $authUserId) {
+            $user->tokens()->delete();
 
-        return $user;
+            $user->update([
+                'password' => $newPassword,
+                'updated_by' => $authUserId,
+            ]);
+
+            return $user;
+        });
     }
 
     public function deleteUser(User $user, ?int $authUserId = null): bool
@@ -193,6 +207,8 @@ class UserService
                 'user_id' => null,
                 'updated_by' => $authUserId,
             ]);
+
+            $user->tokens()->delete();
 
             $user->update(['deleted_by' => $authUserId]);
 

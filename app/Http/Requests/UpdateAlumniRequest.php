@@ -27,7 +27,15 @@ class UpdateAlumniRequest extends FormRequest
                     ->ignore($alumni?->id)
                     ->whereNull('deleted_at'),
             ],
-            'user_id' => ['sometimes', 'nullable', 'integer'],
+            'user_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('users', 'id')
+                    ->whereIn('role', ['siswa', 'alumni'])
+                    ->whereNull('deleted_at')
+                    ->where('is_active', true),
+            ],
             'full_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'email' => [
                 'sometimes',
@@ -66,6 +74,7 @@ class UpdateAlumniRequest extends FormRequest
             'major_id.required' => 'Jurusan wajib diisi.',
             'major_id.exists' => 'Jurusan yang dipilih tidak valid.',
             'graduation_year.between' => 'Tahun lulus tidak valid.',
+            'user_id.exists' => 'Akun siswa yang dipilih tidak valid.',
         ];
     }
 }

@@ -312,6 +312,13 @@ class StudentService
                     $userUpdates['is_active'] = $data['is_active'];
                 }
 
+                $revokeTokens = (! empty($data['password']))
+                    || (isset($data['is_active']) && ! (bool) $data['is_active']);
+
+                if ($revokeTokens) {
+                    $student->user->tokens()->delete();
+                }
+
                 $student->user->update($userUpdates);
             }
 
@@ -365,6 +372,8 @@ class StudentService
             $student->save();
 
             if ($student->user) {
+                $student->user->tokens()->delete();
+
                 $student->user->is_active = false;
                 $student->user->updated_by = $authUserId;
                 $student->user->deleted_by = $authUserId;

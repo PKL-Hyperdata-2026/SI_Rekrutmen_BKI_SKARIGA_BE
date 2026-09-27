@@ -40,8 +40,14 @@ class StudentJobVacancyController extends Controller
 
     public function show(Request $request, string $jobVacancy): Responsable
     {
-        $studentId = $request->user()->studentAlumni?->id;
-        $vacancy = $this->service->getStudentVacancyDetail($jobVacancy, $studentId);
+        $user = $request->user();
+        $studentProfile = $user->studentAlumni;
+        $vacancy = $this->service->getStudentVacancyDetail(
+            $jobVacancy,
+            $user->role,
+            $studentProfile?->id,
+            $studentProfile?->major_id
+        );
 
         return $this->response->message('Detail lowongan kerja berhasil diambil.')
             ->data(new JobVacancyResource($vacancy));

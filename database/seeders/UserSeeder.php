@@ -11,6 +11,10 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            return;
+        }
+
         // User::create([
         //     'full_name' => 'Jon Snow',
         //     'email' => 'jon.snow@example.com',

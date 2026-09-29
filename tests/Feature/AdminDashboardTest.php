@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Company;
+use App\Models\JobApplication;
+use App\Models\JobVacancy;
+use App\Models\Major;
+use App\Models\SelectionResult;
+use App\Models\StudentAlumni;
+use App\Models\TracerStudy;
 use App\Models\User;
 use Database\Seeders\ApplicationStageHistoryStandardTypeSeeder;
 use Database\Seeders\DepartmentSeeder;
@@ -118,18 +125,18 @@ class AdminDashboardTest extends TestCase
 
     public function test_admin_dashboard_calculates_accurate_metrics_and_chart_values(): void
     {
-        $major = \App\Models\Major::first();
-        $company = \App\Models\Company::factory()->create(['is_active' => true]);
+        $major = Major::first();
+        $company = Company::factory()->create(['is_active' => true]);
 
         // 1. Siswa Aktif (2 orang)
         $userSiswa1 = User::factory()->create(['role' => 'siswa', 'is_active' => true]);
-        \App\Models\StudentAlumni::factory()->create([
+        StudentAlumni::factory()->create([
             'user_id' => $userSiswa1->id,
             'major_id' => $major?->id,
             'graduation_year' => null,
         ]);
         $userSiswa2 = User::factory()->create(['role' => 'siswa', 'is_active' => true]);
-        $student2 = \App\Models\StudentAlumni::factory()->create([
+        $student2 = StudentAlumni::factory()->create([
             'user_id' => $userSiswa2->id,
             'major_id' => $major?->id,
             'graduation_year' => null,
@@ -137,27 +144,27 @@ class AdminDashboardTest extends TestCase
 
         // 2. Alumni (2 orang: 1 bekerja, 1 belum)
         $userAlumni1 = User::factory()->create(['role' => 'alumni', 'is_active' => true]);
-        $alumni1 = \App\Models\StudentAlumni::factory()->create([
+        $alumni1 = StudentAlumni::factory()->create([
             'user_id' => $userAlumni1->id,
             'major_id' => $major?->id,
             'graduation_year' => 2025,
         ]);
         $userAlumni2 = User::factory()->create(['role' => 'alumni', 'is_active' => true]);
-        \App\Models\StudentAlumni::factory()->create([
+        StudentAlumni::factory()->create([
             'user_id' => $userAlumni2->id,
             'major_id' => $major?->id,
             'graduation_year' => 2025,
         ]);
 
         // 1 Tracer Study terisi status 'bekerja'
-        \App\Models\TracerStudy::create([
+        TracerStudy::create([
             'student_alumni_id' => $alumni1->id,
             'career_status' => 'bekerja',
             'company_name' => 'PT Mitra Sejahtera',
         ]);
 
         // 3. Lowongan aktif (1 open)
-        $activeVacancy = \App\Models\JobVacancy::create([
+        $activeVacancy = JobVacancy::create([
             'company_id' => $company->id,
             'title' => 'Teknisi Jaringan',
             'description' => 'Lowongan teknisi',
@@ -170,14 +177,14 @@ class AdminDashboardTest extends TestCase
         ]);
 
         // 4. Lamaran bulan ini
-        $application = \App\Models\JobApplication::create([
+        $application = JobApplication::create([
             'job_vacancy_id' => $activeVacancy->id,
             'student_alumni_id' => $student2->id,
             'applied_at' => now(),
         ]);
 
         // 5. Hasil seleksi diterima dan published
-        \App\Models\SelectionResult::create([
+        SelectionResult::create([
             'job_application_id' => $application->id,
             'decision' => 'diterima',
             'status' => 'published',
@@ -185,12 +192,12 @@ class AdminDashboardTest extends TestCase
         ]);
 
         // 6. Hasil seleksi kedua berstatus draft (tidak boleh dihitung diterima)
-        $application2 = \App\Models\JobApplication::create([
+        $application2 = JobApplication::create([
             'job_vacancy_id' => $activeVacancy->id,
             'student_alumni_id' => $student2->id,
             'applied_at' => now(),
         ]);
-        \App\Models\SelectionResult::create([
+        SelectionResult::create([
             'job_application_id' => $application2->id,
             'decision' => 'diterima',
             'status' => 'draft',

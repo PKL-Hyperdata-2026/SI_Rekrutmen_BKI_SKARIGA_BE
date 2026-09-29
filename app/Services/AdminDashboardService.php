@@ -9,7 +9,6 @@ use App\Models\JobApplication;
 use App\Models\JobPlacement;
 use App\Models\JobVacancy;
 use App\Models\SelectionResult;
-use App\Models\StudentAlumni;
 use App\Models\TracerStudy;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;

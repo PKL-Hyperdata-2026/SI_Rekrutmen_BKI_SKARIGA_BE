@@ -11,7 +11,6 @@ use App\Models\JobVacancy;
 use App\Models\SelectionResult;
 use App\Models\SelectionStage;
 use App\Models\StandardType;
-use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -281,9 +280,6 @@ class HrdApplicantReviewService
 
     private function applyDecision(JobApplication $application, string $decision, ?string $notes, ?int $hrdUserId): void
     {
-        static $stageStatuses = [];
-        static $applicationStatuses = [];
-
         $isLolos = $decision === 'lolos';
         $stage = $this->resolveAdminStage($application, $hrdUserId);
 
@@ -298,7 +294,7 @@ class HrdApplicantReviewService
         ])->save();
 
         $stageStatusCode = $isLolos ? 'passed' : 'failed';
-        $stageStatusId = $stageStatuses[$stageStatusCode] ??= StandardType::byCategory('application_stage_status')
+        $stageStatusId = StandardType::byCategory('application_stage_status')
             ->where('code', $stageStatusCode)
             ->value('id');
 
@@ -316,7 +312,7 @@ class HrdApplicantReviewService
         );
 
         $appStatusCode = $isLolos ? 'in_progress' : 'rejected';
-        $applicationStatusId = $applicationStatuses[$appStatusCode] ??= StandardType::byCategory('job_application_status')
+        $applicationStatusId = StandardType::byCategory('job_application_status')
             ->where('code', $appStatusCode)
             ->value('id');
 

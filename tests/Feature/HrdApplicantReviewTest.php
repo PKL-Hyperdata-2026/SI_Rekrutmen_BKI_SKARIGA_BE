@@ -171,7 +171,7 @@ test('hrd cannot view other company application', function () {
         'applied_at' => now(),
     ]);
 
-    $this->actingAs($this->hrdUserA)->getJson("/api/hrd/applicant-reviews/{$app->id}")->assertStatus(404);
+    $this->actingAs($this->hrdUserA)->getJson("/api/hrd/applicant-reviews/{$app->id}")->assertStatus(403);
 });
 
 test('hrd can review applicant lolos', function () {
@@ -291,7 +291,7 @@ test('hrd cannot review other company application', function () {
     $this->actingAs($this->hrdUserA)->patchJson(
         "/api/hrd/applicant-reviews/{$app->id}/review",
         ['decision' => 'lolos']
-    )->assertStatus(404);
+    )->assertStatus(403);
 
     $this->assertDatabaseMissing('selection_results', ['job_application_id' => $app->id]);
 });

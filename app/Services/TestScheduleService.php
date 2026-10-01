@@ -101,7 +101,7 @@ class TestScheduleService
             ->first();
 
         if (! $schedule) {
-            throw new HttpException(404, 'Jadwal tes tidak ditemukan.');
+            throw new HttpException(403, 'Anda tidak memiliki akses ke jadwal tes ini.');
         }
 
         return $schedule;

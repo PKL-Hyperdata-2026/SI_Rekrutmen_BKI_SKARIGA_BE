@@ -349,7 +349,7 @@ test('hrd can list filter and view schedules', function () {
     $unauthorizedResponse = $this->actingAs($this->hrdUserA)
         ->getJson("/api/hrd/test-schedules/{$stageB->id}");
 
-    $unauthorizedResponse->assertStatus(404);
+    $unauthorizedResponse->assertStatus(403);
 });
 
 test('hrd can update and delete schedule', function () {
@@ -483,20 +483,20 @@ test('hrd cannot access or remind participants of another company schedule', fun
         'selection_stage_id' => $stageA->id,
     ]);
 
-    // HRD B (Telkom) tries to view participants of Astra's schedule -> 404
+    // HRD B (Telkom) tries to view participants of Astra's schedule -> 403
     $this->actingAs($this->hrdUserB)
         ->getJson("/api/hrd/test-schedules/{$stageA->id}/participants")
-        ->assertStatus(404);
+        ->assertStatus(403);
 
-    // HRD B tries to remind participant of Astra's schedule -> 404
+    // HRD B tries to remind participant of Astra's schedule -> 403
     $this->actingAs($this->hrdUserB)
         ->postJson("/api/hrd/test-schedules/{$stageA->id}/participants/{$historyA->id}/remind")
-        ->assertStatus(404);
+        ->assertStatus(403);
 
-    // HRD B tries to bulk remind Astra's participants -> 404
+    // HRD B tries to bulk remind Astra's participants -> 403
     $this->actingAs($this->hrdUserB)
         ->postJson("/api/hrd/test-schedules/{$stageA->id}/remind-all")
-        ->assertStatus(404);
+        ->assertStatus(403);
 });
 
 test('filtering and searching participants by attendance status and keyword', function () {

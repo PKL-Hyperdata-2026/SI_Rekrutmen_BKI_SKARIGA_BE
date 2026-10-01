@@ -137,7 +137,7 @@ class HrdApplicantReviewService
             ->first();
 
         if (! $application) {
-            throw new HttpException(404, 'Data lamaran tidak ditemukan.');
+            throw new HttpException(403, 'Anda tidak memiliki akses ke data lamaran ini.');
         }
 
         return $application;

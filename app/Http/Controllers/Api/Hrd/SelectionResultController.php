@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Hrd;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\HrdSelectionResultIndexRequest;
+use App\Http\Requests\GetHrdSelectionResultRequest;
 use App\Http\Requests\PublishHrdSelectionResultRequest;
 use App\Http\Requests\StoreHrdSelectionResultRequest;
 use App\Http\Requests\UpdateHrdSelectionDecisionRequest;
@@ -22,7 +22,7 @@ class SelectionResultController extends Controller
         protected ResponseService $response
     ) {}
 
-    public function index(HrdSelectionResultIndexRequest $request): Responsable
+    public function index(GetHrdSelectionResultRequest $request): Responsable
     {
         $company = $request->user()?->company;
 

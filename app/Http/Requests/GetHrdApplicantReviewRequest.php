@@ -6,7 +6,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 
-class HrdSelectionResultIndexRequest extends BaseFormRequest
+class GetHrdApplicantReviewRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {
@@ -20,12 +20,11 @@ class HrdSelectionResultIndexRequest extends BaseFormRequest
     {
         return [
             'job_vacancy_id' => ['nullable', 'integer', 'exists:job_vacancies,id'],
-            'selection_stage_id' => ['nullable', 'integer', 'exists:selection_stages,id'],
-            'status' => ['nullable', 'string', 'in:semua,menunggu_penilaian,lolos,gugur,diterima,tidak_hadir'],
+            'review_status' => ['nullable', 'string', 'in:semua,perlu_review,lolos_berkas,ditolak'],
             'search' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],
-            'sort_by' => ['nullable', 'string', 'in:scheduled_at,name,position,score'],
+            'sort_by' => ['nullable', 'string', 'in:applied_at,name,position'],
             'sort_dir' => ['nullable', 'string', 'in:asc,desc'],
         ];
     }
@@ -38,9 +37,7 @@ class HrdSelectionResultIndexRequest extends BaseFormRequest
         return [
             'job_vacancy_id.integer' => 'ID lowongan kerja tidak valid.',
             'job_vacancy_id.exists' => 'Lowongan kerja tidak ditemukan.',
-            'selection_stage_id.integer' => 'ID tahapan seleksi tidak valid.',
-            'selection_stage_id.exists' => 'Tahapan seleksi tidak ditemukan.',
-            'status.in' => 'Status harus salah satu dari: semua, menunggu_penilaian, lolos, gugur, diterima, tidak_hadir.',
+            'review_status.in' => 'Status review harus salah satu dari: semua, perlu_review, lolos_berkas, ditolak.',
             'search.max' => 'Kata kunci pencarian maksimal 100 karakter.',
             'per_page.integer' => 'Parameter per_page tidak valid.',
             'per_page.min' => 'Jumlah data per halaman minimal 1.',

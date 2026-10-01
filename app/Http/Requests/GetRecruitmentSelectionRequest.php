@@ -6,7 +6,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 
-class HrdApplicantReviewIndexRequest extends BaseFormRequest
+class GetRecruitmentSelectionRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {
@@ -20,31 +20,24 @@ class HrdApplicantReviewIndexRequest extends BaseFormRequest
     {
         return [
             'job_vacancy_id' => ['nullable', 'integer', 'exists:job_vacancies,id'],
-            'review_status' => ['nullable', 'string', 'in:semua,perlu_review,lolos_berkas,ditolak'],
+            'stage_id' => ['nullable', 'integer', 'exists:selection_stages,id'],
+            'attendance_status' => ['nullable', 'string', 'in:hadir,tidak_hadir,belum,hadir_tidak_hadir,present,absent,leave'],
             'search' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],
-            'sort_by' => ['nullable', 'string', 'in:applied_at,name,position'],
-            'sort_dir' => ['nullable', 'string', 'in:asc,desc'],
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
     public function messages(): array
     {
         return [
-            'job_vacancy_id.integer' => 'ID lowongan kerja tidak valid.',
             'job_vacancy_id.exists' => 'Lowongan kerja tidak ditemukan.',
-            'review_status.in' => 'Status review harus salah satu dari: semua, perlu_review, lolos_berkas, ditolak.',
+            'stage_id.exists' => 'Tahapan seleksi tidak ditemukan.',
+            'attendance_status.in' => 'Status kehadiran harus salah satu dari: hadir, tidak_hadir, belum.',
             'search.max' => 'Kata kunci pencarian maksimal 100 karakter.',
             'per_page.integer' => 'Parameter per_page tidak valid.',
             'per_page.min' => 'Jumlah data per halaman minimal 1.',
             'per_page.max' => 'Jumlah data per halaman maksimal 100.',
-            'page.integer' => 'Parameter page tidak valid.',
-            'sort_by.in' => 'Kolom urutan tidak valid.',
-            'sort_dir.in' => 'Arah urutan harus asc atau desc.',
         ];
     }
 }

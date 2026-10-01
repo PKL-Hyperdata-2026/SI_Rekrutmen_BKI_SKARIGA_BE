@@ -192,7 +192,7 @@ Semua response dibentuk oleh `App\Services\ResponseService` dengan format yang k
 
 ## 6. Database Convention
 
-- **Primary Key:** Gunakan nama `id` dengan tipe bigint auto-increment (`$table->id()`) — proyek ini tidak memakai UUID.
+- **Primary Key:** Gunakan nama `id` dengan tipe bigint auto-increment (`$table->id()`) — proyek ini tidak memakai UUID, kecuali tabel `notifications` yang memakai UUID string (`HasUuids`, `$keyType = 'string'`, `$incrementing = false`) karena id-nya dipakai sebagai identifier notifikasi yang dikirim ke klien.
 - **Foreign Key:** Gunakan nama tabel singular + `_id` (contoh: `user_id`, `job_vacancy_id`).
 - **Timestamps:** Selalu gunakan `created_at` dan `updated_at` (`$table->timestamps()`).
 - **Soft Deletes:** Gunakan kolom `deleted_at` (`SoftDeletes`) pada tabel data krusial (contoh: `job_vacancies`, data pelamar).

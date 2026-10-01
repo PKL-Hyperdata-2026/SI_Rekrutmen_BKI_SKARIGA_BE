@@ -10,7 +10,7 @@ class HrdSelectionResultDraftRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role === 'hrd';
+        return true;
     }
 
     /**

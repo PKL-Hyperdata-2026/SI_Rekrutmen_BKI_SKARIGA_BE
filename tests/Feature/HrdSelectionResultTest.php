@@ -261,4 +261,17 @@ class HrdSelectionResultTest extends TestCase
         $result = SelectionResult::where('job_application_id', $this->application->id)->first();
         $this->assertEquals('draft', $result->status);
     }
+
+    public function test_non_hrd_role_is_rejected_by_route_middleware(): void
+    {
+        $this->actingAs($this->adminUser)
+            ->getJson('/api/hrd/selection-results')
+            ->assertStatus(403)
+            ->assertJsonPath('success', false);
+
+        $this->actingAs($this->studentUser)
+            ->getJson('/api/hrd/selection-results')
+            ->assertStatus(403)
+            ->assertJsonPath('success', false);
+    }
 }

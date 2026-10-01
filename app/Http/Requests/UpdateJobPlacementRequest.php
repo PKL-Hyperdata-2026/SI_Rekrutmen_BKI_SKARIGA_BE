@@ -6,9 +6,8 @@ namespace App\Http\Requests;
 
 use App\Models\JobPlacement;
 use App\Services\JobPlacementService;
-use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateJobPlacementRequest extends FormRequest
+class UpdateJobPlacementRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

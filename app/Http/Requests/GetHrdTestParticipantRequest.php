@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class GetHrdTestParticipantRequest extends FormRequest
+class GetHrdTestParticipantRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

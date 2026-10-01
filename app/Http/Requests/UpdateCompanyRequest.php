@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UpdateCompanyRequest extends FormRequest
+class UpdateCompanyRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

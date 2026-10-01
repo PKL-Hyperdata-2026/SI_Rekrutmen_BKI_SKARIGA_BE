@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Services\JobPlacementService;
-use Illuminate\Foundation\Http\FormRequest;
 
-class StoreJobPlacementRequest extends FormRequest
+class StoreJobPlacementRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

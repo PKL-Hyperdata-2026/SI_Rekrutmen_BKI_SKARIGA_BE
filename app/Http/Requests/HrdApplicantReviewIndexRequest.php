@@ -5,12 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Symfony\Component\HttpFoundation\Response;
 
-class HrdApplicantReviewIndexRequest extends FormRequest
+class HrdApplicantReviewIndexRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {
@@ -50,15 +46,5 @@ class HrdApplicantReviewIndexRequest extends FormRequest
             'sort_by.in' => 'Kolom urutan tidak valid.',
             'sort_dir.in' => 'Arah urutan harus asc atau desc.',
         ];
-    }
-
-    protected function failedValidation(Validator $validator): void
-    {
-        throw new HttpResponseException(response()->json([
-            'success' => false,
-            'message' => 'Validation error',
-            'data' => null,
-            'errors' => $validator->errors(),
-        ], Response::HTTP_UNPROCESSABLE_ENTITY));
     }
 }

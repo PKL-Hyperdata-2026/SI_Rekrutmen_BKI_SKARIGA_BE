@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class ResetUserPasswordRequest extends FormRequest
+class ResetUserPasswordRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

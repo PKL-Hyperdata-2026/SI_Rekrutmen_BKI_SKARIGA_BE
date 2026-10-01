@@ -197,7 +197,7 @@ Semua response dibentuk oleh `App\Services\ResponseService` dengan format yang k
 - **Timestamps:** Selalu gunakan `created_at` dan `updated_at` (`$table->timestamps()`).
 - **Soft Deletes:** Gunakan kolom `deleted_at` (`SoftDeletes`) pada tabel data krusial (contoh: `job_vacancies`, data pelamar).
 - **Audit Trail:** Untuk tabel yang butuh rekam jejak, tambahkan kolom `created_by`, `updated_by`, dan `deleted_by` (relasi ke `users`).
-- **Lookup / Standard Types:** Untuk nilai enum/status/lookup (jenis lowongan, status lamaran, dll) gunakan pola tabel `standard_types` + `standard_type_categories`, diisi via Seeder, lalu di-relasikan dengan `foreignId`.
+- **Lookup / Standard Types:** Untuk nilai lookup dinamis (jenis lowongan, status lamaran, industri, dll) gunakan pola tabel `standard_types` + `standard_type_categories`, diisi via Seeder, lalu di-relasikan dengan `foreignId`. Untuk nilai status/role internal domain yang tertutup dan statis (seperti `users.role`, `selection_results.decision`), gunakan kolom enum/string database.
 
 ---
 

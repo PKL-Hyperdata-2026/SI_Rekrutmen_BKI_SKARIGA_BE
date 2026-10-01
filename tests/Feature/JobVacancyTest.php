@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature;
-
 use App\Models\Company;
 use App\Models\JobVacancy;
 use App\Models\Major;
@@ -12,258 +10,238 @@ use App\Models\StandardTypeCategory;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-class JobVacancyTest extends TestCase
-{
-    use RefreshDatabase;
+uses(RefreshDatabase::class);
 
-    protected User $user;
+beforeEach(function () {
+    $this->user = User::factory()->create([
+        'role' => 'admin',
+    ]);
+    $this->company = Company::create([
+        'name' => 'PT Test Indonesia',
+        'is_active' => true,
+    ]);
+    $category = StandardTypeCategory::firstOrCreate(
+        ['code' => 'target_applicant'],
+        ['name' => 'Target Pelamar']
+    );
+    $this->targetApplicant = StandardType::firstOrCreate(
+        ['category_id' => $category->id, 'code' => 'class_12_and_alumni'],
+        ['name' => 'Siswa Kelas 12 & Alumni', 'sort_order' => 3, 'is_active' => true]
+    );
+});
 
-    protected Company $company;
+test('can create job vacancy with unique slug and majors', function () {
+    $major = Major::create([
+        'code' => 'RPL',
+        'name' => 'Rekayasa Perangkat Lunak',
+        'is_active' => true,
+    ]);
 
-    protected StandardType $targetApplicant;
+    $payload = [
+        'company_id' => $this->company->id,
+        'target_applicant_id' => $this->targetApplicant->id,
+        'title' => 'Junior Laravel Developer',
+        'position' => 'Backend Developer',
+        'description' => 'Job description details',
+        'quota' => 2,
+        'min_salary' => 5000000,
+        'max_salary' => 8000000,
+        'major_ids' => [$major->id],
+    ];
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->user = User::factory()->create([
-            'role' => 'admin',
-        ]);
-        $this->company = Company::create([
-            'name' => 'PT Test Indonesia',
-            'is_active' => true,
-        ]);
-        $category = StandardTypeCategory::firstOrCreate(
-            ['code' => 'target_applicant'],
-            ['name' => 'Target Pelamar']
-        );
-        $this->targetApplicant = StandardType::firstOrCreate(
-            ['category_id' => $category->id, 'code' => 'class_12_and_alumni'],
-            ['name' => 'Siswa Kelas 12 & Alumni', 'sort_order' => 3, 'is_active' => true]
-        );
-    }
+    $response = $this->actingAs($this->user)
+        ->postJson('/api/admin/job-vacancies', $payload);
 
-    public function test_can_create_job_vacancy_with_unique_slug_and_majors(): void
-    {
-        $major = Major::create([
-            'code' => 'RPL',
-            'name' => 'Rekayasa Perangkat Lunak',
-            'is_active' => true,
-        ]);
+    $response->assertStatus(201)
+        ->assertJsonPath('success', true)
+        ->assertJsonPath('data.title', 'Junior Laravel Developer');
 
-        $payload = [
-            'company_id' => $this->company->id,
-            'target_applicant_id' => $this->targetApplicant->id,
-            'title' => 'Junior Laravel Developer',
-            'position' => 'Backend Developer',
-            'description' => 'Job description details',
-            'quota' => 2,
-            'min_salary' => 5000000,
-            'max_salary' => 8000000,
-            'major_ids' => [$major->id],
-        ];
+    $this->assertDatabaseHas('job_vacancies', [
+        'title' => 'Junior Laravel Developer',
+        'company_id' => $this->company->id,
+    ]);
 
-        $response = $this->actingAs($this->user)
-            ->postJson('/api/admin/job-vacancies', $payload);
+    $this->assertDatabaseHas('job_vacancy_majors', [
+        'major_id' => $major->id,
+    ]);
+});
 
-        $response->assertStatus(201)
-            ->assertJsonPath('success', true)
-            ->assertJsonPath('data.title', 'Junior Laravel Developer');
+test('salary validation fails when max salary less than min salary', function () {
+    $payload = [
+        'company_id' => $this->company->id,
+        'title' => 'Senior Developer',
+        'min_salary' => 10000000,
+        'max_salary' => 5000000, // Invalid: max < min
+    ];
 
-        $this->assertDatabaseHas('job_vacancies', [
-            'title' => 'Junior Laravel Developer',
-            'company_id' => $this->company->id,
-        ]);
+    $response = $this->actingAs($this->user)
+        ->postJson('/api/admin/job-vacancies', $payload);
 
-        $this->assertDatabaseHas('job_vacancy_majors', [
-            'major_id' => $major->id,
-        ]);
-    }
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['max_salary']);
+});
 
-    public function test_salary_validation_fails_when_max_salary_less_than_min_salary(): void
-    {
-        $payload = [
-            'company_id' => $this->company->id,
-            'title' => 'Senior Developer',
-            'min_salary' => 10000000,
-            'max_salary' => 5000000, // Invalid: max < min
-        ];
+test('can support high salary up to billions', function () {
+    $payload = [
+        'company_id' => $this->company->id,
+        'target_applicant_id' => $this->targetApplicant->id,
+        'title' => 'VP of Engineering (Global)',
+        'min_salary' => 1500000000.00,
+        'max_salary' => 3000000000.00,
+    ];
 
-        $response = $this->actingAs($this->user)
-            ->postJson('/api/admin/job-vacancies', $payload);
+    $response = $this->actingAs($this->user)
+        ->postJson('/api/admin/job-vacancies', $payload);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['max_salary']);
-    }
+    $response->assertStatus(201)
+        ->assertJsonPath('success', true)
+        ->assertJsonPath('data.minSalary', '1500000000.00')
+        ->assertJsonPath('data.maxSalary', '3000000000.00');
+});
 
-    public function test_can_support_high_salary_up_to_billions(): void
-    {
-        $payload = [
-            'company_id' => $this->company->id,
-            'target_applicant_id' => $this->targetApplicant->id,
-            'title' => 'VP of Engineering (Global)',
-            'min_salary' => 1500000000.00,
-            'max_salary' => 3000000000.00,
-        ];
+test('can fetch and update job vacancy', function () {
+    $vacancy = JobVacancy::create([
+        'company_id' => $this->company->id,
+        'title' => 'Initial Title',
+        'slug' => 'initial-title-1-abcde',
+    ]);
 
-        $response = $this->actingAs($this->user)
-            ->postJson('/api/admin/job-vacancies', $payload);
+    $fetchResponse = $this->actingAs($this->user)
+        ->getJson("/api/admin/job-vacancies/{$vacancy->id}");
 
-        $response->assertStatus(201)
-            ->assertJsonPath('success', true)
-            ->assertJsonPath('data.minSalary', '1500000000.00')
-            ->assertJsonPath('data.maxSalary', '3000000000.00');
-    }
+    $fetchResponse->assertStatus(200)
+        ->assertJsonPath('data.title', 'Initial Title');
 
-    public function test_can_fetch_and_update_job_vacancy(): void
-    {
-        $vacancy = JobVacancy::create([
-            'company_id' => $this->company->id,
-            'title' => 'Initial Title',
-            'slug' => 'initial-title-1-abcde',
-        ]);
-
-        $fetchResponse = $this->actingAs($this->user)
-            ->getJson("/api/admin/job-vacancies/{$vacancy->id}");
-
-        $fetchResponse->assertStatus(200)
-            ->assertJsonPath('data.title', 'Initial Title');
-
-        $updateResponse = $this->actingAs($this->user)
-            ->putJson("/api/admin/job-vacancies/{$vacancy->id}", [
-                'title' => 'Updated Title',
-            ]);
-
-        $updateResponse->assertStatus(200)
-            ->assertJsonPath('data.title', 'Updated Title');
-
-        $this->assertDatabaseHas('job_vacancies', [
-            'id' => $vacancy->id,
+    $updateResponse = $this->actingAs($this->user)
+        ->putJson("/api/admin/job-vacancies/{$vacancy->id}", [
             'title' => 'Updated Title',
         ]);
-    }
 
-    public function test_scope_active_returns_only_active_vacancies(): void
-    {
-        $activeVacancy = JobVacancy::create([
-            'company_id' => $this->company->id,
-            'title' => 'Active Job',
-            'slug' => 'active-job',
-            'is_active' => true,
-        ]);
+    $updateResponse->assertStatus(200)
+        ->assertJsonPath('data.title', 'Updated Title');
 
-        $inactiveVacancy = JobVacancy::create([
-            'company_id' => $this->company->id,
-            'title' => 'Inactive Job',
-            'slug' => 'inactive-job',
-            'is_active' => false,
-        ]);
+    $this->assertDatabaseHas('job_vacancies', [
+        'id' => $vacancy->id,
+        'title' => 'Updated Title',
+    ]);
+});
 
-        $activeVacancies = JobVacancy::active()->get();
+test('scope active returns only active vacancies', function () {
+    $activeVacancy = JobVacancy::create([
+        'company_id' => $this->company->id,
+        'title' => 'Active Job',
+        'slug' => 'active-job',
+        'is_active' => true,
+    ]);
 
-        $this->assertTrue($activeVacancies->contains('id', $activeVacancy->id));
-        $this->assertFalse($activeVacancies->contains('id', $inactiveVacancy->id));
-    }
+    $inactiveVacancy = JobVacancy::create([
+        'company_id' => $this->company->id,
+        'title' => 'Inactive Job',
+        'slug' => 'inactive-job',
+        'is_active' => false,
+    ]);
 
-    public function test_scope_open_returns_active_vacancies_with_future_or_null_deadlines(): void
-    {
-        $openWithNullDeadline = JobVacancy::create([
-            'company_id' => $this->company->id,
-            'title' => 'Open No Deadline',
-            'slug' => 'open-no-deadline',
-            'is_active' => true,
-            'deadline' => null,
-        ]);
+    $activeVacancies = JobVacancy::active()->get();
 
-        $openWithFutureDeadline = JobVacancy::create([
-            'company_id' => $this->company->id,
-            'title' => 'Open Future Deadline',
-            'slug' => 'open-future-deadline',
-            'is_active' => true,
-            'deadline' => now()->addDays(7)->toDateString(),
-        ]);
+    $this->assertTrue($activeVacancies->contains('id', $activeVacancy->id));
+    $this->assertFalse($activeVacancies->contains('id', $inactiveVacancy->id));
+});
 
-        $openWithTodayDeadline = JobVacancy::create([
-            'company_id' => $this->company->id,
-            'title' => 'Open Today Deadline',
-            'slug' => 'open-today-deadline',
-            'is_active' => true,
-            'deadline' => now()->toDateString(),
-        ]);
+test('scope open returns active vacancies with future or null deadlines', function () {
+    $openWithNullDeadline = JobVacancy::create([
+        'company_id' => $this->company->id,
+        'title' => 'Open No Deadline',
+        'slug' => 'open-no-deadline',
+        'is_active' => true,
+        'deadline' => null,
+    ]);
 
-        $pastDeadline = JobVacancy::create([
-            'company_id' => $this->company->id,
-            'title' => 'Past Deadline',
-            'slug' => 'past-deadline',
-            'is_active' => true,
-            'deadline' => now()->subDays(1)->toDateString(),
-        ]);
+    $openWithFutureDeadline = JobVacancy::create([
+        'company_id' => $this->company->id,
+        'title' => 'Open Future Deadline',
+        'slug' => 'open-future-deadline',
+        'is_active' => true,
+        'deadline' => now()->addDays(7)->toDateString(),
+    ]);
 
-        $inactiveWithFutureDeadline = JobVacancy::create([
-            'company_id' => $this->company->id,
-            'title' => 'Inactive Future Deadline',
-            'slug' => 'inactive-future-deadline',
-            'is_active' => false,
-            'deadline' => now()->addDays(7)->toDateString(),
-        ]);
+    $openWithTodayDeadline = JobVacancy::create([
+        'company_id' => $this->company->id,
+        'title' => 'Open Today Deadline',
+        'slug' => 'open-today-deadline',
+        'is_active' => true,
+        'deadline' => now()->toDateString(),
+    ]);
 
-        $openVacancies = JobVacancy::open()->get();
+    $pastDeadline = JobVacancy::create([
+        'company_id' => $this->company->id,
+        'title' => 'Past Deadline',
+        'slug' => 'past-deadline',
+        'is_active' => true,
+        'deadline' => now()->subDays(1)->toDateString(),
+    ]);
 
-        $this->assertTrue($openVacancies->contains('id', $openWithNullDeadline->id));
-        $this->assertTrue($openVacancies->contains('id', $openWithFutureDeadline->id));
-        $this->assertTrue($openVacancies->contains('id', $openWithTodayDeadline->id));
-        $this->assertFalse($openVacancies->contains('id', $pastDeadline->id));
-        $this->assertFalse($openVacancies->contains('id', $inactiveWithFutureDeadline->id));
-    }
+    $inactiveWithFutureDeadline = JobVacancy::create([
+        'company_id' => $this->company->id,
+        'title' => 'Inactive Future Deadline',
+        'slug' => 'inactive-future-deadline',
+        'is_active' => false,
+        'deadline' => now()->addDays(7)->toDateString(),
+    ]);
 
-    public function test_scope_expired_returns_vacancies_with_past_deadlines(): void
-    {
-        $pastVacancy = JobVacancy::create([
-            'company_id' => $this->company->id,
-            'title' => 'Past Vacancy',
-            'slug' => 'past-vacancy',
-            'deadline' => now()->subDays(2)->toDateString(),
-        ]);
+    $openVacancies = JobVacancy::open()->get();
 
-        $futureVacancy = JobVacancy::create([
-            'company_id' => $this->company->id,
-            'title' => 'Future Vacancy',
-            'slug' => 'future-vacancy',
-            'deadline' => now()->addDays(2)->toDateString(),
-        ]);
+    $this->assertTrue($openVacancies->contains('id', $openWithNullDeadline->id));
+    $this->assertTrue($openVacancies->contains('id', $openWithFutureDeadline->id));
+    $this->assertTrue($openVacancies->contains('id', $openWithTodayDeadline->id));
+    $this->assertFalse($openVacancies->contains('id', $pastDeadline->id));
+    $this->assertFalse($openVacancies->contains('id', $inactiveWithFutureDeadline->id));
+});
 
-        $nullDeadlineVacancy = JobVacancy::create([
-            'company_id' => $this->company->id,
-            'title' => 'No Deadline Vacancy',
-            'slug' => 'no-deadline-vacancy',
-            'deadline' => null,
-        ]);
+test('scope expired returns vacancies with past deadlines', function () {
+    $pastVacancy = JobVacancy::create([
+        'company_id' => $this->company->id,
+        'title' => 'Past Vacancy',
+        'slug' => 'past-vacancy',
+        'deadline' => now()->subDays(2)->toDateString(),
+    ]);
 
-        $todayVacancy = JobVacancy::create([
-            'company_id' => $this->company->id,
-            'title' => 'Today Vacancy',
-            'slug' => 'today-vacancy',
-            'deadline' => now()->toDateString(),
-        ]);
+    $futureVacancy = JobVacancy::create([
+        'company_id' => $this->company->id,
+        'title' => 'Future Vacancy',
+        'slug' => 'future-vacancy',
+        'deadline' => now()->addDays(2)->toDateString(),
+    ]);
 
-        $expiredVacancies = JobVacancy::expired()->get();
+    $nullDeadlineVacancy = JobVacancy::create([
+        'company_id' => $this->company->id,
+        'title' => 'No Deadline Vacancy',
+        'slug' => 'no-deadline-vacancy',
+        'deadline' => null,
+    ]);
 
-        $this->assertTrue($expiredVacancies->contains('id', $pastVacancy->id));
-        $this->assertFalse($expiredVacancies->contains('id', $futureVacancy->id));
-        $this->assertFalse($expiredVacancies->contains('id', $nullDeadlineVacancy->id));
-        $this->assertFalse($expiredVacancies->contains('id', $todayVacancy->id));
-    }
+    $todayVacancy = JobVacancy::create([
+        'company_id' => $this->company->id,
+        'title' => 'Today Vacancy',
+        'slug' => 'today-vacancy',
+        'deadline' => now()->toDateString(),
+    ]);
 
-    public function test_job_vacancy_has_applications_and_job_applications_relation(): void
-    {
-        $vacancy = JobVacancy::create([
-            'company_id' => $this->company->id,
-            'title' => 'Vacancy with Applications',
-            'slug' => 'vacancy-apps',
-        ]);
+    $expiredVacancies = JobVacancy::expired()->get();
 
-        $this->assertInstanceOf(HasMany::class, $vacancy->applications());
-        $this->assertInstanceOf(HasMany::class, $vacancy->jobApplications());
-    }
-}
+    $this->assertTrue($expiredVacancies->contains('id', $pastVacancy->id));
+    $this->assertFalse($expiredVacancies->contains('id', $futureVacancy->id));
+    $this->assertFalse($expiredVacancies->contains('id', $nullDeadlineVacancy->id));
+    $this->assertFalse($expiredVacancies->contains('id', $todayVacancy->id));
+});
+
+test('job vacancy has applications and job applications relation', function () {
+    $vacancy = JobVacancy::create([
+        'company_id' => $this->company->id,
+        'title' => 'Vacancy with Applications',
+        'slug' => 'vacancy-apps',
+    ]);
+
+    $this->assertInstanceOf(HasMany::class, $vacancy->applications());
+    $this->assertInstanceOf(HasMany::class, $vacancy->jobApplications());
+});

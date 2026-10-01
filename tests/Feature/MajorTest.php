@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature;
-
 use App\Models\Department;
 use App\Models\Major;
 use App\Models\StudentAlumni;
@@ -11,250 +9,226 @@ use App\Models\User;
 use Database\Seeders\DepartmentSeeder;
 use Database\Seeders\MajorSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-class MajorTest extends TestCase
-{
-    use RefreshDatabase;
+uses(RefreshDatabase::class);
 
-    protected User $adminUser;
+beforeEach(function () {
+    $this->seed([
+        DepartmentSeeder::class,
+        MajorSeeder::class,
+    ]);
 
-    protected User $siswaUser;
+    $this->adminUser = User::factory()->create([
+        'role' => 'admin',
+        'is_active' => true,
+    ]);
 
-    protected Department $tikDept;
+    $this->siswaUser = User::factory()->create([
+        'role' => 'siswa',
+        'is_active' => true,
+    ]);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+    $this->tikDept = Department::where('code', 'TIK')->firstOrFail();
+});
 
-        $this->seed([
-            DepartmentSeeder::class,
-            MajorSeeder::class,
-        ]);
+test('non admin cannot access majors crud', function () {
+    $this->actingAs($this->siswaUser, 'sanctum')
+        ->getJson('/api/admin/majors')
+        ->assertForbidden();
+});
 
-        $this->adminUser = User::factory()->create([
-            'role' => 'admin',
-            'is_active' => true,
-        ]);
+test('admin can list majors with department', function () {
+    $response = $this->actingAs($this->adminUser, 'sanctum')
+        ->getJson('/api/admin/majors');
 
-        $this->siswaUser = User::factory()->create([
-            'role' => 'siswa',
-            'is_active' => true,
-        ]);
-
-        $this->tikDept = Department::where('code', 'TIK')->firstOrFail();
-    }
-
-    public function test_non_admin_cannot_access_majors_crud(): void
-    {
-        $this->actingAs($this->siswaUser, 'sanctum')
-            ->getJson('/api/admin/majors')
-            ->assertForbidden();
-    }
-
-    public function test_admin_can_list_majors_with_department(): void
-    {
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->getJson('/api/admin/majors');
-
-        $response->assertOk()
-            ->assertJsonPath('success', true)
-            ->assertJsonCount(15, 'data.data')
-            ->assertJsonPath('data.meta.active_count', 15)
-            ->assertJsonStructure([
-                'success',
+    $response->assertOk()
+        ->assertJsonPath('success', true)
+        ->assertJsonCount(15, 'data.data')
+        ->assertJsonPath('data.meta.active_count', 15)
+        ->assertJsonStructure([
+            'success',
+            'data' => [
                 'data' => [
-                    'data' => [
-                        '*' => [
+                    '*' => [
+                        'id',
+                        'departmentId',
+                        'department' => [
                             'id',
-                            'departmentId',
-                            'department' => [
-                                'id',
-                                'code',
-                                'name',
-                            ],
                             'code',
                             'name',
-                            'description',
-                            'isActive',
                         ],
+                        'code',
+                        'name',
+                        'description',
+                        'isActive',
                     ],
                 ],
-            ]);
-    }
-
-    public function test_admin_can_get_accurate_active_count_across_pagination(): void
-    {
-        Major::create([
-            'department_id' => $this->tikDept->id,
-            'code' => 'INACT',
-            'name' => 'Jurusan Nonaktif',
-            'is_active' => false,
+            ],
         ]);
+});
 
-        $page1 = $this->actingAs($this->adminUser, 'sanctum')
-            ->getJson('/api/admin/majors?per_page=10&page=1');
+test('admin can get accurate active count across pagination', function () {
+    Major::create([
+        'department_id' => $this->tikDept->id,
+        'code' => 'INACT',
+        'name' => 'Jurusan Nonaktif',
+        'is_active' => false,
+    ]);
 
-        $page1->assertOk()
-            ->assertJsonCount(10, 'data.data')
-            ->assertJsonPath('data.meta.total', 16)
-            ->assertJsonPath('data.meta.active_count', 15);
+    $page1 = $this->actingAs($this->adminUser, 'sanctum')
+        ->getJson('/api/admin/majors?per_page=10&page=1');
 
-        $page2 = $this->actingAs($this->adminUser, 'sanctum')
-            ->getJson('/api/admin/majors?per_page=10&page=2');
+    $page1->assertOk()
+        ->assertJsonCount(10, 'data.data')
+        ->assertJsonPath('data.meta.total', 16)
+        ->assertJsonPath('data.meta.active_count', 15);
 
-        $page2->assertOk()
-            ->assertJsonCount(6, 'data.data')
-            ->assertJsonPath('data.meta.total', 16)
-            ->assertJsonPath('data.meta.active_count', 15);
-    }
+    $page2 = $this->actingAs($this->adminUser, 'sanctum')
+        ->getJson('/api/admin/majors?per_page=10&page=2');
 
-    public function test_admin_can_filter_majors_by_department(): void
-    {
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->getJson("/api/admin/majors?department_id={$this->tikDept->id}");
+    $page2->assertOk()
+        ->assertJsonCount(6, 'data.data')
+        ->assertJsonPath('data.meta.total', 16)
+        ->assertJsonPath('data.meta.active_count', 15);
+});
 
-        $response->assertOk()
-            ->assertJsonCount(5, 'data.data')
-            ->assertJsonPath('data.data.0.department.code', 'TIK');
-    }
+test('admin can filter majors by department', function () {
+    $response = $this->actingAs($this->adminUser, 'sanctum')
+        ->getJson("/api/admin/majors?department_id={$this->tikDept->id}");
 
-    public function test_admin_can_fetch_major_form_options(): void
-    {
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->getJson('/api/admin/majors/options');
+    $response->assertOk()
+        ->assertJsonCount(5, 'data.data')
+        ->assertJsonPath('data.data.0.department.code', 'TIK');
+});
 
-        $response->assertOk()
-            ->assertJsonStructure([
-                'success',
-                'data' => [
-                    'departments' => [
-                        '*' => ['id', 'code', 'name'],
-                    ],
+test('admin can fetch major form options', function () {
+    $response = $this->actingAs($this->adminUser, 'sanctum')
+        ->getJson('/api/admin/majors/options');
+
+    $response->assertOk()
+        ->assertJsonStructure([
+            'success',
+            'data' => [
+                'departments' => [
+                    '*' => ['id', 'code', 'name'],
                 ],
-            ]);
-    }
-
-    public function test_admin_can_create_new_major_with_department(): void
-    {
-        $payload = [
-            'department_id' => $this->tikDept->id,
-            'code' => 'SIJA',
-            'name' => 'Sistem Informatika, Jaringan, dan Aplikasi',
-            'description' => 'Program SIJA 4 Tahun',
-            'is_active' => true,
-        ];
-
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->postJson('/api/admin/majors', $payload);
-
-        $response->assertCreated()
-            ->assertJsonPath('success', true)
-            ->assertJsonPath('data.code', 'SIJA');
-        $this->assertEquals($this->tikDept->id, decrypt($response->json('data.departmentId')));
-
-        $this->assertDatabaseHas('majors', [
-            'code' => 'SIJA',
-            'department_id' => $this->tikDept->id,
-            'created_by' => $this->adminUser->id,
+            ],
         ]);
-    }
+});
 
-    public function test_cannot_create_major_with_invalid_department(): void
-    {
-        $payload = [
-            'department_id' => 99999,
-            'code' => 'SIJA',
-            'name' => 'Sistem Informatika',
-        ];
+test('admin can create new major with department', function () {
+    $payload = [
+        'department_id' => $this->tikDept->id,
+        'code' => 'SIJA',
+        'name' => 'Sistem Informatika, Jaringan, dan Aplikasi',
+        'description' => 'Program SIJA 4 Tahun',
+        'is_active' => true,
+    ];
 
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->postJson('/api/admin/majors', $payload);
+    $response = $this->actingAs($this->adminUser, 'sanctum')
+        ->postJson('/api/admin/majors', $payload);
 
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['department_id']);
-    }
+    $response->assertCreated()
+        ->assertJsonPath('success', true)
+        ->assertJsonPath('data.code', 'SIJA');
+    $this->assertEquals($this->tikDept->id, decrypt($response->json('data.departmentId')));
 
-    public function test_admin_can_update_major(): void
-    {
-        $major = Major::where('code', 'RPL')->firstOrFail();
+    $this->assertDatabaseHas('majors', [
+        'code' => 'SIJA',
+        'department_id' => $this->tikDept->id,
+        'created_by' => $this->adminUser->id,
+    ]);
+});
 
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->putJson("/api/admin/majors/{$major->id}", [
-                'department_id' => $this->tikDept->id,
-                'code' => 'PPLG',
-                'name' => 'Pengembangan Perangkat Lunak dan Gim',
-                'description' => 'Kurikulum Merdeka PPLG',
-            ]);
+test('cannot create major with invalid department', function () {
+    $payload = [
+        'department_id' => 99999,
+        'code' => 'SIJA',
+        'name' => 'Sistem Informatika',
+    ];
 
-        $response->assertOk()
-            ->assertJsonPath('data.code', 'PPLG')
-            ->assertJsonPath('data.name', 'Pengembangan Perangkat Lunak dan Gim');
+    $response = $this->actingAs($this->adminUser, 'sanctum')
+        ->postJson('/api/admin/majors', $payload);
 
-        $this->assertDatabaseHas('majors', [
-            'id' => $major->id,
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['department_id']);
+});
+
+test('admin can update major', function () {
+    $major = Major::where('code', 'RPL')->firstOrFail();
+
+    $response = $this->actingAs($this->adminUser, 'sanctum')
+        ->putJson("/api/admin/majors/{$major->id}", [
+            'department_id' => $this->tikDept->id,
             'code' => 'PPLG',
-            'updated_by' => $this->adminUser->id,
-        ]);
-    }
-
-    public function test_admin_can_toggle_major_active_status(): void
-    {
-        $major = Major::where('code', 'RPL')->firstOrFail();
-
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->patchJson("/api/admin/majors/{$major->id}/toggle-active");
-
-        $response->assertOk()
-            ->assertJsonPath('data.isActive', false);
-
-        $this->assertDatabaseHas('majors', [
-            'id' => $major->id,
-            'is_active' => false,
-        ]);
-    }
-
-    public function test_cannot_delete_major_used_by_student(): void
-    {
-        $major = Major::where('code', 'RPL')->firstOrFail();
-
-        StudentAlumni::create([
-            'user_id' => $this->siswaUser->id,
-            'major_id' => $major->id,
-            'nis' => '12345678',
-            'is_active' => true,
+            'name' => 'Pengembangan Perangkat Lunak dan Gim',
+            'description' => 'Kurikulum Merdeka PPLG',
         ]);
 
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->deleteJson("/api/admin/majors/{$major->id}");
+    $response->assertOk()
+        ->assertJsonPath('data.code', 'PPLG')
+        ->assertJsonPath('data.name', 'Pengembangan Perangkat Lunak dan Gim');
 
-        $response->assertStatus(422)
-            ->assertJsonPath('success', false);
+    $this->assertDatabaseHas('majors', [
+        'id' => $major->id,
+        'code' => 'PPLG',
+        'updated_by' => $this->adminUser->id,
+    ]);
+});
 
-        $this->assertDatabaseHas('majors', [
-            'id' => $major->id,
-            'deleted_at' => null,
-        ]);
-    }
+test('admin can toggle major active status', function () {
+    $major = Major::where('code', 'RPL')->firstOrFail();
 
-    public function test_admin_can_delete_unused_major(): void
-    {
-        $unusedMajor = Major::create([
-            'department_id' => $this->tikDept->id,
-            'code' => 'UNUSED',
-            'name' => 'Jurusan Tidak Terpakai',
-            'is_active' => true,
-        ]);
+    $response = $this->actingAs($this->adminUser, 'sanctum')
+        ->patchJson("/api/admin/majors/{$major->id}/toggle-active");
 
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->deleteJson("/api/admin/majors/{$unusedMajor->id}");
+    $response->assertOk()
+        ->assertJsonPath('data.isActive', false);
 
-        $response->assertOk()
-            ->assertJsonPath('success', true);
+    $this->assertDatabaseHas('majors', [
+        'id' => $major->id,
+        'is_active' => false,
+    ]);
+});
 
-        $this->assertSoftDeleted('majors', [
-            'id' => $unusedMajor->id,
-            'deleted_by' => $this->adminUser->id,
-        ]);
-    }
-}
+test('cannot delete major used by student', function () {
+    $major = Major::where('code', 'RPL')->firstOrFail();
+
+    StudentAlumni::create([
+        'user_id' => $this->siswaUser->id,
+        'major_id' => $major->id,
+        'nis' => '12345678',
+        'is_active' => true,
+    ]);
+
+    $response = $this->actingAs($this->adminUser, 'sanctum')
+        ->deleteJson("/api/admin/majors/{$major->id}");
+
+    $response->assertStatus(422)
+        ->assertJsonPath('success', false);
+
+    $this->assertDatabaseHas('majors', [
+        'id' => $major->id,
+        'deleted_at' => null,
+    ]);
+});
+
+test('admin can delete unused major', function () {
+    $unusedMajor = Major::create([
+        'department_id' => $this->tikDept->id,
+        'code' => 'UNUSED',
+        'name' => 'Jurusan Tidak Terpakai',
+        'is_active' => true,
+    ]);
+
+    $response = $this->actingAs($this->adminUser, 'sanctum')
+        ->deleteJson("/api/admin/majors/{$unusedMajor->id}");
+
+    $response->assertOk()
+        ->assertJsonPath('success', true);
+
+    $this->assertSoftDeleted('majors', [
+        'id' => $unusedMajor->id,
+        'deleted_by' => $this->adminUser->id,
+    ]);
+});

@@ -15,6 +15,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Throwable;
 
 class HrdApplicantReviewService
 {
@@ -175,7 +176,7 @@ class HrdApplicantReviewService
                     $this->assertReviewable($application);
                     $this->applyDecision($application, $decision, $notes, $hrdUserId);
                     $succeeded++;
-                } catch (\Throwable $exception) {
+                } catch (Throwable $exception) {
                     $failures[] = ['id' => $id, 'message' => $exception->getMessage()];
                 }
             }

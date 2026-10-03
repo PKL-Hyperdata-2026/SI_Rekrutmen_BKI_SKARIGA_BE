@@ -16,6 +16,10 @@ class JobPlacementSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            return;
+        }
+
         $hrdCompany = Company::where('name', 'PT Kejayaan Terraloka')->first()
             ?? Company::whereHas('user', fn ($q) => $q->where('role', 'hrd'))->first();
 

@@ -131,9 +131,20 @@ class StudentAlumniService
 
             $existingUser = User::withTrashed()->where('email', $email)->first();
             if ($existingUser) {
+                if (! $existingUser->is_active && ! $existingUser->trashed()) {
+                    throw ValidationException::withMessages([
+                        'email' => ['Akun dengan email ini sedang dinonaktifkan. Aktifkan kembali melalui menu pengguna terlebih dahulu.'],
+                    ]);
+                }
+
                 if ($existingUser->trashed()) {
                     $existingUser->restore();
                 }
+
+                if ($existingUser->role !== 'alumni' || ! $existingUser->is_active) {
+                    $existingUser->tokens()->delete();
+                }
+
                 $existingUser->update([
                     'full_name' => $data['full_name'],
                     'phone' => $data['phone'] ?? $existingUser->phone,
@@ -190,8 +201,21 @@ class StudentAlumniService
                 $data['current_company_id'] = $company->id;
             }
 
-            $profileData = Arr::except($data, ['full_name', 'phone', 'email', 'company_name']);
+            $profileData = Arr::except($data, ['full_name', 'phone', 'email', 'company_name', 'role']);
             $profileData['updated_by'] = $actorId;
+
+            if (! empty($data['user_id']) && (int) $data['user_id'] !== (int) $alumni->user_id) {
+                $conflict = StudentAlumni::withTrashed()
+                    ->where('user_id', $data['user_id'])
+                    ->where('id', '!=', $alumni->id)
+                    ->first();
+
+                if ($conflict) {
+                    throw ValidationException::withMessages([
+                        'user_id' => ['Akun ini sudah terhubung dengan data alumni lain.'],
+                    ]);
+                }
+            }
 
             $alumni->update($profileData);
 
@@ -209,6 +233,8 @@ class StudentAlumniService
     {
         return DB::transaction(function () use ($alumni, $actorId) {
             if ($alumni->user) {
+                $alumni->user->tokens()->delete();
+
                 $alumni->user->update(['is_active' => false]);
             }
 
@@ -367,6 +393,13 @@ class StudentAlumniService
         }
 
         if (! empty($userUpdate)) {
+            $revokeTokens = (array_key_exists('is_active', $userUpdate) && ! $userUpdate['is_active'])
+                || (isset($userUpdate['role']) && $userUpdate['role'] !== $user->role);
+
+            if ($revokeTokens) {
+                $user->tokens()->delete();
+            }
+
             $user->update($userUpdate);
         }
     }

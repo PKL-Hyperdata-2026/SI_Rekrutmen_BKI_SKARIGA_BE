@@ -49,7 +49,7 @@ class StudentJobApplicationResource extends JsonResource
                 'startDate' => $this->jobPlacement->start_date?->format('Y-m-d'),
                 'notes' => $this->jobPlacement->notes,
             ] : null),
-            'selectionResult' => $this->whenLoaded('selectionResult', fn () => $this->selectionResult ? [
+            'selectionResult' => $this->whenLoaded('selectionResult', fn () => $this->selectionResult && $this->selectionResult->published_at !== null ? [
                 'id' => $this->selectionResult->id,
                 'decision' => $this->selectionResult->decision,
                 'letterPath' => $this->selectionResult->letter_path,

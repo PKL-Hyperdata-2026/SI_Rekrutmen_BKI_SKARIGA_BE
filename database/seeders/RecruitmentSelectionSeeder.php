@@ -25,6 +25,10 @@ class RecruitmentSelectionSeeder extends Seeder
      */
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            return;
+        }
+
         $vacancies = JobVacancy::orderBy('id')->get();
         $students = StudentAlumni::with(['user', 'major'])->orderBy('id')->get();
 
@@ -321,6 +325,7 @@ class RecruitmentSelectionSeeder extends Seeder
                         'final_score' => $finalScore,
                         'decision' => $decision,
                         'status' => $resultStatus,
+                        'published_at' => $resultStatus === 'published' ? now() : null,
                         'notes' => $notes,
                         'created_by' => $adminUserId,
                         'updated_by' => $adminUserId,

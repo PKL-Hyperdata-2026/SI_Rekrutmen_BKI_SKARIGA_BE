@@ -33,6 +33,7 @@ class AuthController extends Controller
 
         if (! $result['success']) {
             return $this->response
+                ->success(false)
                 ->message($result['message'])
                 ->code($result['code']);
         }

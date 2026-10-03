@@ -22,7 +22,7 @@ Operational instructions & boundaries: [`AGENTS.md`](./AGENTS.md).
 ```text
 HTTP Request (Frontend Client)
   → routes/api.php (Route declaration + middleware: auth:sanctum, role:X)
-  → app/Http/Middleware/ (RBAC, DecryptRequest)
+  → app/Http/Middleware/ (RBAC, DecryptRequest, EnsureAccountIsActive)
   → app/Http/Controllers/ (Thin HTTP dispatcher)
       → FormRequest (app/Http/Requests/ - input validation & authorization)
       → Service Layer (app/Services/ - business rules, DB transactions, external integrations)
@@ -78,6 +78,7 @@ backend/app/
 │   │   └── Controller.php                             # Base Laravel controller
 │   ├── Middleware/
 │   │   ├── DecryptRequest.php                         # Otomatis mendekripsi ID terenkripsi pada request
+│   │   ├── EnsureAccountIsActive.php                  # Tolak akun non-aktif + cabut tokennya (global, prepended ke grup api)
 │   │   └── RBAC.php                                   # Role-Based Access Control middleware (aliased as 'role')
 │   ├── Requests/
 │   │   ├── AdminReportFilterRequest.php
@@ -229,7 +230,7 @@ backend/app/
 - **`job_placements`**: Records work placement of students/alumni (`student_alumni_id`, `company_id`, `job_application_id`, `placement_status_id`, `accepted_date`, `start_date`, `evaluations` JSON, `notes`).
 - **`tracer_studies`**: Linked to `student_alumni.id`, using enum `career_status` (`bekerja`, `wirausaha`, `lanjut_studi`, `mencari_pekerjaan`), with extended columns: `accepted_date`, `job_location`, `company_sector`, and conditional attributes per status.
 - **`student_portfolios`**: Portfolio attachments for students and alumni (`student_alumni_id`, `category_id`, `title`, `description`, `file_path`, `original_filename`). Tracks uploaded storage path and user-facing original filename. Supports soft deletes.
-- **`notifications`**: In-app notifications with integer primary key `id`, polymorphic `notifiable`, type, data payload, read status timestamp. Broadcast via Reverb.
+- **`notifications`**: In-app notifications with UUID primary key `id`, polymorphic `notifiable`, type, data payload, read status timestamp. Broadcast via Reverb.
 - **`standard_types` & `standard_type_categories`**: Dynamic lookup options/constants (`class`, `employment_status`, `portfolio_type`, `company_industry`, etc.).
 - **`menus` & `access_menus`**: System navigation menus and role permission mapping.
 - **`activity_logs`**: Audit logging recording user ID, action, model affected, IP address, and changed attributes.
@@ -244,7 +245,7 @@ backend/app/
 
 ### Public / Auth
 
-- `POST /api/login` — Authenticate user and issue Sanctum token.
+- `POST /api/login` — Authenticate user and issue Sanctum token (throttled 5 failed attempts per email / 30 min, returns 429).
 - `POST /api/forgot-password` — Send password reset link email (throttled 6/min).
 - `POST /api/reset-password` — Reset password using `token`, `email`, `password` (`min:8`, `confirmed`).
 
@@ -341,12 +342,12 @@ backend/app/
     - `PATCH /api/hrd/applicant-reviews/{id}/review` — [HRD] Keputusan tunggal (`decision`: lolos/tidak_lolos, `notes` wajib saat tolak). Dalam `DB::transaction()` menulis `selection_results.admin_selection_status`, `application_stage_histories` tahap administrasi (`passed`/`failed`, `assessor_id` = HRD), dan `job_applications.status` (`in_progress`/`rejected`, `current_stage_id` = tahap administrasi). Menolak 422 bila lamaran sudah `accepted` atau masuk penempatan.
     - `POST /api/hrd/applicant-reviews/bulk-review` — [HRD] Keputusan massal untuk tombol Loloskan Terpilih (`application_ids[]` 1-100, `decision`, `notes`). Dalam `DB::transaction()`, mengembalikan `processed/succeeded/failed/failures`.
 - **Selection Results:**
-        - `GET /api/hrd/selection-results/options` — [HRD] Dropdown opsi lowongan milik HRD, master tahapan seleksi, dan status filter hasil seleksi.
-        - `GET /api/hrd/selection-results` — [HRD] List pelamar/hasil seleksi + pagination, search, filter lowongan/tahap/status, sorting.
-        - `POST /api/hrd/selection-results/publish` — [HRD] Publikasikan hasil seleksi lowongan (mengunci hasil dan membuat notifikasi).
-        - `POST /api/hrd/selection-results/draft` — [HRD] Retract / kembalikan status hasil seleksi lowongan ke draft.
-        - `POST /api/hrd/selection-results/{id}` — [HRD] Simpan nilai evaluasi/skor seleksi pelamar dan upload surat penerimaan bila diterima.
-        - `PATCH /api/hrd/selection-results/{id}/decision` — [HRD] Update keputusan akhir kelulusan (diterima, tidak_diterima, cadangan, pending) secara inline.
+    - `GET /api/hrd/selection-results/options` — [HRD] Dropdown opsi lowongan milik HRD, master tahapan seleksi, dan status filter hasil seleksi.
+    - `GET /api/hrd/selection-results` — [HRD] List pelamar/hasil seleksi + pagination, search, filter lowongan/tahap/status, sorting.
+    - `POST /api/hrd/selection-results/publish` — [HRD] Publikasikan hasil seleksi lowongan (mengunci hasil dan membuat notifikasi).
+    - `POST /api/hrd/selection-results/draft` — [HRD] Retract / kembalikan status hasil seleksi lowongan ke draft.
+    - `POST /api/hrd/selection-results/{id}` — [HRD] Simpan nilai evaluasi/skor seleksi pelamar dan upload surat penerimaan bila diterima.
+    - `PATCH /api/hrd/selection-results/{id}/decision` — [HRD] Update keputusan akhir kelulusan (diterima, tidak_diterima, cadangan, pending) secara inline.
 - **Test Schedules:**
     - `GET /api/hrd/test-schedules` — List agenda & jadwal tes + pagination, search, filter (lowongan, tipe tahap `stage_type_id`, status sesi). Response menyertakan `stageType` (badge warna/nama/kode), `sessionStatusCode` (`ready` vs `completed`), `scheduledAtFormatted`, `hasScores`.
     - `GET /api/hrd/test-schedules/options` — Dropdown opsi lowongan aktif milik HRD (termasuk counter `eligible_applicants_count`) + master kategori tahapan seleksi (`stage_types`).

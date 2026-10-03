@@ -323,6 +323,7 @@ test('student can view application detail with placement and selection result', 
         'admin_selection_status' => 'lolos',
         'decision' => 'diterima',
         'status' => 'published',
+        'published_at' => now(),
         'notes' => 'Lulus semua tahapan',
     ]);
 

@@ -32,6 +32,16 @@ class RBAC
                 ->toResponse($request);
         }
 
+        if (! $user->is_active) {
+            $user->tokens()->delete();
+
+            return $this->response
+                ->message('Akun Anda telah dinonaktifkan!')
+                ->code(403)
+                ->success(false)
+                ->toResponse($request);
+        }
+
         $allowed = in_array($user->role, $roles);
 
         if (! $allowed && $user->role === 'superadmin' && in_array('admin', $roles)) {

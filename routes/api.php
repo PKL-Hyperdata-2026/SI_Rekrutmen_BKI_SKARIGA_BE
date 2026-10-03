@@ -43,7 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [NotificationController::class, 'index']);
         Route::get('/unread', [NotificationController::class, 'unread']);
         Route::patch('/read-all', [NotificationController::class, 'markAllAsRead']);
-        Route::patch('/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::patch('/{notification}/read', [NotificationController::class, 'markAsRead']);
     });
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {

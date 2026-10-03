@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Middleware\DecryptRequest;
+use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\RBAC;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->api(prepend: [
             DecryptRequest::class,
+            EnsureAccountIsActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

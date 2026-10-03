@@ -21,6 +21,10 @@ class RecruitmentAttendanceSeeder extends Seeder
 
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            return;
+        }
+
         RecruitmentAttendance::query()->delete();
 
         $vacancies = JobVacancy::orderBy('id')->take(self::TOTAL_ROWS)->get();

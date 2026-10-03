@@ -14,6 +14,10 @@ class TracerStudySeeder extends Seeder
 {
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            return;
+        }
+
         $admin = User::where('role', 'admin')->first() ?? User::factory()->create([
             'full_name' => 'Admin BKI',
             'email' => 'admin@skariga.sch.id',

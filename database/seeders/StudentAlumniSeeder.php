@@ -15,6 +15,10 @@ class StudentAlumniSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            return;
+        }
+
         $names = [
             'Marvello Faisal',
             'Surya Jayanata Wibawa',

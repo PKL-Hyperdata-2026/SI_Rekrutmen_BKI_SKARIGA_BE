@@ -11,6 +11,8 @@ use Throwable;
 
 class DecryptRequest
 {
+    private const UNENCRYPTED_ROUTE_PARAMS = ['notification'];
+
     /**
      * Handle an incoming request.
      *
@@ -21,6 +23,10 @@ class DecryptRequest
         // 1. Process and decrypt route parameters (e.g. {jobVacancy}, {student}, {id})
         if ($route = $request->route()) {
             foreach ($route->parameters() as $paramName => $paramValue) {
+                if (in_array($paramName, self::UNENCRYPTED_ROUTE_PARAMS, true)) {
+                    continue;
+                }
+
                 if (is_string($paramValue) && ! is_numeric($paramValue)) {
                     try {
                         $decrypted = decrypt($paramValue);

@@ -31,7 +31,7 @@ class NotificationService
                 'id' => (string) Str::uuid(),
                 'user_id' => $userId,
                 'type' => $type,
-                'title' => $title,
+                'title' => Str::limit($title, 50, ''),
                 'message' => $message,
                 'data' => $data,
             ]);
@@ -84,7 +84,7 @@ class NotificationService
                     'id' => $id,
                     'user_id' => $userId,
                     'type' => $type,
-                    'title' => $title,
+                    'title' => Str::limit($title, 50, ''),
                     'message' => $message,
                     'data' => json_encode($data),
                     'created_at' => $now,

@@ -7,10 +7,9 @@ namespace App\Http\Requests;
 use App\Models\JobApplication;
 use App\Services\JobPlacementService;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreJobPlacementRequest extends FormRequest
+class StoreJobPlacementRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

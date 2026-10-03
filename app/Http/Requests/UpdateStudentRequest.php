@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Models\StudentAlumni;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
-class UpdateStudentRequest extends FormRequest
+class UpdateStudentRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

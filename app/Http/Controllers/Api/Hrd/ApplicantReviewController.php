@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Hrd;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\GetHrdApplicantReviewRequest;
 use App\Http\Requests\HrdApplicantBulkReviewRequest;
 use App\Http\Requests\HrdApplicantReviewActionRequest;
-use App\Http\Requests\HrdApplicantReviewIndexRequest;
 use App\Http\Resources\HrdApplicantReviewResource;
 use App\Services\HrdApplicantReviewService;
 use App\Services\ResponseService;
@@ -21,7 +21,7 @@ class ApplicantReviewController extends Controller
         protected ResponseService $response
     ) {}
 
-    public function index(HrdApplicantReviewIndexRequest $request): Responsable
+    public function index(GetHrdApplicantReviewRequest $request): Responsable
     {
         $company = $request->user()?->company;
 

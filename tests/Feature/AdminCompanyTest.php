@@ -1,222 +1,199 @@
 <?php
 
-namespace Tests\Feature;
+declare(strict_types=1);
 
 use App\Models\Company;
 use App\Models\StandardType;
 use App\Models\User;
 use Database\Seeders\CompanyIndustrySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-class AdminCompanyTest extends TestCase
-{
-    use RefreshDatabase;
+uses(RefreshDatabase::class);
 
-    protected User $adminUser;
+beforeEach(function () {
+    $this->seed(CompanyIndustrySeeder::class);
 
-    protected User $siswaUser;
+    $this->adminUser = User::factory()->create([
+        'role' => 'admin',
+        'is_active' => true,
+    ]);
 
-    protected StandardType $industry;
+    $this->siswaUser = User::factory()->create([
+        'role' => 'siswa',
+        'is_active' => true,
+    ]);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+    $this->industry = StandardType::byCategory('company_industry')->firstOrFail();
+});
 
-        $this->seed(CompanyIndustrySeeder::class);
+test('can fetch form options including industries', function () {
+    $response = $this->actingAs($this->adminUser)
+        ->getJson('/api/admin/companies/options');
 
-        $this->adminUser = User::factory()->create([
-            'role' => 'admin',
-            'is_active' => true,
+    $response->assertStatus(200)
+        ->assertJsonPath('success', true)
+        ->assertJsonStructure([
+            'success',
+            'message',
+            'data' => [
+                'industries',
+            ],
         ]);
+});
 
-        $this->siswaUser = User::factory()->create([
-            'role' => 'siswa',
-            'is_active' => true,
-        ]);
+test('admin can create company', function () {
+    $payload = [
+        'name' => 'PT Astra Honda Motor',
+        'industry_id' => $this->industry->id,
+        'address' => 'Kawasan Industri EJIP, Cikarang',
+        'email' => 'hrd@astra-honda.example',
+        'phone' => '081234567890',
+        'website' => 'https://www.astra-honda.example',
+        'pic_name' => 'Budi Santoso',
+        'pic_contact' => '081298765432',
+        'is_active' => true,
+    ];
 
-        $this->industry = StandardType::byCategory('company_industry')->firstOrFail();
-    }
+    $response = $this->actingAs($this->adminUser)
+        ->postJson('/api/admin/companies', $payload);
 
-    public function test_can_fetch_form_options_including_industries(): void
-    {
-        $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/admin/companies/options');
+    $response->assertStatus(201)
+        ->assertJsonPath('success', true)
+        ->assertJsonPath('data.name', 'PT Astra Honda Motor')
+        ->assertJsonPath('data.email', 'hrd@astra-honda.example')
+        ->assertJsonPath('data.isActive', true);
 
-        $response->assertStatus(200)
-            ->assertJsonPath('success', true)
-            ->assertJsonStructure([
-                'success',
-                'message',
-                'data' => [
-                    'industries',
-                ],
-            ]);
-    }
+    $this->assertDatabaseHas('companies', [
+        'name' => 'PT Astra Honda Motor',
+        'email' => 'hrd@astra-honda.example',
+        'industry_id' => $this->industry->id,
+    ]);
+});
 
-    public function test_admin_can_create_company(): void
-    {
-        $payload = [
-            'name' => 'PT Astra Honda Motor',
-            'industry_id' => $this->industry->id,
-            'address' => 'Kawasan Industri EJIP, Cikarang',
-            'email' => 'hrd@astra-honda.example',
-            'phone' => '081234567890',
-            'website' => 'https://www.astra-honda.example',
-            'pic_name' => 'Budi Santoso',
-            'pic_contact' => '081298765432',
-            'is_active' => true,
-        ];
+test('company name and email are unique and non soft deleted', function () {
+    Company::create([
+        'name' => 'PT Astra Honda Motor',
+        'email' => 'hrd@astra-honda.example',
+        'is_active' => true,
+    ]);
 
-        $response = $this->actingAs($this->adminUser)
-            ->postJson('/api/admin/companies', $payload);
-
-        $response->assertStatus(201)
-            ->assertJsonPath('success', true)
-            ->assertJsonPath('data.name', 'PT Astra Honda Motor')
-            ->assertJsonPath('data.email', 'hrd@astra-honda.example')
-            ->assertJsonPath('data.isActive', true);
-
-        $this->assertDatabaseHas('companies', [
-            'name' => 'PT Astra Honda Motor',
-            'email' => 'hrd@astra-honda.example',
-            'industry_id' => $this->industry->id,
-        ]);
-    }
-
-    public function test_company_name_and_email_are_unique_and_non_soft_deleted(): void
-    {
-        Company::create([
+    $response = $this->actingAs($this->adminUser)
+        ->postJson('/api/admin/companies', [
             'name' => 'PT Astra Honda Motor',
             'email' => 'hrd@astra-honda.example',
-            'is_active' => true,
         ]);
 
-        $response = $this->actingAs($this->adminUser)
-            ->postJson('/api/admin/companies', [
-                'name' => 'PT Astra Honda Motor',
-                'email' => 'hrd@astra-honda.example',
-            ]);
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['name', 'email']);
+});
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['name', 'email']);
-    }
-
-    public function test_company_rejects_invalid_phone_format(): void
-    {
-        $response = $this->actingAs($this->adminUser)
-            ->postJson('/api/admin/companies', [
-                'name' => 'PT Contoh',
-                'phone' => '12345',
-            ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['phone']);
-    }
-
-    public function test_non_admin_cannot_access_admin_company_routes(): void
-    {
-        $response = $this->actingAs($this->siswaUser)
-            ->getJson('/api/admin/companies');
-
-        $response->assertStatus(403);
-    }
-
-    public function test_admin_can_list_and_search_companies(): void
-    {
-        Company::create([
-            'name' => 'PT Astra Honda Motor',
-            'industry_id' => $this->industry->id,
-            'is_active' => true,
-        ]);
-        Company::create([
-            'name' => 'PT Telkom Indonesia',
-            'industry_id' => $this->industry->id,
-            'is_active' => true,
+test('company rejects invalid phone format', function () {
+    $response = $this->actingAs($this->adminUser)
+        ->postJson('/api/admin/companies', [
+            'name' => 'PT Contoh',
+            'phone' => '12345',
         ]);
 
-        $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/admin/companies?search=Astra');
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['phone']);
+});
 
-        $response->assertStatus(200)
-            ->assertJsonPath('success', true)
-            ->assertJsonCount(1, 'data.data')
-            ->assertJsonPath('data.data.0.name', 'PT Astra Honda Motor');
-    }
+test('non admin cannot access admin company routes', function () {
+    $response = $this->actingAs($this->siswaUser)
+        ->getJson('/api/admin/companies');
 
-    public function test_admin_can_fetch_company_detail(): void
-    {
-        $company = Company::create([
-            'name' => 'PT Astra Honda Motor',
-            'industry_id' => $this->industry->id,
-            'is_active' => true,
-        ]);
+    $response->assertStatus(403);
+});
 
-        $response = $this->actingAs($this->adminUser)
-            ->getJson("/api/admin/companies/{$company->id}");
+test('admin can list and search companies', function () {
+    Company::create([
+        'name' => 'PT Astra Honda Motor',
+        'industry_id' => $this->industry->id,
+        'is_active' => true,
+    ]);
+    Company::create([
+        'name' => 'PT Telkom Indonesia',
+        'industry_id' => $this->industry->id,
+        'is_active' => true,
+    ]);
 
-        $response->assertStatus(200)
-            ->assertJsonPath('data.name', 'PT Astra Honda Motor');
-        $this->assertEquals($company->id, decrypt($response->json('data.id')));
-    }
+    $response = $this->actingAs($this->adminUser)
+        ->getJson('/api/admin/companies?search=Astra');
 
-    public function test_admin_can_update_company(): void
-    {
-        $company = Company::create([
-            'name' => 'PT Astra Honda Motor',
-            'is_active' => true,
-        ]);
+    $response->assertStatus(200)
+        ->assertJsonPath('success', true)
+        ->assertJsonCount(1, 'data.data')
+        ->assertJsonPath('data.data.0.name', 'PT Astra Honda Motor');
+});
 
-        $response = $this->actingAs($this->adminUser)
-            ->putJson("/api/admin/companies/{$company->id}", [
-                'name' => 'PT Astra Honda',
-                'phone' => '081298765432',
-            ]);
+test('admin can fetch company detail', function () {
+    $company = Company::create([
+        'name' => 'PT Astra Honda Motor',
+        'industry_id' => $this->industry->id,
+        'is_active' => true,
+    ]);
 
-        $response->assertStatus(200)
-            ->assertJsonPath('data.name', 'PT Astra Honda')
-            ->assertJsonPath('data.phone', '081298765432');
+    $response = $this->actingAs($this->adminUser)
+        ->getJson("/api/admin/companies/{$company->id}");
 
-        $this->assertDatabaseHas('companies', [
-            'id' => $company->id,
+    $response->assertStatus(200)
+        ->assertJsonPath('data.name', 'PT Astra Honda Motor');
+    $this->assertEquals($company->id, decrypt($response->json('data.id')));
+});
+
+test('admin can update company', function () {
+    $company = Company::create([
+        'name' => 'PT Astra Honda Motor',
+        'is_active' => true,
+    ]);
+
+    $response = $this->actingAs($this->adminUser)
+        ->putJson("/api/admin/companies/{$company->id}", [
             'name' => 'PT Astra Honda',
-        ]);
-    }
-
-    public function test_admin_can_toggle_active_company(): void
-    {
-        $company = Company::create([
-            'name' => 'PT Astra Honda Motor',
-            'is_active' => true,
+            'phone' => '081298765432',
         ]);
 
-        $response = $this->actingAs($this->adminUser)
-            ->patchJson("/api/admin/companies/{$company->id}/toggle-active");
+    $response->assertStatus(200)
+        ->assertJsonPath('data.name', 'PT Astra Honda')
+        ->assertJsonPath('data.phone', '081298765432');
 
-        $response->assertStatus(200)
-            ->assertJsonPath('data.isActive', false);
+    $this->assertDatabaseHas('companies', [
+        'id' => $company->id,
+        'name' => 'PT Astra Honda',
+    ]);
+});
 
-        $this->assertDatabaseHas('companies', [
-            'id' => $company->id,
-            'is_active' => false,
-        ]);
-    }
+test('admin can toggle active company', function () {
+    $company = Company::create([
+        'name' => 'PT Astra Honda Motor',
+        'is_active' => true,
+    ]);
 
-    public function test_admin_can_soft_delete_company(): void
-    {
-        $company = Company::create([
-            'name' => 'PT Astra Honda Motor',
-            'is_active' => true,
-        ]);
+    $response = $this->actingAs($this->adminUser)
+        ->patchJson("/api/admin/companies/{$company->id}/toggle-active");
 
-        $response = $this->actingAs($this->adminUser)
-            ->deleteJson("/api/admin/companies/{$company->id}");
+    $response->assertStatus(200)
+        ->assertJsonPath('data.isActive', false);
 
-        $response->assertStatus(200)
-            ->assertJsonPath('success', true);
+    $this->assertDatabaseHas('companies', [
+        'id' => $company->id,
+        'is_active' => false,
+    ]);
+});
 
-        $this->assertSoftDeleted('companies', [
-            'id' => $company->id,
-        ]);
-    }
-}
+test('admin can soft delete company', function () {
+    $company = Company::create([
+        'name' => 'PT Astra Honda Motor',
+        'is_active' => true,
+    ]);
+
+    $response = $this->actingAs($this->adminUser)
+        ->deleteJson("/api/admin/companies/{$company->id}");
+
+    $response->assertStatus(200)
+        ->assertJsonPath('success', true);
+
+    $this->assertSoftDeleted('companies', [
+        'id' => $company->id,
+    ]);
+});

@@ -127,7 +127,7 @@ class HrdSelectionResultService
                 ->first();
 
             if (! $application) {
-                throw new HttpException(404, 'Data lamaran tidak ditemukan atau bukan milik perusahaan Anda.');
+                throw new HttpException(403, 'Anda tidak memiliki akses ke data lamaran ini.');
             }
 
             $scores = [];
@@ -193,7 +193,7 @@ class HrdSelectionResultService
                 ->first();
 
             if (! $application) {
-                throw new HttpException(404, 'Data lamaran tidak ditemukan.');
+                throw new HttpException(403, 'Anda tidak memiliki akses ke data lamaran ini.');
             }
 
             $result = SelectionResult::firstOrNew(['job_application_id' => $application->id]);
@@ -226,7 +226,7 @@ class HrdSelectionResultService
         return DB::transaction(function () use ($companyId, $vacancyId, $hrdUserId): int {
             $vacancy = JobVacancy::where('id', $vacancyId)->where('company_id', $companyId)->first();
             if (! $vacancy) {
-                throw new HttpException(404, 'Lowongan kerja tidak ditemukan.');
+                throw new HttpException(403, 'Anda tidak memiliki akses ke lowongan kerja ini.');
             }
 
             $applications = JobApplication::with(['selectionResult', 'studentAlumni.user'])
@@ -291,7 +291,7 @@ class HrdSelectionResultService
         return DB::transaction(function () use ($companyId, $vacancyId, $hrdUserId): int {
             $vacancy = JobVacancy::where('id', $vacancyId)->where('company_id', $companyId)->first();
             if (! $vacancy) {
-                throw new HttpException(404, 'Lowongan kerja tidak ditemukan.');
+                throw new HttpException(403, 'Anda tidak memiliki akses ke lowongan kerja ini.');
             }
 
             return SelectionResult::whereHas('jobApplication', fn (Builder $q) => $q->where('job_vacancy_id', $vacancyId))

@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class UpdateHrdTestScheduleRequest extends FormRequest
+class UpdateHrdTestScheduleRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role === 'hrd';
+        return true;
     }
 
     /**

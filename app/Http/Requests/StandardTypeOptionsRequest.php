@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class StandardTypeOptionsRequest extends FormRequest
+class StandardTypeOptionsRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

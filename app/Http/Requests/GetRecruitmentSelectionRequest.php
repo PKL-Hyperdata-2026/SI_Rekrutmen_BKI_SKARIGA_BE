@@ -5,12 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Symfony\Component\HttpFoundation\Response;
 
-class RecruitmentSelectionIndexRequest extends FormRequest
+class GetRecruitmentSelectionRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {
@@ -43,15 +39,5 @@ class RecruitmentSelectionIndexRequest extends FormRequest
             'per_page.min' => 'Jumlah data per halaman minimal 1.',
             'per_page.max' => 'Jumlah data per halaman maksimal 100.',
         ];
-    }
-
-    protected function failedValidation(Validator $validator): void
-    {
-        throw new HttpResponseException(response()->json([
-            'success' => false,
-            'message' => 'Validation error',
-            'data' => null,
-            'errors' => $validator->errors(),
-        ], Response::HTTP_UNPROCESSABLE_ENTITY));
     }
 }

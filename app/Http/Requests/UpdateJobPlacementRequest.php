@@ -8,10 +8,9 @@ use App\Models\JobApplication;
 use App\Models\JobPlacement;
 use App\Services\JobPlacementService;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UpdateJobPlacementRequest extends FormRequest
+class UpdateJobPlacementRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

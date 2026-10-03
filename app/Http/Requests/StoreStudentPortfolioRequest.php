@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class StoreStudentPortfolioRequest extends FormRequest
+class StoreStudentPortfolioRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

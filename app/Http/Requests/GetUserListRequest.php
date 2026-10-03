@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class GetUserListRequest extends FormRequest
+class GetUserListRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

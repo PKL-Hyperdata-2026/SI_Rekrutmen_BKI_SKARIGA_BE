@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class GetAdminTracerStudyRequest extends FormRequest
+class GetAdminTracerStudyRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

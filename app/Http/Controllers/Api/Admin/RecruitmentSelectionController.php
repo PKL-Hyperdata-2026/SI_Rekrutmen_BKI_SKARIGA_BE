@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\RecruitmentSelectionIndexRequest;
+use App\Http\Requests\GetRecruitmentSelectionRequest;
 use App\Http\Resources\RecruitmentSelectionResource;
 use App\Services\RecruitmentSelectionService;
 use App\Services\ResponseService;
@@ -18,7 +18,7 @@ class RecruitmentSelectionController extends Controller
         protected ResponseService $response
     ) {}
 
-    public function index(RecruitmentSelectionIndexRequest $request): Responsable
+    public function index(GetRecruitmentSelectionRequest $request): Responsable
     {
         $filters = $request->validated();
         $perPage = $request->integer('per_page', 15);

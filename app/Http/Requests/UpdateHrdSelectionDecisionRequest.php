@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class UpdateHrdSelectionDecisionRequest extends FormRequest
+class UpdateHrdSelectionDecisionRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

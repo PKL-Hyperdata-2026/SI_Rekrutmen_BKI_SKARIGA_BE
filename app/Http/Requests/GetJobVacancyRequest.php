@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class GetJobVacancyRequest extends FormRequest
+class GetJobVacancyRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

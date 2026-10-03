@@ -5,16 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Symfony\Component\HttpFoundation\Response;
 
-class HrdApplicantReviewActionRequest extends FormRequest
+class HrdApplicantReviewActionRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role === 'hrd';
+        return true;
     }
 
     /**
@@ -39,15 +35,5 @@ class HrdApplicantReviewActionRequest extends FormRequest
             'notes.required_if' => 'Alasan penolakan wajib diisi.',
             'notes.max' => 'Catatan maksimal 1000 karakter.',
         ];
-    }
-
-    protected function failedValidation(Validator $validator): void
-    {
-        throw new HttpResponseException(response()->json([
-            'success' => false,
-            'message' => 'Validation error',
-            'data' => null,
-            'errors' => $validator->errors(),
-        ], Response::HTTP_UNPROCESSABLE_ENTITY));
     }
 }

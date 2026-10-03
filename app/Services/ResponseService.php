@@ -48,6 +48,7 @@ class ResponseService implements Responsable
     public function code(int $httpCode): self
     {
         $this->statusCode = $httpCode;
+        $this->success = $httpCode < 400;
 
         return $this;
     }

@@ -56,6 +56,7 @@ backend/app/
 │   │   │   │   ├── JobVacancyController.php           # HRD CRUD lowongan kerja & statistik
 │   │   │   │   ├── SelectionResultController.php      # HRD input hasil seleksi & evaluasi tes: list + filter + submit hasil + bulk submit
 │   │   │   │   └── TestScheduleController.php         # HRD CRUD jadwal tes, list peserta, & reminder
+│   │   │   ├── AdminDashboardController.php           # Admin ringkasan statistik KPI, tren rekrutmen, & serapan per departemen
 │   │   │   ├── AdminReportController.php              # Admin rekapitulasi laporan (rekrutmen, absensi, keterserapan, tracer)
 │   │   │   ├── AdminTracerStudyController.php         # Admin CRUD tracer study, metrics, options, & sync alumni
 │   │   │   ├── CompanyController.php                  # Admin CRUD perusahaan mitra & options
@@ -82,31 +83,29 @@ backend/app/
 │   ├── Requests/
 │   │   ├── AdminReportFilterRequest.php
 │   │   ├── ApplyJobVacancyRequest.php
+│   │   ├── BaseFormRequest.php
 │   │   ├── BulkValidateAttendanceRequest.php
 │   │   ├── ForgotPasswordRequest.php
 │   │   ├── GetAdminTracerStudyRequest.php
 │   │   ├── GetAttendanceQueueRequest.php
 │   │   ├── GetAttendanceStageSummariesRequest.php
+│   │   ├── GetHrdApplicantReviewRequest.php
 │   │   ├── GetHrdJobPlacementRequest.php
 │   │   ├── GetHrdJobVacancyRequest.php
+│   │   ├── GetHrdSelectionResultRequest.php
 │   │   ├── GetHrdTestParticipantRequest.php
 │   │   ├── GetHrdTestScheduleRequest.php
 │   │   ├── GetJobVacancyRequest.php
+│   │   ├── GetRecruitmentSelectionRequest.php
 │   │   ├── GetStudentAlumniRequest.php
 │   │   ├── GetStudentJobApplicationRequest.php
 │   │   ├── GetStudentJobVacanciesRequest.php
 │   │   ├── GetUserListRequest.php
 │   │   ├── HrdApplicantBulkReviewRequest.php
 │   │   ├── HrdApplicantReviewActionRequest.php
-│   │   ├── HrdApplicantReviewIndexRequest.php
 │   │   ├── HrdSelectionResultDraftRequest.php
-│   │   ├── HrdSelectionResultIndexRequest.php
-│   │   ├── HrdSelectionResultPublishRequest.php
-│   │   ├── HrdSelectionResultUpdateDecisionRequest.php
-│   │   ├── HrdSubmitSelectionResultRequest.php
 │   │   ├── LoginRequest.php
 │   │   ├── PublishHrdSelectionResultRequest.php
-│   │   ├── RecruitmentSelectionIndexRequest.php
 │   │   ├── ResetPasswordRequest.php
 │   │   ├── ResetUserPasswordRequest.php
 │   │   ├── SelectOptionsRequest.php
@@ -140,10 +139,13 @@ backend/app/
 │   │   ├── UpdateUserRequest.php
 │   │   └── ValidateAttendanceRequest.php
 │   └── Resources/
+│       ├── AdminDashboardResource.php
+│       ├── AdminReportResource.php
 │       ├── ApplicationStageHistoryResource.php
 │       ├── CompanyResource.php
 │       ├── DepartmentResource.php
 │       ├── HrdApplicantReviewResource.php
+│       ├── HrdSelectionResultResource.php
 │       ├── HrdTestParticipantResource.php
 │       ├── HrdTestScheduleResource.php
 │       ├── JobPlacementResource.php
@@ -185,11 +187,13 @@ backend/app/
 │   ├── TracerStudy.php                                # Graduate employment tracking survey data
 │   └── User.php                                       # Application users with role association
 ├── Services/
+│   ├── AdminDashboardService.php                      # Ringkasan KPI dasbor admin, tren rekrutmen 6 bulan, & pie keterserapan
 │   ├── AdminReportService.php                         # Agregasi data laporan admin, metrik, filter tanggal, dan statistik
 │   ├── AuthService.php                                # Authentication credential validation & token issuance
 │   ├── CompanyService.php                             # Corporate partner CRUD, filtering, logo upload
 │   ├── DepartmentService.php                          # Department master data CRUD & status toggle
 │   ├── HrdApplicantReviewService.php                  # HRD review pelamar scope company: paginate + summary + options + detail + review/bulk
+│   ├── HrdSelectionResultService.php                  # HRD input & publikasi hasil seleksi: draft, publish, retract, keputusan
 │   ├── JobPlacementService.php                        # Job placement CRUD, filtering, audit trail, options, metrics
 │   ├── JobVacancyService.php                          # Vacancy business rules, filters, company checks
 │   ├── MailService.php                                # Generic email notification dispatch
@@ -247,6 +251,8 @@ backend/app/
 
 ### Role: Admin (`role:admin`)
 
+- **Dashboard:**
+    - `GET /api/admin/dashboard` — Ambil ringkasan statistik KPI dasbor, grafik tren rekrutmen, dan distribusi penyerapan kerja per departemen.
 - **Departments & Majors:**
     - `GET /api/admin/departments` — List master departemen + pagination, search, status filter.
     - `POST /api/admin/departments` — Buat departemen baru.
@@ -335,6 +341,13 @@ backend/app/
     - `GET /api/hrd/applicant-reviews/{id}` — [HRD] Detail pelamar (kontak, jurusan/kelas/tahun lulus, lowongan, daftar berkas portofolio, hasil seleksi, riwayat tahap).
     - `PATCH /api/hrd/applicant-reviews/{id}/review` — [HRD] Keputusan tunggal (`decision`: lolos/tidak_lolos, `notes` wajib saat tolak). Dalam `DB::transaction()` menulis `selection_results.admin_selection_status`, `application_stage_histories` tahap administrasi (`passed`/`failed`, `assessor_id` = HRD), dan `job_applications.status` (`in_progress`/`rejected`, `current_stage_id` = tahap administrasi). Menolak 422 bila lamaran sudah `accepted` atau masuk penempatan.
     - `POST /api/hrd/applicant-reviews/bulk-review` — [HRD] Keputusan massal untuk tombol Loloskan Terpilih (`application_ids[]` 1-100, `decision`, `notes`). Dalam `DB::transaction()`, mengembalikan `processed/succeeded/failed/failures`.
+- **Selection Results:**
+    - `GET /api/hrd/selection-results/options` — [HRD] Dropdown opsi lowongan milik HRD, master tahapan seleksi, dan status filter hasil seleksi.
+    - `GET /api/hrd/selection-results` — [HRD] List pelamar/hasil seleksi + pagination, search, filter lowongan/tahap/status, sorting.
+    - `POST /api/hrd/selection-results/publish` — [HRD] Publikasikan hasil seleksi lowongan (mengunci hasil dan membuat notifikasi).
+    - `POST /api/hrd/selection-results/draft` — [HRD] Retract / kembalikan status hasil seleksi lowongan ke draft.
+    - `POST /api/hrd/selection-results/{id}` — [HRD] Simpan nilai evaluasi/skor seleksi pelamar dan upload surat penerimaan bila diterima.
+    - `PATCH /api/hrd/selection-results/{id}/decision` — [HRD] Update keputusan akhir kelulusan (diterima, tidak_diterima, cadangan, pending) secara inline.
 - **Test Schedules:**
     - `GET /api/hrd/test-schedules` — List agenda & jadwal tes + pagination, search, filter (lowongan, tipe tahap `stage_type_id`, status sesi). Response menyertakan `stageType` (badge warna/nama/kode), `sessionStatusCode` (`ready` vs `completed`), `scheduledAtFormatted`, `hasScores`.
     - `GET /api/hrd/test-schedules/options` — Dropdown opsi lowongan aktif milik HRD (termasuk counter `eligible_applicants_count`) + master kategori tahapan seleksi (`stage_types`).
@@ -391,13 +404,17 @@ Successful JSON response:
 }
 ```
 
-Validation failure (FormRequest 422 standard):
+Validation failure (FormRequest 422 standard, emitted by `App\Http\Requests\BaseFormRequest::failedValidation()`):
 
 ```json
 {
-    "message": "The given data was invalid.",
+    "success": false,
+    "message": "Validation error",
+    "data": null,
     "errors": {
         "field": ["Validation error message"]
     }
 }
 ```
+
+Every FormRequest in `app/Http/Requests/` extends `BaseFormRequest`; do not override `failedValidation()` in individual requests.

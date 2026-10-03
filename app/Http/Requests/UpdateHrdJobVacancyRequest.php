@@ -6,10 +6,9 @@ namespace App\Http\Requests;
 
 use App\Models\JobVacancy;
 use Closure;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UpdateHrdJobVacancyRequest extends FormRequest
+class UpdateHrdJobVacancyRequest extends BaseFormRequest
 {
     public function authorize(): bool
     {

@@ -40,7 +40,8 @@ HTTP Request (Frontend Client)
 backend/app/
 ├── Console/
 │   └── Commands/
-│       └── DevCommand.php                             # Dev runner helper command
+│       ├── DevCommand.php                             # Dev runner helper command
+│       └── SendTracerStudyRemindersCommand.php        # Cron pengingat berkala Tracer Study (3/6/12 bulan)
 ├── Events/
 │   └── NotificationSent.php                           # Real-time WebSocket broadcasting event via Reverb
 ├── Helpers/
@@ -49,9 +50,12 @@ backend/app/
 │   ├── Controllers/
 │   │   ├── Api/
 │   │   │   ├── Admin/
+│   │   │   │   ├── AccessMenuController.php           # [SUPERADMIN] Role-menu permission matrix & menu pengguna
+│   │   │   │   ├── MessageTemplateController.php      # [ADMIN] CRUD template pesan & notifikasi otomatis
 │   │   │   │   └── RecruitmentSelectionController.php # [ADMIN] View-only seleksi rekrutmen: summary + paginasi + filter
 │   │   │   ├── Hrd/
 │   │   │   │   ├── ApplicantReviewController.php      # HRD review pelamar & verifikasi berkas: list + filter + detail + review tunggal/massal
+│   │   │   │   ├── HrdDashboardController.php         # HRD overview metrik rekrutmen, kuota, lowongan, & pelamar
 │   │   │   │   ├── JobPlacementController.php         # HRD CRUD penempatan kerja & metrik evaluasi
 │   │   │   │   ├── JobVacancyController.php           # HRD CRUD lowongan kerja & statistik
 │   │   │   │   ├── SelectionResultController.php      # HRD input hasil seleksi & evaluasi tes: list + filter + submit hasil + bulk submit
@@ -134,9 +138,11 @@ backend/app/
 │   │   ├── UpdateJobPlacementRequest.php
 │   │   ├── UpdateJobVacancyRequest.php
 │   │   ├── UpdateMajorRequest.php
+│   │   ├── UpdateMessageTemplateRequest.php
 │   │   ├── UpdateStudentProfileRequest.php
 │   │   ├── UpdateStudentRequest.php
 │   │   ├── UpdateUserRequest.php
+│   │   ├── UpdateAccessMenuRequest.php
 │   │   └── ValidateAttendanceRequest.php
 │   └── Resources/
 │       ├── AdminDashboardResource.php
@@ -176,6 +182,7 @@ backend/app/
 │   ├── JobVacancy.php                                 # Job openings posted by companies/BKI
 │   ├── Major.php                                      # Vocational majors under departments
 │   ├── Menu.php                                       # System navigation menus
+│   ├── MessageTemplate.php                            # Email & in-app notification dynamic message templates
 │   ├── Notification.php                               # In-app notifications
 │   ├── RecruitmentAttendance.php                      # Test event attendance, coordinates, QR verification
 │   ├── SelectionResult.php                            # HRD selection score per job application
@@ -187,17 +194,21 @@ backend/app/
 │   ├── TracerStudy.php                                # Graduate employment tracking survey data
 │   └── User.php                                       # Application users with role association
 ├── Services/
+│   ├── AccessMenuService.php                          # Role-menu matrix management, user active menu resolution
+│   ├── ActivityScoreService.php                       # User activity audit logging & engagement score calculation
 │   ├── AdminDashboardService.php                      # Ringkasan KPI dasbor admin, tren rekrutmen 6 bulan, & pie keterserapan
 │   ├── AdminReportService.php                         # Agregasi data laporan admin, metrik, filter tanggal, dan statistik
 │   ├── AuthService.php                                # Authentication credential validation & token issuance
 │   ├── CompanyService.php                             # Corporate partner CRUD, filtering, logo upload
 │   ├── DepartmentService.php                          # Department master data CRUD & status toggle
 │   ├── HrdApplicantReviewService.php                  # HRD review pelamar scope company: paginate + summary + options + detail + review/bulk
-│   ├── HrdSelectionResultService.php                  # HRD input & publikasi hasil seleksi: draft, publish, retract, keputusan
+│   ├── HrdDashboardService.php                        # HRD overview metrics, active vacancies progress, applicant intake
+│   ├── HrdSelectionResultService.php                  # HRD input & publikasi hasil seleksi, auto job placement creation
 │   ├── JobPlacementService.php                        # Job placement CRUD, filtering, audit trail, options, metrics
 │   ├── JobVacancyService.php                          # Vacancy business rules, filters, company checks
 │   ├── MailService.php                                # Generic email notification dispatch
 │   ├── MajorService.php                               # Vocational major CRUD, department relations
+│   ├── MessageTemplateService.php                     # Dynamic notification template parser & variable replacement
 │   ├── NotificationService.php                        # In-app notification creation, broadcast via Reverb, read flags
 │   ├── PasswordResetService.php                       # Password reset flow end-to-end (broker token, mail dispatch)
 │   ├── RecruitmentAttendanceService.php               # Validasi presensi, status update, agregasi counter tahapan
@@ -231,8 +242,9 @@ backend/app/
 - **`tracer_studies`**: Linked to `student_alumni.id`, using enum `career_status` (`bekerja`, `wirausaha`, `lanjut_studi`, `mencari_pekerjaan`), with extended columns: `accepted_date`, `job_location`, `company_sector`, and conditional attributes per status.
 - **`student_portfolios`**: Portfolio attachments for students and alumni (`student_alumni_id`, `category_id`, `title`, `description`, `file_path`, `original_filename`). Tracks uploaded storage path and user-facing original filename. Supports soft deletes.
 - **`notifications`**: In-app notifications with UUID primary key `id`, polymorphic `notifiable`, type, data payload, read status timestamp. Broadcast via Reverb.
+- **`message_templates`**: Dynamic templates for in-app notifications and queued emails with placeholder replacements (`code`, `name`, `channel`, `subject`, `body`, `variables` JSON, `is_active`).
 - **`standard_types` & `standard_type_categories`**: Dynamic lookup options/constants (`class`, `employment_status`, `portfolio_type`, `company_industry`, etc.).
-- **`menus` & `access_menus`**: System navigation menus and role permission mapping.
+- **`menus` & `access_menus`**: System navigation menus and role permission mapping managed dynamically via `/api/admin/access-menus`.
 - **`activity_logs`**: Audit logging recording user ID, action, model affected, IP address, and changed attributes.
 - **`password_reset_tokens`**: Email-keyed storage of SHA-256 hashed reset tokens (`email`, `token`, `created_at`). Expiry 60 minutes configured in `config/auth.php`.
 
@@ -248,6 +260,7 @@ backend/app/
 - `POST /api/login` — Authenticate user and issue Sanctum token (throttled 5 failed attempts per email / 30 min, returns 429).
 - `POST /api/forgot-password` — Send password reset link email (throttled 6/min).
 - `POST /api/reset-password` — Reset password using `token`, `email`, `password` (`min:8`, `confirmed`).
+- `GET /api/me/menus` — Daftar menu navigasi aktif yang berhak diakses pengguna saat ini.
 
 ### Role: Admin (`role:admin`)
 
@@ -310,11 +323,17 @@ backend/app/
     - `GET /api/admin/reports/attendance` — Laporan rekapitulasi presensi tahapan seleksi.
     - `GET /api/admin/reports/absorption` — Laporan keterserapan alumni per jurusan.
     - `GET /api/admin/reports/tracer-study` — Laporan evaluasi tracer study & retensi kerja.
+- **Message Templates:**
+    - `GET /api/admin/message-templates` — List template pesan email dan notifikasi sistem.
+    - `GET /api/admin/message-templates/{id}` — Detail template pesan dan variabel placeholder.
+    - `PUT|PATCH /api/admin/message-templates/{id}` — Update subjek dan isi template pesan.
 - **Lookups:**
     - `GET /api/admin/standard-types` — Generic async-select lookup items (?category=&search=&page=&per_page=).
 
 ### Role: Superadmin (`role:superadmin`)
 
+- `GET /api/admin/access-menus` — Matriks centang hak akses menu navigasi per role.
+- `POST /api/admin/access-menus` — Simpan pembaruan centang hak akses menu untuk role tertentu.
 - `GET /api/admin/users` — List pengguna aplikasi + pagination, role filter, search.
 - `GET /api/admin/users/options` — Dropdown opsi roles.
 - `GET /api/admin/users/{user}` — Detail data user.
@@ -326,6 +345,8 @@ backend/app/
 
 ### Role: HRD (`role:hrd`)
 
+- **Dashboard:**
+    - `GET /api/hrd/dashboard` — Overview metrik rekrutmen perusahaan (lowongan aktif, total kuota, pelamar, agenda tes, kandidat diterima, pelamar terbaru, ringkasan berkas).
 - **Job Vacancies:**
     - `GET /api/hrd/job-vacancies/statistics` — Statistik lowongan HRD: `active` dan `draft_closed`.
     - `GET /api/hrd/job-vacancies/options` — Dropdown form lowongan (jurusan, target, tipe kerja, status).
@@ -370,6 +391,8 @@ backend/app/
 
 ### Role: Siswa & Alumni (`role:siswa,alumni`)
 
+- **Dashboard Analytics:**
+    - `GET /api/siswa/dashboard/trends` — Data tren bergulir 6 bulan: jumlah lowongan kerja aktif dan lamaran yang diajukan siswa.
 - **Self-Service Portfolio (`/api/siswa/*` & `/api/alumni/*`):**
     - `GET /api/siswa/portfolio/profile` | `GET /api/alumni/portfolio/profile` — Get profil dan berkas portofolio.
     - `GET /api/siswa/portfolio/options` | `GET /api/alumni/portfolio/options` — Dropdown form profil portofolio.

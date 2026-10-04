@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
             JobVacancySeeder::class,
             RecruitmentAttendanceSeeder::class,
             RecruitmentSelectionSeeder::class,
+            MenuSeeder::class,
         ]);
     }
 }

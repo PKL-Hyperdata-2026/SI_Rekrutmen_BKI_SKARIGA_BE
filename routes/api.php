@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\Admin\AccessMenuController;
 use App\Http\Controllers\Api\Admin\RecruitmentSelectionController;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminReportController;
@@ -38,6 +39,7 @@ Route::middleware('throttle:6,1')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
+    Route::get('/me/menus', [AccessMenuController::class, 'myMenus']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::prefix('notification')->group(function () {
@@ -97,6 +99,8 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:superadmin')->prefix('admin')->name('superadmin.')->group(function () {
+        Route::get('/access-menus', [AccessMenuController::class, 'index']);
+        Route::post('/access-menus', [AccessMenuController::class, 'update']);
         Route::get('/users/options', [UserController::class, 'options']);
         Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive']);
         Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword']);

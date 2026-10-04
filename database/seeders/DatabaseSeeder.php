@@ -34,6 +34,7 @@ class DatabaseSeeder extends Seeder
             RecruitmentAttendanceSeeder::class,
             RecruitmentSelectionSeeder::class,
             MenuSeeder::class,
+            MessageTemplateSeeder::class,
         ]);
     }
 }

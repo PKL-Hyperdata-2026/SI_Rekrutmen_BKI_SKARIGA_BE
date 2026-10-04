@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\Admin\AccessMenuController;
+use App\Http\Controllers\Api\Admin\MessageTemplateController;
 use App\Http\Controllers\Api\Admin\RecruitmentSelectionController;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminReportController;
@@ -86,6 +87,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/tracer-study', [AdminReportController::class, 'tracerStudy']);
         });
         Route::get('/recruitment-selections', [RecruitmentSelectionController::class, 'index']); // [ADMIN] Seleksi Rekrutmen view-only (Issue #67)
+        Route::apiResource('message-templates', MessageTemplateController::class)->only(['index', 'show', 'update']);
         // TODO: API Admin lainnya
 
         Route::prefix('attendances')->group(function () {

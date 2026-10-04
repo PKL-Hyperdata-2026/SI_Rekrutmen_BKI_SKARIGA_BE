@@ -27,6 +27,12 @@ class NotificationService
         bool $sendEmail = true
     ): bool {
         try {
+            $rendered = app(MessageTemplateService::class)->render($type, $data);
+            if ($rendered) {
+                $title = $rendered['subject'];
+                $message = $rendered['body'];
+            }
+
             $notification = Notification::create([
                 'id' => (string) Str::uuid(),
                 'user_id' => $userId,
@@ -74,6 +80,12 @@ class NotificationService
         }
 
         try {
+            $rendered = app(MessageTemplateService::class)->render($type, $data);
+            if ($rendered) {
+                $title = $rendered['subject'];
+                $message = $rendered['body'];
+            }
+
             $now = now();
             $records = [];
             $broadcastPayloads = [];

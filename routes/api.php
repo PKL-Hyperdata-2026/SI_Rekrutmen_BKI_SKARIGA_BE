@@ -142,6 +142,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Self-Service Siswa & Alumni Portfolio
     Route::middleware('role:siswa,alumni')->prefix('siswa')->group(function () {
+        Route::get('/dashboard/trends', [StudentJobVacancyController::class, 'trends']);
         Route::get('/portfolio/profile', [PortfolioController::class, 'getProfile']);
         Route::get('/portfolio/options', [PortfolioController::class, 'getOptions']);
         Route::put('/portfolio/profile', [PortfolioController::class, 'updateProfile']);

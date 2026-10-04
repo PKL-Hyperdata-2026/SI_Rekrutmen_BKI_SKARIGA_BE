@@ -69,4 +69,12 @@ class StudentJobVacancyController extends Controller
 
         return $this->response->message('Lamaran berhasil dikirim.')->data(new StudentJobApplicationResource($app))->code(201);
     }
+
+    public function trends(Request $request): Responsable
+    {
+        $data = $this->service->getMonthlyTrends((int) $request->user()->id);
+
+        return $this->response->message('Data tren lowongan dan lamaran berhasil diambil.')
+            ->data($data);
+    }
 }

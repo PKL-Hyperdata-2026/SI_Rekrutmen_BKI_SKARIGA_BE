@@ -6,9 +6,11 @@ namespace App\Services;
 
 use App\Models\ApplicationStageHistory;
 use App\Models\JobApplication;
+use App\Models\JobPlacement;
 use App\Models\JobVacancy;
 use App\Models\SelectionResult;
 use App\Models\StandardType;
+use App\Models\StudentAlumni;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
@@ -255,6 +257,32 @@ class HrdSelectionResultService
 
                 if ($res->decision === 'diterima' && $acceptedStatusId) {
                     $app->update(['status_id' => $acceptedStatusId, 'updated_by' => $hrdUserId]);
+
+                    $placementStatusId = StandardType::byCategory('placement_status')->where('code', 'placed')->value('id')
+                        ?? StandardType::byCategory('placement_status')->value('id');
+
+                    if ($app->student_alumni_id) {
+                        JobPlacement::firstOrCreate(
+                            ['job_application_id' => $app->id],
+                            [
+                                'student_alumni_id' => $app->student_alumni_id,
+                                'company_id' => $vacancy->company_id,
+                                'placement_status_id' => $placementStatusId,
+                                'accepted_date' => now()->toDateString(),
+                                'start_date' => null,
+                                'notes' => $res->notes ?? $vacancy->position,
+                                'created_by' => $hrdUserId,
+                                'updated_by' => $hrdUserId,
+                            ]
+                        );
+
+                        StudentAlumni::where('id', $app->student_alumni_id)->update([
+                            'current_company_id' => $vacancy->company_id,
+                            'current_position' => $vacancy->position,
+                            'updated_by' => $hrdUserId,
+                        ]);
+                    }
+
                     if ($app->studentAlumni?->user_id) {
                         $this->notificationService->send(
                             $app->studentAlumni->user_id,
@@ -262,6 +290,15 @@ class HrdSelectionResultService
                             'Pengumuman Kelulusan: '.$vacancy->title,
                             "Selamat! Anda dinyatakan DITERIMA pada posisi {$vacancy->position} ({$vacancy->title}). Silakan unduh surat penempatan di portal siswa.",
                             ['application_id' => $app->id, 'decision' => 'diterima'],
+                            true
+                        );
+
+                        $this->notificationService->send(
+                            $app->studentAlumni->user_id,
+                            'tracer_study_reminder',
+                            'Pembaruan Status Karier & Penempatan: '.$vacancy->title,
+                            "Selamat atas penempatan kerja Anda di {$vacancy->company?->name}. Mohon pastikan profil dan status Tracer Study Anda terbarui secara berkala.",
+                            ['application_id' => $app->id, 'action_url' => '/student/tracer'],
                             true
                         );
                     }

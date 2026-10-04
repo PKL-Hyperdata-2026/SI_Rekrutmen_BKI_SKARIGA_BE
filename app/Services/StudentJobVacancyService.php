@@ -12,6 +12,7 @@ use App\Models\Major;
 use App\Models\StandardType;
 use App\Models\StudentAlumni;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,7 +22,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 class StudentJobVacancyService
 {
     public function __construct(
-        protected NotificationService $notificationService
+        protected NotificationService $notificationService,
+        protected ActivityScoreService $activityScoreService
     ) {}
 
     public function getStudentVacancies(
@@ -297,7 +299,80 @@ class StudentJobVacancyService
                 );
             }
 
+            $this->activityScoreService->logActivity(
+                $userId,
+                'apply_vacancy',
+                'recruitment',
+                JobApplication::class,
+                $application->id,
+                ['vacancy_title' => $vacancy->title, 'position' => $vacancy->position]
+            );
+
             return $application->load(['jobVacancy.company', 'status']);
         });
+    }
+
+    public function getMonthlyTrends(int $userId): array
+    {
+        $student = StudentAlumni::where('user_id', $userId)->first();
+        $studentId = $student?->id;
+
+        $now = Carbon::now();
+        $rangeStart = $now->copy()->subMonths(5)->startOfMonth();
+        $rangeEnd = $now->copy()->endOfMonth();
+
+        $isSqlite = DB::connection()->getDriverName() === 'sqlite';
+        $vacMonthExpr = $isSqlite
+            ? "strftime('%Y-%m', created_at)"
+            : "to_char(created_at, 'YYYY-MM')";
+
+        $vacancies = JobVacancy::query()
+            ->where('is_active', true)
+            ->whereBetween('created_at', [$rangeStart, $rangeEnd])
+            ->selectRaw("{$vacMonthExpr} as ym, count(*) as total")
+            ->groupBy('ym')
+            ->pluck('total', 'ym')
+            ->all();
+
+        $appMonthExpr = $isSqlite
+            ? "strftime('%Y-%m', COALESCE(applied_at, created_at))"
+            : "to_char(COALESCE(applied_at, created_at), 'YYYY-MM')";
+
+        $myApplications = [];
+        if ($studentId) {
+            $myApplications = JobApplication::query()
+                ->where('student_alumni_id', $studentId)
+                ->where(function ($q) use ($rangeStart, $rangeEnd) {
+                    $q->whereBetween('applied_at', [$rangeStart, $rangeEnd])
+                        ->orWhere(function ($sub) use ($rangeStart, $rangeEnd) {
+                            $sub->whereNull('applied_at')
+                                ->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+                        });
+                })
+                ->selectRaw("{$appMonthExpr} as ym, count(*) as total")
+                ->groupBy('ym')
+                ->pluck('total', 'ym')
+                ->all();
+        }
+
+        $monthNames = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+            5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Agu',
+            9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des',
+        ];
+
+        $months = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $targetMonth = $now->copy()->subMonths($i);
+            $ymKey = $targetMonth->format('Y-m');
+
+            $months[] = [
+                'month' => $monthNames[$targetMonth->month] ?? $targetMonth->format('M'),
+                'lowongan' => (int) ($vacancies[$ymKey] ?? 0),
+                'melamar' => (int) ($myApplications[$ymKey] ?? 0),
+            ];
+        }
+
+        return $months;
     }
 }

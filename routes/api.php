@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\AdminTracerStudyController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\Hrd\ApplicantReviewController;
+use App\Http\Controllers\Api\Hrd\HrdDashboardController;
 use App\Http\Controllers\Api\Hrd\JobPlacementController;
 use App\Http\Controllers\Api\Hrd\JobVacancyController as HrdJobVacancyController;
 use App\Http\Controllers\Api\Hrd\SelectionResultController;
@@ -103,6 +104,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:hrd')->prefix('hrd')->name('hrd.')->group(function () {
+        Route::get('/dashboard', [HrdDashboardController::class, 'index'])->name('dashboard');
         Route::get('/job-placements/metrics', [JobPlacementController::class, 'metrics']);
         Route::get('/job-placements/options', [JobPlacementController::class, 'options']);
         Route::get('/students-alumni', [JobPlacementController::class, 'studentsAlumni']);

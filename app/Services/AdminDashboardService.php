@@ -31,7 +31,7 @@ class AdminDashboardService
             ->whereNull('sa.deleted_at')
             ->whereNull('u.deleted_at')
             ->selectRaw("
-                COUNT(CASE WHEN u.role = 'siswa' THEN 1 END) as active_students,
+                COUNT(CASE WHEN u.role = 'siswa' AND u.is_active = true THEN 1 END) as active_students,
                 COUNT(CASE WHEN sa.graduation_year IS NOT NULL THEN 1 END) as total_alumni
             ")
             ->first();

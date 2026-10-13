@@ -41,14 +41,14 @@ class HrdDashboardService
 
         $upcomingSchedules = SelectionStage::whereHas('jobVacancy', fn ($q) => $q->where('company_id', $companyId))
             ->where(function ($q) {
-                $q->where('scheduled_date', '>=', now()->toDateString())
-                    ->orWhereNull('scheduled_date');
+                $q->where('scheduled_at', '>=', now())
+                    ->orWhereNull('scheduled_at');
             })
             ->count();
 
         $acceptedCandidates = (clone $applicationsQuery)
             ->where(function ($q) {
-                $q->whereHas('selectionResult', fn ($sq) => $sq->where('decision', 'diterima'))
+                $q->whereHas('selectionResult', fn ($sq) => $sq->where('decision', 'diterima')->where('status', 'published'))
                     ->orWhereHas('jobPlacement');
             })
             ->count();
@@ -89,7 +89,7 @@ class HrdDashboardService
                     'major' => $student?->major?->name ?? 'Vokasi',
                     'position' => $app->jobVacancy?->position ?? 'Lowongan',
                     'applied_at' => $appliedDate ? Carbon::parse($appliedDate)->translatedFormat('d M Y') : '-',
-                    'portfolio' => $portfolioCount > 0 ? "CV & {$portfolioCount} Berkas" : 'CV Lengkap',
+                    'portfolio' => $portfolioCount > 0 ? "CV & {$portfolioCount} Berkas" : 'Hanya CV',
                 ];
             })
             ->all();
